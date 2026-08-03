@@ -20,7 +20,36 @@
 | Kiểu dữ liệu | `npx tsc --noEmit` | exit 0 |
 | Bundle Android | `npx expo export --platform android` | exit 0, dựng được bundle Hermes |
 | Không lộ bí mật | quét `*.ts,*.tsx,*.json,*.js` | không kết quả; `.env` bị `.gitignore` chặn |
-| **Chạy trên điện thoại thật** | 6 bước ở Task 12 Bước 10 | **CHƯA LÀM — cần thiết bị Android của chủ dự án** |
+| **Chạy trên thiết bị Android** | 6 bước ở Task 12 Bước 10 | **ĐẠT ĐỦ 6/6** — chi tiết bên dưới |
+
+### Kết quả nghiệm thu trên máy ảo (Android 17, API 37, Pixel 7)
+
+| # | Bước | Kết quả |
+|---|---|---|
+| 1 | Màn đăng nhập, khẩu hiệu tiếng Việt | Đạt. Màu `#0055c7` đúng; ô mật khẩu có `password="true"`; ô email có `content-desc="Email"` |
+| 2 | Sai mật khẩu → lỗi tiếng Việt từ máy chủ | Đạt. Server trả nguyên văn *"Email hoặc mật khẩu không đúng"*, hiển thị đúng trong `ErrorBanner` |
+| 3 | Đăng nhập thật → khung 4 tab | Đạt. Đi trọn luồng `GET /workspaces` rỗng → màn hình tạo → `POST /workspaces` → vào tab |
+| 4 | Tắt hẳn app, mở lại → giữ phiên | **Đạt.** Không hỏi đăng nhập lại → JWT được giữ trong Android Keystore qua `expo-secure-store` |
+| 5 | Mất mạng → báo lỗi, không sập | Đạt. Hiện *"Không thể kết nối máy chủ. Kiểm tra mạng và thử lại."*, app không crash |
+| 6 | Edge-to-edge API 36+ | **Đạt, có số đo.** Thanh trạng thái `0→136`, nội dung bắt đầu `178`; nhãn tab kết thúc `2332`, thanh điều hướng `2337→2400`. Không pixel nào bị che |
+
+### Bài học môi trường (ghi lại để khỏi vấp lại)
+
+**Bỏ hẳn Expo Go.** Expo đóng băng Expo Go ở SDK 54 trên App Store và Play Store từ 05/2026; dự án dùng SDK 57. Ép chạy thì gặp crash native SIGSEGV trong `libworklets.so` (thư viện nằm trong Expo Go, không phải mã dự án; đã loại trừ React Compiler bằng thực nghiệm). Từ nay luôn dùng development build:
+
+```
+npx expo start --dev-client
+```
+
+**Máy ảo bắt buộc có cờ DNS.** Mặc định emulator lấy DNS sai và không phân giải được tên miền nào, khiến app báo nhầm thành lỗi mạng:
+
+```
+emulator.exe -avd WeDo_Pixel7 -dns-server 8.8.8.8
+```
+
+**Máy ảo phải do chủ dự án tự khởi động từ terminal của mình.** Khởi động hộ qua tiến trình nền thì hoặc chết theo phiên, hoặc chạy không có cửa sổ hiển thị.
+
+**Biến môi trường phải đăng ký trên EAS.** `.env` nằm trong `.gitignore` nên không được tải lên cloud. Bản `development` không sao vì JS do Metro cục bộ phục vụ, nhưng `preview` và `production` đóng gói JS lúc build trên cloud — thiếu biến là app không biết gọi API đi đâu. Đã đăng ký `EXPO_PUBLIC_API_BASE_URL` cho cả ba environment.
 
 Số test thực tế là 52 chứ không phải 48 như kế hoạch dự tính: thêm 2 test cho `client` (cắt dấu gạch chéo cuối base URL, thiếu biến môi trường), 1 cho `login` (cắt khoảng trắng quanh email), 1 cho `workspace-context` (workspace đã lưu không còn tồn tại).
 
