@@ -2317,7 +2317,13 @@ import { getPreferences, updatePreferences } from '../../lib/api/notifications';
 import type { NotificationPreferences } from '../../lib/types';
 import { colors, fontSize, spacing } from '../../theme/tokens';
 
-/** Bỏ `notifyMeeting` vì Cuộc họp không nằm trong phạm vi bản mobile. */
+/**
+ * Hiện đủ cả bốn loại, kể cả `notifyMeeting`.
+ *
+ * Cuộc họp không có màn hình riêng trên mobile, nhưng người dùng vẫn bật tắt được
+ * mục này trên web và vẫn nhận thông báo họp trên điện thoại. Ẩn đi sẽ khiến họ
+ * tưởng app mất cài đặt, hoặc tệ hơn là không tắt được thứ đang làm phiền mình.
+ */
 const ROWS: Array<{ key: keyof NotificationPreferences; label: string; hint: string }> = [
   {
     key: 'notifyTaskAssignment',
@@ -2333,6 +2339,11 @@ const ROWS: Array<{ key: keyof NotificationPreferences; label: string; hint: str
     key: 'notifyDeadlineReminder',
     label: 'Nhắc hạn chót',
     hint: 'Nhắc trước 24 giờ và đúng giờ hạn',
+  },
+  {
+    key: 'notifyMeeting',
+    label: 'Cuộc họp',
+    hint: 'Khi có cuộc họp mới được lên lịch. Xem chi tiết họp trên web WeDo',
   },
 ];
 
@@ -2583,7 +2594,7 @@ Kỳ vọng thấy `POST_NOTIFICATIONS` và `RECEIVE_BOOT_COMPLETED` (expo-notif
 npx expo start --dev-client
 ```
 
-- [ ] **Bước 3: Chạy chín phép thử, chụp màn hình từng cái**
+- [ ] **Bước 3: Chạy mười một phép thử, chụp màn hình từng cái**
 
 | # | Phép thử | Đạt khi |
 |---|---|---|
@@ -2595,7 +2606,9 @@ npx expo start --dev-client
 | 6 | Mở chi tiết công việc | Đủ tiêu đề, hạn chót, người phụ trách, dự án |
 | 7 | Mở tab Thông báo lần đầu | **Hiện hộp thoại xin quyền của Android**, không phải lúc mở app |
 | 8 | Danh sách thông báo | Thông báo chưa đọc có nền nhạt và chấm; chạm thì mất chấm và đi tới việc |
-| 9 | **Nhắc hạn cục bộ** | Xem bước 4 |
+| 9 | Badge trên tab Thông báo | Hiện số chưa đọc; đánh dấu đã đọc thì số giảm |
+| 10 | Cài đặt thông báo | Đủ **bốn** công tắc; tắt một cái rồi mở lại màn hình thì trạng thái giữ nguyên |
+| 11 | **Nhắc hạn cục bộ** | Xem bước 4 |
 
 - [ ] **Bước 4: Kiểm chứng nhắc hạn thật**
 
@@ -2630,7 +2643,7 @@ Kỳ vọng: không in ra dòng nào.
 | Bundle Android | `npx expo export --platform android` | exit 0 |
 | **Không có quyền báo thức chính xác** | `aapt2 dump permissions` | **Không thấy `USE_EXACT_ALARM` hay `SCHEDULE_EXACT_ALARM`** |
 | Không lộ bí mật | lệnh grep ở Task 10 Bước 5 | không kết quả |
-| Nghiệm thu thiết bị | 9 phép thử | có ảnh chụp từng cái |
+| Nghiệm thu thiết bị | 11 phép thử | có ảnh chụp từng cái |
 
 ---
 
