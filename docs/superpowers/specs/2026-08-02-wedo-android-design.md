@@ -346,7 +346,15 @@ Công việc `assignmentStatus === 'PENDING'` ghim đầu danh sách với hai n
 - **Nhận** → `POST /tasks/:id/accept`
 - **Từ chối** → mở ô nhập lý do (bắt buộc ≥3 ký tự) → `POST /tasks/:id/reject { reason }`
 
-**`tasks/[taskId].tsx`** — `GET /tasks/:id`. Đổi trạng thái qua `PATCH /tasks/:id { status }` giữa `TODO`/`IN_PROGRESS`/`REVIEW`/`DONE`. Hiện lý do từ chối nếu có. Link ngược về tin nhắn gốc nếu `chatMessages` không rỗng.
+**`tasks/[taskId].tsx`** — `GET /tasks/:id`. Hiện lý do từ chối nếu có. Link ngược về tin nhắn gốc nếu `chatMessages` không rỗng.
+
+> **Sửa spec ngày 04/08/2026 — bỏ "Đổi trạng thái".**
+>
+> Bản gốc ghi tính năng 2 có "Đổi trạng thái". Đọc mã nguồn backend cho thấy điều đó **không khả thi với thành viên thường**: `PATCH /tasks/:id` gọi `ensureProjectLeader` và ném lỗi *"Chỉ leader dự án mới được tạo, phân công hoặc xóa task"* (`tasks.service.ts:714`).
+>
+> Luồng backend thiết kế cho thành viên là `accept` → `POST /tasks/:id/submissions` (bắt buộc ít nhất một tệp) → `submit-review`. Muốn đẩy việc tiến lên thì **bắt buộc upload tệp**, mà đính kèm tệp đã bị loại khỏi phạm vi mobile.
+>
+> **Quyết định:** "Việc của tôi" chỉ gồm xem danh sách theo hạn chót, nhận việc, từ chối kèm lý do, xem chi tiết. Người dùng vào web WeDo để nộp bài.
 
 ### 5.5 Tính năng 3 — Thông báo
 
