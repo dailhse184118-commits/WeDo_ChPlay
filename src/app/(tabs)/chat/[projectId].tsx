@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { randomUUID } from 'expo-crypto';
 
 import { MessageBubble } from '../../../components/chat/MessageBubble';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
@@ -30,6 +29,7 @@ import {
 import { listProjects } from '../../../lib/api/projects';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { createTaskFromMessage } from '../../../lib/chat/create-task-from-message';
+import { createLocalId } from '../../../lib/chat/local-id';
 import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
@@ -86,7 +86,7 @@ export default function ChatThreadScreen() {
   const getIdempotencyKey = useCallback((messageId: string) => {
     const existing = idempotencyKeys.current.get(messageId);
     if (existing) return existing;
-    const created = randomUUID();
+    const created = createLocalId();
     idempotencyKeys.current.set(messageId, created);
     return created;
   }, []);
@@ -234,7 +234,7 @@ export default function ChatThreadScreen() {
     const content = draft.trim();
     if (!content) return;
 
-    const localId = randomUUID();
+    const localId = createLocalId();
     setPending((current) => [...current, { localId, content, failed: false }]);
     setDraft('');
 

@@ -24,7 +24,38 @@
 | Kiểu dữ liệu | `npx tsc --noEmit` | exit 0 |
 | Bundle Android | `npx expo export --platform android` | exit 0 |
 | Không lộ bí mật | quét `*.ts,*.tsx,*.json,*.js` | không kết quả |
-| **Nghiệm thu thiết bị** | Task 12 | **CHƯA LÀM — cần máy ảo và tài khoản của chủ dự án** |
+| **Nghiệm thu thiết bị** | Task 12 | **6/8 đạt** — chi tiết bên dưới |
+
+### Kết quả nghiệm thu trên máy ảo (Android 17, API 37)
+
+Dữ liệu thật: workspace `Exe101`, dự án `Dự án WeDo Mobile`, 2 thành viên.
+
+| # | Phép thử | Kết quả |
+|---|---|---|
+| 1 | Danh sách dự án và empty state | Đạt |
+| 2 | Mở dự án, tải tin nhắn, nhãn công việc | Đạt |
+| 3 | Gửi tin nhắn có optimistic | Đạt |
+| 4 | Cuộn tải lịch sử | **Chưa thử** — chưa đủ tin nhắn để phân trang |
+| 5 | **Nhấn giữ → AI phân tích** | Đạt — trả `Độ tin cậy cao`, điền sẵn tiêu đề |
+| 6 | **Tạo công việc (luồng ba bước)** | Đạt — hộp thoại xác nhận, nhãn gắn vào tin nhắn |
+| 7 | Chế độ máy bay | **Chưa thử** |
+| 8 | Chỉ báo đang gõ | **Chưa thử** |
+
+**Realtime đã xác minh hai phía:** tin gửi từ web hiện trên máy ảo mà không cần thao tác gì, và tin bị thu hồi trên web cũng chuyển thành "Tin nhắn đã được thu hồi" trên máy ảo. Chứng minh `message:project`, `message:project:recalled` và namespace `/chat` đều đúng.
+
+### Bốn lỗi phát hiện khi nghiệm thu
+
+**1. `expo-crypto` thiếu module native.** Cài gói JS không thêm mã native vào APK đã build. Đã bỏ hẳn `expo-crypto`, thay bằng `createLocalId()` viết bằng JS thuần — khoá idempotency chỉ cần duy nhất, không cần ngẫu nhiên kiểu mật mã.
+
+**2. Route động lạc vào thanh tab.** Mọi file dưới `(tabs)/` tự thành một tab, kể cả `chat/[projectId]`. Đã ẩn bằng `<Tabs.Screen name="chat/[projectId]" options={{ href: null }} />`.
+
+**3. `expo-haptics` thiếu module native, và code gây unhandled promise rejection.** `void Haptics.impactAsync(...)` làm hiện overlay lỗi che cả màn hình. Lỗi này cũng xảy ra trên máy thật không có mô-tơ rung hoặc khi người dùng tắt phản hồi xúc giác. Đã tách thành `tapFeedback()` không bao giờ ném lỗi, kèm 3 test.
+
+**4. Hai chỗ tương phản màu không đọc được.** Nhãn "Đã tạo công việc" dùng xanh lá `#1b7f4d`, và dòng "Tin nhắn đã được thu hồi" dùng xám `#6b7280` — cả hai đặt trên nền bong bóng xanh `#0055c7`. Đã đổi sang trắng cho bong bóng của mình.
+
+### Quy tắc rút ra, áp dụng cho kế hoạch 3
+
+**Thêm bất kỳ module native nào cũng phải build lại APK development client.** Đã vấp ba lần liên tiếp. Kế hoạch 3 cần `expo-notifications` — đó là module native, nên **bắt buộc** build lại APK trước khi nghiệm thu, và rung của `expo-haptics` cũng chỉ hoạt động sau lần build đó.
 
 Số test thực tế là **127**, không phải 115 hay 118 như hai lần dự tính trong kế hoạch. Con số trong kế hoạch cộng sai; số thật lấy từ `npm test`.
 

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
-
+import { tapFeedback } from '../../lib/haptics';
 import type { ChatMessage } from '../../lib/types';
 import { colors, fontSize, radius, spacing } from '../../theme/tokens';
 
@@ -33,8 +32,9 @@ export function MessageBubble({
   const handleLongPress = () => {
     if (recalled) return;
     // Rung nhẹ khi nhấn giữ. Đây là tương tác native thật, thứ phân biệt app gốc
-    // với trang web bọc lại.
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // với trang web bọc lại. tapFeedback không bao giờ ném lỗi, nên thiếu mô-tơ
+    // rung hay thiếu module native cũng không chặn được luồng tạo công việc.
+    void tapFeedback();
     onLongPress();
   };
 
@@ -58,7 +58,9 @@ export function MessageBubble({
         ]}
       >
         {recalled ? (
-          <Text style={styles.recalled}>Tin nhắn đã được thu hồi</Text>
+          <Text style={[styles.recalled, isMine ? styles.recalledMine : null]}>
+            Tin nhắn đã được thu hồi
+          </Text>
         ) : (
           <Text style={[styles.content, isMine ? styles.contentMine : null]}>
             {message.content}
@@ -66,8 +68,10 @@ export function MessageBubble({
         )}
 
         {message.task ? (
-          <View style={styles.taskTag}>
-            <Text style={styles.taskTagText}>Đã tạo công việc: {message.task.title}</Text>
+          <View style={[styles.taskTag, isMine ? styles.taskTagMine : null]}>
+            <Text style={[styles.taskTagText, isMine ? styles.taskTagTextMine : null]}>
+              Đã tạo công việc: {message.task.title}
+            </Text>
           </View>
         ) : null}
 
@@ -103,13 +107,19 @@ const styles = StyleSheet.create({
   content: { fontSize: fontSize.md, color: colors.text },
   contentMine: { color: '#ffffff' },
   recalled: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
+  // Xám #6b7280 trên nền xanh #0055c7 cũng không đọc được, y như nhãn công việc.
+  recalledMine: { color: 'rgba(255,255,255,0.85)' },
   taskTag: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.12)',
   },
+  // Trên bong bóng của mình (nền #0055c7), màu xanh lá gần như không đọc được.
+  // Đổi sang trắng để giữ độ tương phản.
+  taskTagMine: { borderTopColor: 'rgba(255,255,255,0.35)' },
   taskTagText: { fontSize: fontSize.xs, color: colors.success, fontWeight: '600' },
+  taskTagTextMine: { color: '#ffffff' },
   time: { fontSize: 10, color: colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
   timeMine: { color: 'rgba(255,255,255,0.75)' },
   retry: { marginTop: spacing.xs },

@@ -42,6 +42,12 @@ function TabsWithWorkspace() {
           ),
         }}
       />
+      {/*
+        Mọi file dưới (tabs)/ đều tự thành một tab. Route động này chỉ được mở
+        từ danh sách dự án, nên phải ẩn khỏi thanh tab bằng href: null.
+      */}
+      <Tabs.Screen name="chat/[projectId]" options={{ href: null }} />
+
       <Tabs.Screen
         name="tasks/index"
         options={{
