@@ -14,6 +14,42 @@
 
 ---
 
+## Trạng thái thực thi
+
+**Task 1–11: xong và kiểm chứng bằng máy. Task 12 chờ thiết bị.**
+
+| Kiểm chứng | Lệnh | Kết quả |
+|---|---|---|
+| Test đơn vị | `npm test` | **127/127 PASS**, 21 test suite |
+| Kiểu dữ liệu | `npx tsc --noEmit` | exit 0 |
+| Bundle Android | `npx expo export --platform android` | exit 0 |
+| Không lộ bí mật | quét `*.ts,*.tsx,*.json,*.js` | không kết quả |
+| **Nghiệm thu thiết bị** | Task 12 | **CHƯA LÀM — cần máy ảo và tài khoản của chủ dự án** |
+
+Số test thực tế là **127**, không phải 115 hay 118 như hai lần dự tính trong kế hoạch. Con số trong kế hoạch cộng sai; số thật lấy từ `npm test`.
+
+**Một lỗi phát sinh khi thực thi:** bật `typedRoutes` khiến `tsc` báo lỗi `/chat/${string}` không thuộc union route sau khi tạo file `[projectId].tsx`. Nguyên nhân: expo-router sinh bảng kiểu vào `.expo/types/router.d.ts` lúc dev server chạy, mà Metro đang ở chế độ `CI=1` nên không theo dõi file mới. Sửa bằng cách khởi động lại Metro không đặt `CI`. **Sau khi thêm bất kỳ file route mới nào, phải chạy lại `npx expo start` trước khi `tsc` mới hết đỏ.**
+
+---
+
+## Điều chỉnh khi thực thi
+
+**1. Không thể test kiểu dữ liệu bằng Jest.** Task 1 ban đầu viết một file `types-smoke.test.ts` dùng `import type`. File này **pass ngay cả khi các kiểu chưa tồn tại**, vì Babel xoá sạch `import type` lúc transpile nên Jest không bao giờ thấy. Một test không thể đỏ là test vô dụng.
+
+Công cụ đúng để kiểm kiểu là `tsc`:
+
+```bash
+npx tsc --noEmit
+```
+
+Đã xoá file test giả. Kiểu dữ liệu được `tsc` kiểm qua chính chỗ dùng thật ở Task 2 đến Task 11. **Tổng số test cuối cùng là 115, không phải 118.**
+
+**2. Không cài `@gorhom/bottom-sheet` và `@react-native-community/datetimepicker`.** Task 9 thực tế dùng `Modal` của React Native, còn datetimepicker để dành kế hoạch 3. Cài thư viện native không dùng là thêm mã chết vào AAB nộp Play. Chỉ cài `socket.io-client`, `expo-haptics`, `expo-crypto`.
+
+Đã kiểm chứng `socket.io-client@4.8.3` — major 4, khớp server `socket.io@4.8.1`.
+
+---
+
 ## Ràng buộc toàn cục
 
 Mọi task đều ngầm mang các ràng buộc này. Kế thừa toàn bộ ràng buộc của kế hoạch 1, cộng thêm:

@@ -52,3 +52,78 @@ export interface Workspace {
   updatedAt: string;
   owner?: UserSummary;
 }
+
+export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string | null;
+  workspaceId: string;
+  status: ProjectStatus;
+  createdAt: string;
+  updatedAt: string;
+  members?: Array<{ id: string; role: string; user: UserSummary }>;
+  _count?: { tasks: number; members?: number };
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: TaskStatus;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  assignmentStatus?: TaskAssignmentStatus | null;
+  rejectionReason?: string | null;
+  projectId?: string | null;
+  workspaceId: string;
+  assigneeId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignee?: UserSummary | null;
+  project?: Pick<Project, 'id' | 'name' | 'status'> | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  content: string;
+  workspaceId: string;
+  projectId: string;
+  authorId: string;
+  taskId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  author?: UserSummary;
+  task?: Pick<
+    Task,
+    'id' | 'title' | 'status' | 'assignmentStatus' | 'projectId' | 'workspaceId'
+  > | null;
+  replyTo?: Pick<ChatMessage, 'id' | 'content' | 'deletedAt'> & {
+    author?: UserSummary;
+  };
+  pinnedAt?: string | null;
+}
+
+/** Kết quả phân tích của AI. Mọi trường ngoài ba trường đầu đều có thể vắng. */
+export interface ChatTaskSuggestion {
+  hasTask: boolean;
+  title: string;
+  description?: string;
+  assigneeHint?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  /** Dạng 'YYYY-MM-DD'. */
+  dueDate?: string;
+  /** Dạng 'HH:mm'. */
+  dueTime?: string;
+  confidence: 'low' | 'medium' | 'high';
+  reason?: string;
+  model?: string;
+}
+
+export interface ChatHistoryPage {
+  items: ChatMessage[];
+  nextCursor?: string | null;
+}

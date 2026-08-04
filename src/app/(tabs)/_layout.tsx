@@ -4,6 +4,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../../lib/auth/auth-context';
+import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
 import { colors } from '../../theme/tokens';
@@ -88,9 +89,11 @@ export default function TabsLayout() {
   }
 
   return (
-    <WorkspaceProvider>
-      <TabsWithWorkspace />
-    </WorkspaceProvider>
+    <SocketProvider>
+      <WorkspaceProvider>
+        <TabsWithWorkspace />
+      </WorkspaceProvider>
+    </SocketProvider>
   );
 }
 
