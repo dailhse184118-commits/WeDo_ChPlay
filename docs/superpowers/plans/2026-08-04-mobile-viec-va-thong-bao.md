@@ -14,6 +14,42 @@
 
 ---
 
+## Áp dụng bộ thiết kế (quyết định ngày 04/08/2026)
+
+Chủ dự án cung cấp bộ thiết kế **"WeDo mobile app design system"** gồm 22 màn hình Android. Quyết định: **các màn hình mới của kế hoạch 3 viết thẳng theo thiết kế này**, còn màn hình cũ của kế hoạch 1 và 2 tân trang sau — để không phải viết hai lần.
+
+### Nền tảng đã dựng
+
+| Thành phần | Nội dung |
+|---|---|
+| `src/theme/tokens.ts` | Thêm `primaryLight` `#2071dc`, `page` `#eef2f7`, ba màu pha nhạt `dangerSoft`/`successSoft`/`warningSoft`, `warningText` `#8a5200`, `gradients`, `shadows`, `sizes` |
+| `src/components/ui/GradientHeader.tsx` | Header gradient 160°, bo góc dưới 24, tự cộng inset thanh trạng thái |
+| `src/components/ui/Card.tsx` | Thẻ trắng nổi bóng `0 2px 12px rgba(0,60,140,.10)`, hỗ trợ chồng lên mép gradient |
+| `src/components/ui/IconTile.tsx` | Ô 40×40 bo 10, bốn tông: info / deadline / done / rejected |
+
+**Không cần `expo-linear-gradient`.** React Native 0.86 nhận chuỗi CSS qua `experimental_backgroundImage`, nên tránh được một module native và một lần build lại APK.
+
+### Bốn thứ thiết kế yêu cầu mà API không có — đã bỏ
+
+Người thiết kế đã dặn trước *"nếu không có dữ liệu này ở API thì bỏ"*:
+
+| Thiết kế | Vì sao bỏ |
+|---|---|
+| Tin nhắn cuối + mốc thời gian ở danh sách dự án | `GET /projects` không trả về; muốn có phải gọi thêm một request cho mỗi dự án |
+| Thanh tiến độ "bao nhiêu việc đã xong" | `_count.tasks` chỉ có tổng số, không có số đã xong |
+| Nhãn "Người giao" ở chi tiết việc | `Task` không có trường người tạo, cả Prisma schema lẫn API |
+| Ba ô thống kê ở màn Tài khoản | Không có endpoint |
+
+### Hai cải tiến của người thiết kế đã áp dụng
+
+**Ba chip lý do từ chối nhanh** — "Trùng deadline khác · Đang quá tải · Không đúng phần mình". Bắt buộc gõ tay sinh ra lý do rỗng kiểu "không rảnh"; chạm chip điền sẵn rồi vẫn sửa được. Server vẫn nhận đủ 3 ký tự.
+
+**Trạng thái rỗng dạy cử chỉ ẩn.** Người thiết kế chỉ ra: *"Nhấn giữ là cử chỉ ẩn, tính năng cốt lõi của app không có chỗ nào nhìn thấy được."* Đây vừa là vấn đề trải nghiệm vừa là rủi ro bị Play từ chối vì thiếu chức năng. Trạng thái rỗng của "Việc của tôi" phải dùng đúng câu chữ dạy thao tác:
+
+> Khi nhóm chốt việc trong chat, bạn **nhấn giữ tin nhắn** đó để WeDo tạo công việc. Việc giao cho bạn sẽ xuất hiện ở đây.
+
+---
+
 ## Ràng buộc toàn cục
 
 Kế thừa toàn bộ ràng buộc của kế hoạch 1 và 2, cộng thêm ba điều **quyết định việc app có được Play duyệt hay không**:
@@ -1092,6 +1128,8 @@ git commit -m "feat: them component dong cong viec va o tu choi"
 
 ## Task 4: Màn hình Việc của tôi
 
+**Trạng thái: XONG (05/08/2026).** Viết thẳng theo bộ thiết kế mới: `GradientHeader` với ba ô đếm Đang mở / Chờ nhận / Quá hạn, `SectionList` nhóm theo hạn, trạng thái rỗng dạy cử chỉ nhấn giữ.
+
 **Files:**
 - Modify: `src/app/(tabs)/tasks/index.tsx`
 
@@ -1304,6 +1342,8 @@ git commit -m "feat: them man hinh viec cua toi"
 ---
 
 ## Task 5: Màn hình chi tiết công việc
+
+**Trạng thái: XONG (05/08/2026).** Dạng thẻ với `IconTile` cho từng dòng thông tin, ô lý do từ chối, hai nút Nhận / Từ chối. Không có nút đổi trạng thái — `PATCH /tasks/:id` đòi quyền trưởng dự án, đã ghi trong bản đặc tả sửa đổi 04/08.
 
 **Files:**
 - Create: `src/app/(tabs)/tasks/[taskId].tsx`
@@ -1556,6 +1596,8 @@ git commit -m "feat: them man hinh chi tiet cong viec"
 
 ## Task 6: Lịch nhắc hạn chót cục bộ
 
+**Trạng thái: XONG (05/08/2026).** `planReminders` là hàm thuần, 12 test.
+
 **Files:**
 - Create: `src/lib/notifications/scheduler.ts`
 - Test: `src/lib/notifications/__tests__/scheduler.test.ts`
@@ -1768,6 +1810,8 @@ git commit -m "feat: them logic tinh lich nhac han chot"
 
 ## Task 7: Lớp bọc expo-notifications và xin quyền
 
+**Trạng thái: XONG (05/08/2026).** Thêm `checkNotificationPermission()` ngoài kế hoạch gốc: đọc trạng thái quyền mà **không** hiện hộp thoại. Cần vì Android chỉ cho hỏi một lần — phải biết trạng thái trước để giải thích lý do rồi mới gọi hộp thoại (xem Task 8).
+
 **Files:**
 - Modify: `package.json` (cài `expo-notifications`), `app.json`
 - Create: `src/lib/notifications/permission.ts`, `src/lib/notifications/local.ts`
@@ -1967,6 +2011,21 @@ git commit -m "feat: them lop boc expo-notifications va xin quyen"
 ---
 
 ## Task 8: Màn hình Thông báo và cài đặt
+
+**Trạng thái: XONG phần mã (05/08/2026), chờ nghiệm thu trên máy.**
+
+**Một sửa đổi so với kế hoạch gốc.** Kế hoạch viết *"Xin quyền thông báo lần đầu mở tab này, kèm giải thích trước khi gọi hộp thoại hệ thống"*, nhưng bảng nghiệm thu Task 10 lại ghi hộp thoại Android bật lên ngay khi mở tab. Hai câu này mâu thuẫn nhau. Đã chọn theo **yêu cầu hành vi**, không theo bảng nghiệm thu:
+
+Mở tab lần đầu hiện một thẻ giải thích trong app — *"Nhắc bạn trước khi việc đến hạn"* — với hai nút **Để sau** và **Bật thông báo**. Chỉ khi bấm "Bật thông báo" mới gọi hộp thoại hệ thống.
+
+Lý do: Android chỉ cho hỏi quyền **một lần**. Bật hộp thoại ngay lúc người dùng chưa hiểu thông báo dùng để làm gì thì nhiều người bấm từ chối theo phản xạ, và mất luôn phần nhắc hạn vĩnh viễn — phải vào Cài đặt hệ thống mới bật lại được. Thẻ giải thích trước giữ cho hộp thoại hệ thống chỉ hiện khi người dùng đã đồng ý về mặt ý định.
+
+Bảng nghiệm thu Task 10 dòng 7 đã sửa theo.
+
+**Hai file thêm ngoài danh sách trên,** vì thiếu chúng thì phần nhắc hạn coi như hỏng một nửa:
+
+- `src/lib/notifications/handler.ts` + test. Mặc định `expo-notifications` **nuốt** thông báo tới lúc app đang mở, nên việc đến hạn trong lúc người dùng đang chat sẽ trôi qua im lặng. `configureNotificationHandler()` gọi ở tầng module của `src/app/_layout.tsx` để chạy trước khi có thông báo nào tới.
+- Móc điều hướng trong `src/app/(tabs)/_layout.tsx`. `syncScheduledReminders` đã nhét `taskId` vào phần `data` nhưng trước đó không ai đọc, nên chạm vào nhắc hạn chỉ mở app ở màn hình bất kỳ. Giờ mở thẳng công việc đó, xử lý cả trường hợp app bị đánh thức từ trạng thái tắt hẳn (`getLastNotificationResponseAsync`). Đặt ở layout tab chứ không phải layout gốc vì layout tab chỉ dựng khi đã đăng nhập.
 
 **Files:**
 - Create: `src/components/notifications/NotificationRow.tsx`, `src/app/account/notification-settings.tsx`
@@ -2526,6 +2585,20 @@ git commit -m "feat: them man hinh thong bao va cai dat"
 
 ## Task 9: Build lại APK development client
 
+**Trạng thái: KHÔNG CẦN LÀM (kiểm chứng 05/08/2026).**
+
+Lần build lại vì logo (`19a93a59-b986-4e38-a1f7-10fa9a5c95f5`) đã kéo theo `expo-notifications` rồi. Đã tải chính file APK đó về và soi manifest:
+
+```
+aapt2 dump permissions wedo-dev.apk
+```
+
+Kết quả có `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `com.google.android.c2dm.permission.RECEIVE` và nhóm quyền badge của launcher. Những quyền này **chỉ** vào được bằng cách hợp nhất manifest của `expo-notifications`, nên mã native chắc chắn đã nằm trong APK.
+
+Cũng xác nhận **không có** `USE_EXACT_ALARM` lẫn `SCHEDULE_EXACT_ALARM` — hai quyền Google chỉ cấp cho app báo thức, hẹn giờ và lịch.
+
+Vẫn phải đối chiếu lần cuối ở Task 10 phép thử 7: nếu thiếu module native thì hộp thoại quyền sẽ không hiện mà ném `Cannot find native module`.
+
 **Files:** không sửa file nào.
 
 **Vì sao bắt buộc:** `expo-notifications` là **module native**. Cài gói JS không thêm được mã native vào APK đã build. Kế hoạch 2 đã vấp đúng lỗi này ba lần với `expo-crypto` và `expo-haptics`. Không build lại thì mọi thứ liên quan tới thông báo sẽ ném `Cannot find native module`.
@@ -2604,7 +2677,7 @@ npx expo start --dev-client
 | 4 | Bấm **Từ chối**, nhập 2 ký tự | Chặn lại, báo *"Lý do từ chối phải có ít nhất 3 ký tự"* |
 | 5 | Từ chối với lý do hợp lệ | Việc chuyển sang "Đã từ chối", chi tiết hiện đúng lý do |
 | 6 | Mở chi tiết công việc | Đủ tiêu đề, hạn chót, người phụ trách, dự án |
-| 7 | Mở tab Thông báo lần đầu | **Hiện hộp thoại xin quyền của Android**, không phải lúc mở app |
+| 7 | Mở tab Thông báo lần đầu | Hiện **thẻ giải thích trong app** với hai nút Để sau / Bật thông báo. Bấm "Bật thông báo" mới hiện hộp thoại Android. Không có hộp thoại nào lúc mở app |
 | 8 | Danh sách thông báo | Thông báo chưa đọc có nền nhạt và chấm; chạm thì mất chấm và đi tới việc |
 | 9 | Badge trên tab Thông báo | Hiện số chưa đọc; đánh dấu đã đọc thì số giảm |
 | 10 | Cài đặt thông báo | Đủ **bốn** công tắc; tắt một cái rồi mở lại màn hình thì trạng thái giữ nguyên |
