@@ -30,6 +30,7 @@ import {
   type NotificationPermissionState,
 } from '../../../lib/notifications/permission';
 import { planReminders } from '../../../lib/notifications/scheduler';
+import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
@@ -47,6 +48,8 @@ export default function NotificationsScreen() {
     queryKey: ['notifications'],
     queryFn: listNotifications,
   });
+
+  useRefetchOnScreenFocus(notificationsQuery.refetch);
 
   // Đọc trạng thái quyền khi mở tab. KHÔNG gọi thẳng hộp thoại hệ thống ở đây:
   // Android chỉ cho hỏi một lần, từ chối là mất luôn. Phải giải thích trước.

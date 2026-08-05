@@ -18,6 +18,7 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
 import { listProjects } from '../../../lib/api/projects';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
@@ -37,6 +38,10 @@ export default function ChatListScreen() {
     queryFn: () => listProjects(workspaceId),
     enabled: Boolean(workspaceId),
   });
+
+  // Dự án mới tạo trên web không có sự kiện socket nào, nên phải hỏi lại khi
+  // người dùng quay về màn này.
+  useRefetchOnScreenFocus(projectsQuery.refetch);
 
   const projects = projectsQuery.data ?? [];
   const tracked = projects.slice(0, MAX_UNREAD_QUERIES);

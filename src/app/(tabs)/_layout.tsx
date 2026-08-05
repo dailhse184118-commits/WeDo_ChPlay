@@ -10,6 +10,7 @@ import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceF
 import { getUnreadCount } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
 import { taskIdFromResponse } from '../../lib/notifications/handler';
+import { useRealtimeSync } from '../../lib/realtime/use-realtime-sync';
 import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
 import { colors, sizes } from '../../theme/tokens';
@@ -58,6 +59,7 @@ function TabsWithWorkspace() {
   const insets = useSafeAreaInsets();
 
   useOpenTaskFromNotification();
+  useRealtimeSync();
 
   // Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
   const unreadQuery = useQuery({
@@ -119,10 +121,11 @@ function TabsWithWorkspace() {
       />
 
       {/*
-        Mọi file dưới (tabs)/ đều tự thành một tab. Route động này chỉ được mở
-        từ danh sách dự án, nên phải ẩn khỏi thanh tab bằng href: null.
+        Mọi file dưới (tabs)/ đều tự thành một tab. Hai route động này chỉ được mở
+        từ danh sách, nên phải ẩn khỏi thanh tab bằng href: null.
       */}
       <Tabs.Screen name="chat/[projectId]" options={{ href: null }} />
+      <Tabs.Screen name="tasks/[taskId]" options={{ href: null }} />
 
       <Tabs.Screen
         name="tasks/index"

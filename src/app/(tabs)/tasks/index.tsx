@@ -18,6 +18,7 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { acceptTask, listTasks, rejectTask } from '../../../lib/api/tasks';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { groupByDeadline, myTasks } from '../../../lib/tasks/deadline-groups';
+import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
@@ -44,6 +45,9 @@ export default function MyTasksScreen() {
     queryFn: () => listTasks(active?.id),
     enabled: Boolean(active?.id),
   });
+
+  // Đổi tab không gỡ màn hình, nên phải nạp lại thủ công khi màn được đưa lên trước.
+  useRefetchOnScreenFocus(tasksQuery.refetch);
 
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['tasks', active?.id] });

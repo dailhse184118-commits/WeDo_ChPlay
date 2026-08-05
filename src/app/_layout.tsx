@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '../lib/auth/auth-context';
+import { bridgeAppStateToQueryFocus } from '../lib/app-focus';
 import { configureNotificationHandler } from '../lib/notifications/handler';
 import { queryClient } from '../lib/query';
 
@@ -13,6 +14,8 @@ import { queryClient } from '../lib/query';
 configureNotificationHandler();
 
 export default function RootLayout() {
+  useEffect(() => bridgeAppStateToQueryFocus(), []);
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
