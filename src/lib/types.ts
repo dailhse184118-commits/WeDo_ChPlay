@@ -53,6 +53,29 @@ export interface Workspace {
   owner?: UserSummary;
 }
 
+/** Một không gian làm việc đang chặn việc xoá tài khoản. */
+export interface DeletionBlocker {
+  workspaceId: string;
+  workspaceName: string;
+  otherMemberCount: number;
+  projectCount: number;
+  taskCount: number;
+  /** Thành viên có thể nhận quyền sở hữu. */
+  candidates: UserSummary[];
+}
+
+export interface DeletionBlockers {
+  canDelete: boolean;
+  blockers: DeletionBlocker[];
+  /** Không gian chỉ có mình mình — sẽ bị xoá theo tài khoản. */
+  workspacesToDelete: Array<{
+    workspaceId: string;
+    workspaceName: string;
+    projectCount: number;
+    taskCount: number;
+  }>;
+}
+
 export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
 
 export interface Project {
