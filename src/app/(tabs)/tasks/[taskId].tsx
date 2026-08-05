@@ -1,15 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
 import { acceptTask, getTask, rejectTask } from '../../../lib/api/tasks';
 import type { Task } from '../../../lib/types';
+import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
 const STATUS_LABEL: Record<Task['status'], string> = {
@@ -62,7 +64,17 @@ function Row({
 
 export default function TaskDetailScreen() {
   const { taskId } = useLocalSearchParams<{ taskId: string }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
+
+  /*
+    Vào màn này từ thông báo thì ngăn xếp có thể rỗng, lúc đó `back()` không đi
+    đâu cả. Rơi về danh sách việc cho chắc.
+  */
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/tasks');
+  }, [router]);
 
   const [rejecting, setRejecting] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -72,6 +84,13 @@ export default function TaskDetailScreen() {
     queryFn: () => getTask(taskId as string),
     enabled: Boolean(taskId),
   });
+
+  /*
+    Màn này nằm trong thanh tab nên KHÔNG bị gỡ khi rời đi. Thiếu móc này thì nó
+    giữ nguyên dữ liệu của lần mở đầu tiên — mở lại cùng công việc sau khi người
+    khác đã sửa vẫn thấy bản cũ.
+  */
+  useRefetchOnScreenFocus(taskQuery.refetch);
 
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['task', taskId] });
@@ -104,7 +123,7 @@ export default function TaskDetailScreen() {
   if (taskQuery.isLoading) {
     return (
       <View style={styles.screen}>
-        <Stack.Screen options={{ headerShown: true, title: 'Chi tiết công việc' }} />
+        <GradientHeader title="Chi tiết công việc" onBack={goBack} dense />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -114,7 +133,7 @@ export default function TaskDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ headerShown: true, title: 'Chi tiết công việc' }} />
+      <GradientHeader title="Chi tiết công việc" subtitle={task?.project?.name} onBack={goBack} dense />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {taskQuery.isError ? (

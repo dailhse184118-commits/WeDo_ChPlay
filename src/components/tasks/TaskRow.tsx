@@ -84,6 +84,7 @@ function describeDue(task: Task, now: Date): string | null {
 export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: TaskRowProps) {
   const bucket = bucketOf(task, now);
   const pending = task.assignmentStatus === 'PENDING';
+  const rejected = task.assignmentStatus === 'REJECTED';
   const overdue = bucket === 'overdue';
   const done = task.status === 'DONE';
 
@@ -114,8 +115,15 @@ export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: T
           ) : null}
         </View>
 
-        <View style={styles.chip}>
-          <Text style={styles.chipText}>{STATUS_LABEL[task.status]}</Text>
+        {/*
+          Việc đã từ chối phải nói rõ là đã từ chối. Máy chủ đưa nó về trạng thái
+          TODO, nên nếu chỉ hiện trạng thái thì nó trông y hệt một việc còn phải
+          làm — người dùng vừa từ chối xong lại tưởng mình vẫn nợ nó.
+        */}
+        <View style={[styles.chip, rejected ? styles.chipRejected : null]}>
+          <Text style={[styles.chipText, rejected ? styles.chipTextRejected : null]}>
+            {rejected ? 'Đã từ chối' : STATUS_LABEL[task.status]}
+          </Text>
         </View>
       </View>
 
@@ -171,6 +179,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipText: { fontSize: fontSize.xs, fontWeight: '600', color: colors.textMuted },
+  chipRejected: { backgroundColor: colors.dangerSoft },
+  chipTextRejected: { color: colors.danger },
   actions: { flexDirection: 'row', marginTop: spacing.md },
   accept: {
     flex: 1,

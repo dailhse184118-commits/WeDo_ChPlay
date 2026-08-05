@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { KeyboardTypeOptions } from 'react-native';
 
@@ -13,6 +13,8 @@ interface TextFieldProps {
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  /** Cho xuống dòng. Dùng cho ô mô tả, nơi nội dung thường dài hơn một dòng. */
+  multiline?: boolean;
   testID?: string;
 }
 
@@ -25,8 +27,11 @@ export function TextField({
   secureTextEntry,
   keyboardType,
   autoCapitalize = 'none',
+  multiline,
   testID,
 }: TextFieldProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
@@ -40,7 +45,16 @@ export function TextField({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        style={[styles.input, error ? styles.inputError : null]}
+        multiline={multiline}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        /*
+          Giá trị điền sẵn dài hơn bề ngang ô thì Android đặt con trỏ ở cuối và
+          cuộn theo, người dùng chỉ thấy phần đuôi. Ép con trỏ về đầu khi ô chưa
+          được chạm vào, và thả tay ra ngay khi họ bắt đầu sửa.
+        */
+        selection={focused ? undefined : { start: 0, end: 0 }}
+        style={[styles.input, multiline ? styles.inputMultiline : null, error ? styles.inputError : null]}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -65,6 +79,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
   },
+  inputMultiline: { minHeight: 88, paddingTop: spacing.sm + 4, textAlignVertical: 'top' },
   inputError: { borderWidth: 1, borderColor: colors.danger },
   error: { marginTop: spacing.xs, color: colors.danger, fontSize: fontSize.xs },
 });

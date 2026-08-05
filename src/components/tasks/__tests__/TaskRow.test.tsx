@@ -36,6 +36,35 @@ describe('TaskRow', () => {
     expect(getByText('Đang làm')).toBeTruthy();
   });
 
+  /*
+    Bắt được khi nghiệm thu 05/08: máy chủ đưa việc bị từ chối về trạng thái TODO,
+    nên chip hiện "Cần làm" — nhìn y hệt việc còn phải làm. Người vừa từ chối xong
+    lại tưởng mình vẫn nợ nó.
+  */
+  it('hiện "Đã từ chối" thay vì trạng thái khi việc bị từ chối', async () => {
+    const { getByText, queryByText } = await render(
+      <TaskRow
+        task={makeTask({ status: 'TODO', assignmentStatus: 'REJECTED' })}
+        now={NOW}
+        onPress={() => {}}
+      />,
+    );
+
+    expect(getByText('Đã từ chối')).toBeTruthy();
+    expect(queryByText('Cần làm')).toBeNull();
+  });
+
+  it('vẫn hiện trạng thái bình thường khi việc đã nhận', async () => {
+    const { getByText } = await render(
+      <TaskRow
+        task={makeTask({ status: 'TODO', assignmentStatus: 'ACCEPTED' })}
+        now={NOW}
+        onPress={() => {}}
+      />,
+    );
+    expect(getByText('Cần làm')).toBeTruthy();
+  });
+
   it('ẩn nút nhận và từ chối với việc đã nhận', async () => {
     const { queryByTestId } = await render(
       <TaskRow task={makeTask({ assignmentStatus: 'ACCEPTED' })} now={NOW} onPress={() => {}} />,

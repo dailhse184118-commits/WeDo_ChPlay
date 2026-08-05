@@ -77,7 +77,9 @@ export function TaskSuggestionSheet({
     setDueDate(suggestion.dueDate ?? '');
     // AI thường trả ngày mà không trả giờ. Để trống thì hoá ra 00:00, tức hết hạn
     // ngay đầu ngày — trái hẳn ý người viết tin nhắn.
-    setDueTime(suggestion.dueTime ?? DEFAULT_DUE_TIME);
+    // Máy chủ trả CHUỖI RỖNG chứ không phải undefined khi không đoán được giờ,
+    // nên phải kiểm tra rỗng chứ `??` không đỡ được.
+    setDueTime(suggestion.dueTime?.trim() ? suggestion.dueTime : DEFAULT_DUE_TIME);
     setLocalError('');
   }, [suggestion]);
 
@@ -87,12 +89,20 @@ export function TaskSuggestionSheet({
       return;
     }
     setLocalError('');
+
+    /*
+      Lưới an toàn cuối: có ngày mà người dùng xoá trống ô giờ thì vẫn phải là cuối
+      ngày. Gửi ngày không kèm giờ sẽ thành 00:00, tức việc quá hạn ngay lúc tạo.
+    */
+    const date = dueDate.trim();
+    const time = dueTime.trim();
+
     onConfirm({
       title: title.trim(),
       description: description.trim() || undefined,
       assigneeId,
-      dueDate: dueDate.trim() || undefined,
-      dueTime: dueTime.trim() || undefined,
+      dueDate: date || undefined,
+      dueTime: date ? time || DEFAULT_DUE_TIME : undefined,
     });
   };
 
@@ -165,6 +175,7 @@ export function TaskSuggestionSheet({
               onChangeText={setDescription}
               placeholder="Không bắt buộc"
               autoCapitalize="sentences"
+              multiline
             />
 
             <Text style={styles.label}>Người phụ trách</Text>

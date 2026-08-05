@@ -1,10 +1,11 @@
 import React from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../components/ui/IconTile';
 import { getPreferences, updatePreferences } from '../../lib/api/notifications';
 import type { NotificationPreferences } from '../../lib/types';
@@ -57,6 +58,7 @@ const ROWS: Row[] = [
 ];
 
 export default function NotificationSettingsScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const prefsQuery = useQuery({
@@ -73,7 +75,11 @@ export default function NotificationSettingsScreen() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ headerShown: true, title: 'Cài đặt thông báo' }} />
+      <GradientHeader
+        title="Cài đặt thông báo"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/account'))}
+        dense
+      />
 
       {prefsQuery.isLoading ? (
         <View style={styles.center}>

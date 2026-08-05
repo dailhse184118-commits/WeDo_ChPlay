@@ -9,7 +9,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { MessageBubble } from '../../../components/chat/MessageBubble';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
@@ -18,7 +19,7 @@ import {
   type TaskSuggestionValues,
 } from '../../../components/chat/TaskSuggestionSheet';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
-import { ScreenContainer } from '../../../components/ui/ScreenContainer';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
 import {
   getProjectHistory,
   getProjectMessages,
@@ -46,6 +47,14 @@ interface PendingItem {
 export default function ChatThreadScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  /* Ngăn xếp có thể rỗng nếu vào thẳng từ liên kết, lúc đó rơi về danh sách dự án. */
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/chat');
+  }, [router]);
+
   const { user } = useAuth();
   const { active } = useWorkspace();
   const { socket } = useSocket();
@@ -297,9 +306,16 @@ export default function ChatThreadScreen() {
         orphanTaskId.current = null;
         setMessages((current) => mergeMessages(current, [result.message]));
         setSheetOpen(false);
+        /*
+          Danh sách "Việc của tôi" đang nằm trong bộ nhớ đệm của react-query. Không
+          báo hỏng thì việc vừa tạo sẽ không xuất hiện cho tới lần kéo làm mới sau.
+        */
+        void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
+
         Alert.alert('Đã tạo công việc', result.task.title ?? values.title, [
           { text: 'Đóng', style: 'cancel' },
-          { text: 'Xem công việc', onPress: () => router.push('/tasks') },
+          { text: 'Xem công việc', onPress: () => router.push(`/tasks/${result.task.id}`) },
         ]);
         return;
       }
@@ -316,7 +332,7 @@ export default function ChatThreadScreen() {
 
       setSheetError(result.error.message);
     },
-    [projectId, sourceMessageId, active?.id, router],
+    [projectId, sourceMessageId, active?.id, router, queryClient],
   );
 
   // Danh sách hiển thị: tin thật cộng tin đang gửi, đảo ngược cho FlatList inverted.
@@ -346,18 +362,19 @@ export default function ChatThreadScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer>
-        <Stack.Screen options={{ headerShown: true, title: projectName }} />
+      <View style={styles.screen}>
+        <GradientHeader title={projectName} onBack={goBack} dense />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      </ScreenContainer>
+      </View>
     );
   }
 
   return (
-    <ScreenContainer>
-      <Stack.Screen options={{ headerShown: true, title: projectName }} />
+    <View style={styles.screen}>
+      {/* Trạng thái "đang gõ" vẫn nằm sát ô soạn tin, không đưa lên header. */}
+      <GradientHeader title={projectName} onBack={goBack} dense />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -433,11 +450,12 @@ export default function ChatThreadScreen() {
           Alert.alert('Cảm ơn phản hồi', 'Chúng tôi đã ghi nhận rằng đề xuất này chưa chính xác.')
         }
       />
-    </ScreenContainer>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.surface },
   // Nền khung chat xám nhạt để bong bóng trắng của người khác nổi lên.
   flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

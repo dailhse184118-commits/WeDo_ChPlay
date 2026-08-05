@@ -2667,6 +2667,43 @@ Kỳ vọng thấy `POST_NOTIFICATIONS` và `RECEIVE_BOOT_COMPLETED` (expo-notif
 npx expo start --dev-client
 ```
 
+### Kết quả chạy thật, 05/08/2026 — **11/11 phép thử đạt**
+
+Máy ảo `WeDo_Pixel7`, APK dev `19a93a59`, tài khoản `Nguyenvanteo`, không gian làm việc `MLN122`, dự án `Project đầu tiên`.
+
+| # | Kết quả |
+|---|---|
+| 1 | **Đạt.** Trạng thái rỗng đúng câu chữ dạy cử chỉ; sau khi có việc thì nhóm dưới "HÔM NAY", ba ô đếm khớp |
+| 2 | **Đạt.** "Chờ nhận" = 1, mục "CHỜ BẠN PHẢN HỒI" ghim đầu danh sách, đủ hai nút Nhận việc / Từ chối |
+| 3 | **Đạt.** Bấm Nhận việc: việc rời mục chờ, chip đổi sang "Đang làm", hai nút biến mất, "Chờ nhận" tụt từ 2 xuống 1 |
+| 4 | **Đạt.** Nhập 2 ký tự rồi gửi thì bị chặn, hiện đúng *"Lý do từ chối phải có ít nhất 3 ký tự"*, bộ đếm 2/200, việc vẫn ở trạng thái chờ |
+| 5 | **Đạt sau khi sửa một lỗi.** Chi tiết hiện "Phân công: Đã từ chối" và khối lý do đỏ đúng nội dung. Nhưng dòng trong danh sách vẫn ghi "Cần làm" — xem lỗi 7 bên dưới |
+| 6 | **Đạt.** Đủ tiêu đề, mô tả, trạng thái, phân công, hạn chót, người phụ trách, dự án |
+| 7 | **Đạt.** Thẻ giải thích hiện khi mở tab, hộp thoại Android chỉ bật sau khi bấm "Bật thông báo"; `granted=true` xác nhận bằng `dumpsys package` |
+| 8 | **Đạt.** Chưa đọc có nền `#e6eff9` và chấm xanh, đã đọc thì trắng; chạm thì mất chấm và mở đúng công việc |
+| 9 | **Đạt.** Badge hiện số chưa đọc, chạm vào thông báo thì badge biến mất |
+| 10 | **Đạt.** Đủ bốn công tắc; tắt "Nhắc hạn chót" rồi rời màn hình và quay lại, vẫn tắt — đã lưu lên máy chủ. Đã bật lại sau khi thử |
+| 11 | Xem bên dưới |
+
+**Phép thử 11 — nhắc hạn cục bộ.** `dumpsys alarm` xác nhận ba lịch đã đặt đúng mốc: hạn của việc gấp, mốc trước 24 giờ và mốc đến hạn của việc hôm sau. Quan trọng nhất là **cả ba đều là báo thức không chính xác** (`window=+3m17s` và `window=+1h0m0s`), đúng cam kết không xin `USE_EXACT_ALARM`.
+
+### Sáu lỗi bắt được khi nghiệm thu
+
+Không lỗi nào lộ ra trong 217 test tự động — tất cả đều chỉ thấy khi mở app thật.
+
+1. **Tab thứ năm "Chi tiết công..."** Mọi file dưới `(tabs)/` tự thành một tab; `tasks/[taskId]` thiếu `href: null`.
+2. **Avatar tài khoản biến mất.** Android cắt sạch thành phần con tràn ra ngoài `View` có `borderRadius`. Avatar phải là *anh em* của thẻ, không phải con.
+3. **Vẫn bị xén sau khi sửa (2).** `ScrollView` xén mọi thứ ngoài khung nhìn, nên phải kéo *chính khung cuộn* lên chứ không phải thẻ bên trong.
+4. **Hai màn chi tiết dùng header trắng và không có nút quay lại.** Vào chi tiết việc từ thông báo là hết đường lùi. Đổi sang `GradientHeader` với `onBack`.
+5. **Ô nhập điền sẵn hiển thị phần đuôi.** Android đặt con trỏ ở cuối rồi cuộn theo, người dùng không đọc được tên việc bắt đầu bằng gì.
+6. **Hạn chót thành 00:00 — quá hạn ngay lúc tạo.** Máy chủ trả `dueTime: ''` chứ không phải `undefined`, nên `??` không rơi về `23:59`. Lỗi nặng nhất trong sáu cái. Đã thêm ba test hồi quy.
+
+7. **Việc đã từ chối trông y hệt việc còn phải làm.** Máy chủ đưa việc bị từ chối về trạng thái `TODO`, mà dòng trong danh sách chỉ hiện trạng thái, nên chip ghi "Cần làm". Người vừa bấm Từ chối xong nhìn lại vẫn tưởng mình nợ nó. Nay chip hiện "Đã từ chối" chữ đỏ trên nền đỏ nhạt khi `assignmentStatus === 'REJECTED'`. Thêm hai test hồi quy.
+
+Ngoài ra: "Xem công việc" sau khi tạo đi về *danh sách* thay vì *chi tiết*, và danh sách không tự làm mới vì bộ đệm react-query không được báo hỏng.
+
+**Ghi chú về tài khoản.** Máy chủ đặt `assignmentStatus = isSelfAssigned ? 'ACCEPTED' : 'PENDING'`, nên một tài khoản không tự sinh ra được việc chờ nhận. Nghiệm thu 2–5 bắt buộc phải có hai tài khoản: một người giao, một người nhận. Lần này dùng `Nguyenvanteo` (giao, trên web) và `Phan Van Giang` (nhận, trên máy ảo).
+
 - [ ] **Bước 3: Chạy mười một phép thử, chụp màn hình từng cái**
 
 | # | Phép thử | Đạt khi |
