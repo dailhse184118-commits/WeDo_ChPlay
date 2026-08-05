@@ -127,3 +127,28 @@ export interface ChatHistoryPage {
   items: ChatMessage[];
   nextCursor?: string | null;
 }
+
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  dedupeKey?: string | null;
+  actionUrl?: string | null;
+  readAt?: string | null;
+  userId: string;
+  actorId?: string | null;
+  workspaceId?: string | null;
+  projectId?: string | null;
+  taskId?: string | null;
+  createdAt: string;
+  actor?: UserSummary | null;
+  task?: Pick<Task, 'id' | 'title' | 'status' | 'assignmentStatus'> | null;
+}
+
+export interface NotificationPreferences {
+  notifyTaskAssignment: boolean;
+  notifyTaskReview: boolean;
+  notifyDeadlineReminder: boolean;
+  notifyMeeting: boolean;
+}

@@ -1,25 +1,230 @@
-import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer } from '../../../components/ui/ScreenContainer';
-import { colors, fontSize, spacing } from '../../../theme/tokens';
+import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
+import { TaskRow } from '../../../components/tasks/TaskRow';
+import { ErrorBanner } from '../../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { acceptTask, listTasks, rejectTask } from '../../../lib/api/tasks';
+import { useAuth } from '../../../lib/auth/auth-context';
+import { groupByDeadline, myTasks } from '../../../lib/tasks/deadline-groups';
+import { useWorkspace } from '../../../lib/workspace/workspace-context';
+import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
+
+function CountBox({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.countBox}>
+      <Text style={styles.countValue}>{value}</Text>
+      <Text style={styles.countLabel}>{label}</Text>
+    </View>
+  );
+}
 
 export default function MyTasksScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { active } = useWorkspace();
+  const queryClient = useQueryClient();
+
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  const tasksQuery = useQuery({
+    queryKey: ['tasks', active?.id],
+    queryFn: () => listTasks(active?.id),
+    enabled: Boolean(active?.id),
+  });
+
+  const invalidate = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['tasks', active?.id] });
+  }, [queryClient, active?.id]);
+
+  const acceptMutation = useMutation({
+    mutationFn: (taskId: string) => acceptTask(taskId),
+    onSuccess: () => {
+      setActionError('');
+      invalidate();
+    },
+    onError: (err) =>
+      setActionError(err instanceof Error ? err.message : 'Không nhận được việc này.'),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ taskId, reason }: { taskId: string; reason: string }) =>
+      rejectTask(taskId, reason),
+    onSuccess: () => {
+      setActionError('');
+      setRejectingId(null);
+      invalidate();
+    },
+    onError: (err) =>
+      setActionError(err instanceof Error ? err.message : 'Không từ chối được việc này.'),
+  });
+
+  // `now` chốt một lần cho toàn bộ lần render, để mọi việc được phân nhóm theo
+  // cùng một mốc thời gian.
+  const { sections, counts } = useMemo(() => {
+    const now = new Date();
+    const mine = myTasks(tasksQuery.data ?? [], user?.id ?? '');
+    const groups = groupByDeadline(mine, now);
+
+    return {
+      sections: groups.map((group) => ({ title: group.label, data: group.tasks, now })),
+      counts: {
+        pending: mine.filter((task) => task.assignmentStatus === 'PENDING').length,
+        overdue: groups.find((group) => group.bucket === 'overdue')?.tasks.length ?? 0,
+        total: mine.length,
+      },
+    };
+  }, [tasksQuery.data, user?.id]);
+
   return (
-    <ScreenContainer>
-      <Text style={styles.heading}>Việc của tôi</Text>
-      <Text style={styles.body}>Công việc được giao cho bạn sẽ hiển thị ở đây.</Text>
-    </ScreenContainer>
+    <View style={styles.screen}>
+      <GradientHeader title="Việc của tôi" subtitle={active?.name}>
+        <View style={styles.counts}>
+          <CountBox value={counts.total} label="Đang mở" />
+          <CountBox value={counts.pending} label="Chờ nhận" />
+          <CountBox value={counts.overdue} label="Quá hạn" />
+        </View>
+      </GradientHeader>
+
+      <View style={styles.body}>
+        {tasksQuery.isError ? (
+          <ErrorBanner
+            message={
+              tasksQuery.error instanceof Error
+                ? tasksQuery.error.message
+                : 'Không tải được danh sách công việc.'
+            }
+          />
+        ) : null}
+        {actionError ? <ErrorBanner message={actionError} /> : null}
+
+        {tasksQuery.isLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <SectionList
+            sections={sections}
+            keyExtractor={(task) => task.id}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            stickySectionHeadersEnabled={false}
+            renderSectionHeader={({ section }) => (
+              <Text style={styles.sectionHeader}>{section.title}</Text>
+            )}
+            renderItem={({ item, section }) => (
+              <TaskRow
+                task={item}
+                now={section.now}
+                accepting={acceptMutation.isPending || rejectMutation.isPending}
+                onPress={() => router.push(`/tasks/${item.id}`)}
+                onAccept={() => acceptMutation.mutate(item.id)}
+                onReject={() => {
+                  setActionError('');
+                  setRejectingId(item.id);
+                }}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={tasksQuery.isRefetching}
+                onRefresh={() => tasksQuery.refetch()}
+                colors={[colors.primary]}
+              />
+            }
+            ListEmptyComponent={
+              tasksQuery.isError ? null : (
+                <View style={styles.empty}>
+                  <View style={styles.emptyIcon}>
+                    <Ionicons name="checkbox-outline" size={28} color={colors.primary} />
+                  </View>
+                  <Text style={styles.emptyTitle}>Chưa có việc nào cho bạn</Text>
+                  {/*
+                    Câu này dạy luôn cử chỉ nhấn giữ. Đó là tính năng cốt lõi của app
+                    nhưng không có chỗ nào nhìn thấy được, nên người dùng mới sẽ không
+                    tự tìm ra nếu trạng thái rỗng không nói.
+                  */}
+                  <Text style={styles.emptyBody}>
+                    Khi nhóm chốt việc trong chat, bạn nhấn giữ tin nhắn đó để WeDo tạo công việc.
+                    Việc giao cho bạn sẽ xuất hiện ở đây.
+                  </Text>
+                </View>
+              )
+            }
+          />
+        )}
+      </View>
+
+      <RejectTaskSheet
+        visible={rejectingId !== null}
+        submitting={rejectMutation.isPending}
+        error={actionError || undefined}
+        onConfirm={(reason) => {
+          if (rejectingId) rejectMutation.mutate({ taskId: rejectingId, reason });
+        }}
+        onDismiss={() => setRejectingId(null)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: fontSize.lg,
+  screen: { flex: 1, backgroundColor: colors.page },
+  counts: { flexDirection: 'row' },
+  countBox: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm + 2,
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  countValue: { color: '#ffffff', fontSize: fontSize.lg, fontWeight: '700' },
+  countLabel: { color: '#ffffff', fontSize: 11, marginTop: 2 },
+  body: { flex: 1, marginTop: -spacing.md, paddingHorizontal: spacing.md },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  list: { paddingTop: spacing.md, paddingBottom: spacing.xl },
+  sectionHeader: {
+    fontSize: fontSize.xs,
     fontWeight: '700',
-    color: colors.text,
-    marginTop: spacing.md,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: spacing.sm,
     marginBottom: spacing.sm,
   },
-  body: { fontSize: fontSize.sm, color: colors.textMuted },
+  empty: { paddingTop: spacing.xl, alignItems: 'center' },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  emptyBody: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });
