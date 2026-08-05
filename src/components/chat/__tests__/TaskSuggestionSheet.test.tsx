@@ -69,9 +69,11 @@ describe('TaskSuggestionSheet', () => {
     );
   });
 
-  it('chặn gửi khi tiêu đề rỗng', async () => {
+  // Theo thiết kế, nút chuyển sang trạng thái chưa bật khi tiêu đề rỗng — nền phẳng
+  // không bóng. Nút mờ sẵn nói rõ hơn một thông báo lỗi chỉ hiện ra sau khi bấm.
+  it('vô hiệu hoá nút tạo khi tiêu đề rỗng', async () => {
     const onConfirm = jest.fn();
-    const { getByTestId, getByText } = await render(
+    const { getByTestId } = await render(
       <TaskSuggestionSheet
         visible
         suggestion={suggestion}
@@ -82,10 +84,58 @@ describe('TaskSuggestionSheet', () => {
     );
 
     await fireEvent.changeText(getByTestId('suggestion-title'), '   ');
-    await fireEvent.press(getByTestId('suggestion-confirm'));
 
-    await waitFor(() => expect(getByText('Vui lòng nhập tên công việc')).toBeTruthy());
+    await waitFor(() =>
+      expect(getByTestId('suggestion-confirm').props.accessibilityState.disabled).toBe(true),
+    );
+
+    await fireEvent.press(getByTestId('suggestion-confirm'));
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('hiện tin nhắn gốc để đối chiếu trước khi giao việc', async () => {
+    const { getByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        sourceMessage="Hà làm phần khảo sát người dùng, xong trước 20/8 nha"
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    expect(getByText(/Hà làm phần khảo sát người dùng/)).toBeTruthy();
+  });
+
+  it('gọi thành viên là "Bạn" khi đó chính là mình', async () => {
+    const { getByText, queryByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        currentUserId="u1"
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    expect(getByText('Bạn')).toBeTruthy();
+    expect(queryByText('Lê Hữu Đại')).toBeNull();
+  });
+
+  it('mặc định giờ hết hạn 23:59 khi AI không trả về giờ', async () => {
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={{ hasTask: true, title: 'Nộp bài', confidence: 'high', dueDate: '2026-08-20' }}
+        members={members}
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await waitFor(() => expect(getByTestId('suggestion-due-time').props.value).toBe('23:59'));
   });
 
   it('báo khi AI không thấy công việc nhưng vẫn cho tạo', async () => {

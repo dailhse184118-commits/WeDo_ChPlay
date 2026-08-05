@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, waitFor } from '@testing-library/react-native';
 
+import { renderScreen } from '../../../test-utils/render';
 import LoginScreen from '../login';
 import { useAuth } from '../../../lib/auth/auth-context';
 
@@ -30,12 +31,12 @@ describe('màn hình đăng nhập', () => {
   });
 
   it('hiện khẩu hiệu WeDo', async () => {
-    const { getByText } = await render(<LoginScreen />);
+    const { getByText } = await renderScreen(<LoginScreen />);
     expect(getByText('Nghĩ ít hơn, làm nhiều hơn')).toBeTruthy();
   });
 
   it('chặn gửi khi mật khẩu ngắn hơn 6 ký tự', async () => {
-    const { getByTestId, getByText } = await render(<LoginScreen />);
+    const { getByTestId, getByText } = await renderScreen(<LoginScreen />);
 
     await fireEvent.changeText(getByTestId('email'), 'a@b.c');
     await fireEvent.changeText(getByTestId('password'), '123');
@@ -47,7 +48,7 @@ describe('màn hình đăng nhập', () => {
 
   it('gọi signIn với dữ liệu hợp lệ', async () => {
     signIn.mockResolvedValue(undefined);
-    const { getByTestId } = await render(<LoginScreen />);
+    const { getByTestId } = await renderScreen(<LoginScreen />);
 
     await fireEvent.changeText(getByTestId('email'), 'a@b.c');
     await fireEvent.changeText(getByTestId('password'), 'matkhau');
@@ -58,7 +59,7 @@ describe('màn hình đăng nhập', () => {
 
   it('hiện nguyên văn thông báo lỗi từ máy chủ', async () => {
     signIn.mockRejectedValue(new Error('Email hoặc mật khẩu không đúng'));
-    const { getByTestId, getByText } = await render(<LoginScreen />);
+    const { getByTestId, getByText } = await renderScreen(<LoginScreen />);
 
     await fireEvent.changeText(getByTestId('email'), 'a@b.c');
     await fireEvent.changeText(getByTestId('password'), 'matkhau');
@@ -69,7 +70,7 @@ describe('màn hình đăng nhập', () => {
 
   it('cắt khoảng trắng thừa quanh email', async () => {
     signIn.mockResolvedValue(undefined);
-    const { getByTestId } = await render(<LoginScreen />);
+    const { getByTestId } = await renderScreen(<LoginScreen />);
 
     await fireEvent.changeText(getByTestId('email'), '  a@b.c  ');
     await fireEvent.changeText(getByTestId('password'), 'matkhau');

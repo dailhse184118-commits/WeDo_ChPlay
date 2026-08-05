@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { TextField } from '../../components/ui/TextField';
+import { WeDoLogo } from '../../components/ui/WeDoLogo';
 import { useAuth } from '../../lib/auth/auth-context';
-import { colors, fontSize, spacing } from '../../theme/tokens';
+import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const insets = useSafeAreaInsets();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -39,48 +43,99 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.brand}>WeDo</Text>
-        <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
+    <View style={styles.screen}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Gradient chạy lên tận đỉnh, dưới thanh trạng thái. */}
+          <View
+            style={[
+              styles.hero,
+              {
+                paddingTop: insets.top + spacing.xl * 2,
+                experimental_backgroundImage: gradients.header,
+              },
+            ]}
+          >
+            {/* Logo đảo sang trắng để nổi trên gradient xanh. */}
+            <WeDoLogo testID="wedo-logo" width={168} tintColor="#ffffff" />
+            <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
+          </View>
 
-        {error ? <ErrorBanner message={error} /> : null}
+          <View style={styles.body}>
+            <Card overlap={spacing.lg} style={styles.form}>
+              <Text style={styles.formTitle}>Đăng nhập</Text>
 
-        <TextField
-          testID="email"
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="ban@example.com"
-          keyboardType="email-address"
-        />
-        <TextField
-          testID="password"
-          label="Mật khẩu"
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Ít nhất 6 ký tự"
-          secureTextEntry
-        />
+              {error ? <ErrorBanner message={error} /> : null}
 
-        <Button testID="submit" label="Đăng nhập" onPress={handleSubmit} loading={submitting} />
+              <TextField
+                testID="email"
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="ban@example.com"
+                keyboardType="email-address"
+              />
+              <TextField
+                testID="password"
+                label="Mật khẩu"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Ít nhất 6 ký tự"
+                secureTextEntry
+              />
 
-        <Link href="/register" style={styles.link}>
-          Chưa có tài khoản? Đăng ký
-        </Link>
-      </ScrollView>
-    </ScreenContainer>
+              <Button
+                testID="submit"
+                label="Đăng nhập"
+                onPress={handleSubmit}
+                loading={submitting}
+              />
+            </Card>
+
+            <Link href="/register" style={styles.link}>
+              Chưa có tài khoản? Đăng ký
+            </Link>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, justifyContent: 'center', paddingVertical: spacing.xl },
-  brand: { fontSize: fontSize.xl, fontWeight: '700', color: colors.primary, textAlign: 'center' },
-  tagline: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
+  screen: { flex: 1, backgroundColor: colors.page },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1 },
+  hero: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
+    alignItems: 'center',
+    backgroundColor: colors.primary,
   },
-  link: { marginTop: spacing.lg, textAlign: 'center', color: colors.primary, fontSize: fontSize.sm },
+  brand: { color: '#ffffff', fontSize: 34, fontWeight: '700', letterSpacing: 0.5 },
+  tagline: { color: '#ffffff', fontSize: fontSize.sm, marginTop: spacing.xs },
+  body: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
+  form: { padding: spacing.lg },
+  formTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  link: {
+    marginTop: spacing.lg,
+    textAlign: 'center',
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
 });

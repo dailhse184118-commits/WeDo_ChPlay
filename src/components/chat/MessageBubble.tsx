@@ -1,8 +1,10 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 import { tapFeedback } from '../../lib/haptics';
 import type { ChatMessage } from '../../lib/types';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, gradients, radius, shadows, spacing } from '../../theme/tokens';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -31,9 +33,8 @@ export function MessageBubble({
 
   const handleLongPress = () => {
     if (recalled) return;
-    // Rung nhẹ khi nhấn giữ. Đây là tương tác native thật, thứ phân biệt app gốc
-    // với trang web bọc lại. tapFeedback không bao giờ ném lỗi, nên thiếu mô-tơ
-    // rung hay thiếu module native cũng không chặn được luồng tạo công việc.
+    // Rung nhẹ khi nhấn giữ. tapFeedback không bao giờ ném lỗi nên thiếu mô-tơ rung
+    // hay thiếu module native cũng không chặn được luồng tạo công việc.
     void tapFeedback();
     onLongPress();
   };
@@ -52,7 +53,9 @@ export function MessageBubble({
         delayLongPress={350}
         style={[
           styles.bubble,
-          isMine ? styles.bubbleMine : styles.bubbleTheirs,
+          isMine
+            ? { ...styles.bubbleMine, experimental_backgroundImage: gradients.header }
+            : styles.bubbleTheirs,
           isPending ? styles.bubblePending : null,
           isFailed ? styles.bubbleFailed : null,
         ]}
@@ -68,10 +71,16 @@ export function MessageBubble({
         )}
 
         {message.task ? (
-          <View style={[styles.taskTag, isMine ? styles.taskTagMine : null]}>
-            <Text style={[styles.taskTagText, isMine ? styles.taskTagTextMine : null]}>
-              Đã tạo công việc: {message.task.title}
-            </Text>
+          <View style={styles.taskStrip}>
+            <View style={styles.taskTick}>
+              <Ionicons name="checkmark" size={14} color={colors.primary} />
+            </View>
+            <View style={styles.taskBody}>
+              <Text style={styles.taskLabel}>Đã tạo công việc</Text>
+              <Text style={styles.taskTitle} numberOfLines={2}>
+                {message.task.title}
+              </Text>
+            </View>
           </View>
         ) : null}
 
@@ -90,38 +99,56 @@ export function MessageBubble({
 }
 
 const styles = StyleSheet.create({
-  wrapper: { marginVertical: spacing.xs, maxWidth: '82%' },
+  wrapper: { marginVertical: spacing.xs, maxWidth: '84%' },
   wrapperMine: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   wrapperTheirs: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   author: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
-    marginLeft: spacing.xs,
+    marginBottom: spacing.xs,
+    marginLeft: spacing.sm + 4,
   },
-  bubble: { borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  bubbleMine: { backgroundColor: colors.primary },
-  bubbleTheirs: { backgroundColor: colors.surface },
+  bubble: {
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+  },
+  // Một góc bo nhỏ để bong bóng "trỏ" về phía người gửi.
+  bubbleMine: { borderBottomRightRadius: radius.sm, backgroundColor: colors.primary },
+  bubbleTheirs: {
+    borderBottomLeftRadius: radius.sm,
+    backgroundColor: colors.background,
+    boxShadow: shadows.bubble,
+  },
   bubblePending: { opacity: 0.6 },
   bubbleFailed: { borderWidth: 1, borderColor: colors.danger },
-  content: { fontSize: fontSize.md, color: colors.text },
+  content: { fontSize: fontSize.md, color: colors.text, lineHeight: 22 },
   contentMine: { color: '#ffffff' },
   recalled: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
-  // Xám #6b7280 trên nền xanh #0055c7 cũng không đọc được, y như nhãn công việc.
   recalledMine: { color: 'rgba(255,255,255,0.85)' },
-  taskTag: {
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.12)',
+  // Nhãn công việc là một dải nền sáng nằm TRONG bong bóng, đọc được trên cả hai nền.
+  taskStrip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: spacing.sm + 4,
+    padding: spacing.sm + 2,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
   },
-  // Trên bong bóng của mình (nền #0055c7), màu xanh lá gần như không đọc được.
-  // Đổi sang trắng để giữ độ tương phản.
-  taskTagMine: { borderTopColor: 'rgba(255,255,255,0.35)' },
-  taskTagText: { fontSize: fontSize.xs, color: colors.success, fontWeight: '600' },
-  taskTagTextMine: { color: '#ffffff' },
-  time: { fontSize: 10, color: colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
-  timeMine: { color: 'rgba(255,255,255,0.75)' },
+  taskTick: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.sm,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  taskBody: { flex: 1 },
+  taskLabel: { fontSize: 11, color: colors.primary, fontWeight: '700' },
+  taskTitle: { fontSize: fontSize.xs, color: colors.text, marginTop: 2, lineHeight: 17 },
+  time: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs, alignSelf: 'flex-end' },
+  timeMine: { color: 'rgba(255,255,255,0.8)' },
   retry: { marginTop: spacing.xs },
   retryText: { fontSize: fontSize.xs, color: colors.danger, fontWeight: '600' },
 });

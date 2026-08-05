@@ -423,6 +423,8 @@ export default function ChatThreadScreen() {
         loading={sheetLoading}
         suggestion={suggestion}
         members={members}
+        sourceMessage={messages.find((m) => m.id === sourceMessageId)?.content}
+        currentUserId={user?.id}
         error={sheetError || undefined}
         submitting={sheetSubmitting}
         onConfirm={handleConfirm}
@@ -436,7 +438,8 @@ export default function ChatThreadScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  // Nền khung chat xám nhạt để bong bóng trắng của người khác nổi lên.
+  flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   more: { marginVertical: spacing.md },
   empty: { paddingTop: spacing.xl, alignItems: 'center', transform: [{ scaleY: -1 }] },

@@ -77,7 +77,9 @@ describe('MessageBubble', () => {
     expect(onLongPress).not.toHaveBeenCalled();
   });
 
-  it('hiện nhãn khi tin đã gắn công việc', async () => {
+  // Thiết kế tách nhãn và tiêu đề thành hai dòng trong một dải nền sáng,
+  // thay vì một chuỗi gộp — dải này đọc được trên cả bong bóng xanh lẫn trắng.
+  it('hiện dải công việc khi tin đã gắn công việc', async () => {
     const { getByText } = await render(
       <MessageBubble
         message={makeMessage({
@@ -94,7 +96,8 @@ describe('MessageBubble', () => {
         onLongPress={() => {}}
       />,
     );
-    expect(getByText('Đã tạo công việc: Nộp báo cáo')).toBeTruthy();
+    expect(getByText('Đã tạo công việc')).toBeTruthy();
+    expect(getByText('Nộp báo cáo')).toBeTruthy();
   });
 
   it('hiện nút thử lại khi gửi hỏng', async () => {

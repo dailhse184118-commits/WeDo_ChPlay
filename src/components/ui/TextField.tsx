@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { KeyboardTypeOptions } from 'react-native';
 
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, radius, sizes, spacing } from '../../theme/tokens';
 
 interface TextFieldProps {
   label: string;
@@ -56,15 +56,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.border,
+    minHeight: sizes.control,
+    // Nền chìm thay vì trắng có viền: thẻ chứa nó đã là màu trắng, nên ô nhập
+    // phải lõm xuống mới phân biệt được.
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     fontSize: fontSize.md,
     color: colors.text,
-    backgroundColor: colors.background,
   },
-  inputError: { borderColor: colors.danger },
+  inputError: { borderWidth: 1, borderColor: colors.danger },
   error: { marginTop: spacing.xs, color: colors.danger, fontSize: fontSize.xs },
 });
