@@ -95,6 +95,9 @@ export function RejectTaskSheet({
           style={styles.input}
           multiline
           maxLength={MAX_LENGTH}
+          // Từ điển tiếng Anh của Android gạch đỏ toàn bộ tiếng Việt.
+          spellCheck={false}
+          autoCorrect={false}
         />
 
         <View style={styles.meta}>

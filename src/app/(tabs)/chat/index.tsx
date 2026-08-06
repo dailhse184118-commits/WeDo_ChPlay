@@ -97,6 +97,10 @@ export default function ChatListScreen() {
             placeholder="Tìm dự án"
             placeholderTextColor="rgba(255,255,255,0.75)"
             style={styles.searchInput}
+            // Tự sửa chính tả trong ô tìm kiếm chỉ làm hỏng từ khoá người dùng gõ.
+            spellCheck={false}
+            autoCorrect={false}
+            autoCapitalize="none"
           />
         </View>
       </GradientHeader>

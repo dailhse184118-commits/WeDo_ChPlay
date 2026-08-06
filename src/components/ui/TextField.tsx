@@ -46,6 +46,13 @@ export function TextField({
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         multiline={multiline}
+        /*
+          Bộ kiểm tra chính tả của Android dùng từ điển tiếng Anh, nên nó gạch đỏ
+          gần như mọi từ tiếng Việt — người dùng nhìn tưởng app báo lỗi. Tự sửa
+          từ còn tệ hơn: nó biến từ tiếng Việt thành từ tiếng Anh gần giống.
+        */
+        spellCheck={false}
+        autoCorrect={false}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         /*

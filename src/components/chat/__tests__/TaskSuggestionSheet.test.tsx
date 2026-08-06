@@ -93,6 +93,100 @@ describe('TaskSuggestionSheet', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  /*
+    Bắt được trên máy thật: máy chủ trả `dueTime: ''` chứ không phải undefined, nên
+    `??` không rơi về mặc định. Việc tạo ra có hạn 00:00, tức quá hạn ngay lúc tạo.
+  */
+  it('lấp giờ mặc định khi máy chủ trả chuỗi rỗng', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={{ ...suggestion, dueTime: '' }}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await waitFor(() => expect(getByTestId('suggestion-due-time').props.value).toBe('23:59'));
+
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ dueTime: '23:59' }));
+  });
+
+  it('vẫn gửi giờ mặc định khi người dùng xoá trống ô giờ', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await fireEvent.changeText(getByTestId('suggestion-due-time'), '');
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ dueTime: '23:59' }));
+  });
+
+  it('không gửi giờ khi không có ngày hết hạn', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={{ ...suggestion, dueDate: '' }}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate: undefined, dueTime: undefined }),
+    );
+  });
+
+  /*
+    Bắt được khi chụp ảnh cửa hàng: tài khoản không phải leader nhấn giữ tin nhắn
+    thì máy chủ trả 403. Màn chat gán một đề xuất rỗng để người dùng vẫn tự nhập
+    tay được, nhưng đề xuất rỗng lại kích hoạt câu "không chứa công việc" — hiện
+    chồng lên banner lỗi thành hai thông báo mâu thuẫn.
+  */
+  it('không nói tin nhắn thiếu công việc khi thật ra là lỗi', async () => {
+    const { getByText, queryByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={{ hasTask: false, title: '', confidence: 'low' }}
+        members={members}
+        error="Chỉ Leader dự án mới được dùng AI để đề xuất task từ chat"
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    expect(getByText(/Chỉ Leader dự án/)).toBeTruthy();
+    expect(queryByText('Tin nhắn này có vẻ không chứa công việc')).toBeNull();
+  });
+
+  it('vẫn nói tin nhắn thiếu công việc khi không có lỗi', async () => {
+    const { getByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={{ hasTask: false, title: '', confidence: 'low' }}
+        members={members}
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    expect(getByText('Tin nhắn này có vẻ không chứa công việc')).toBeTruthy();
+  });
+
   it('hiện tin nhắn gốc để đối chiếu trước khi giao việc', async () => {
     const { getByText } = await render(
       <TaskSuggestionSheet

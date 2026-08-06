@@ -84,17 +84,22 @@ export default function ChatThreadScreen() {
   const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
 
   /**
-   * Idempotency-Key theo từng messageId. Sinh một lần rồi dùng lại khi thử lại,
-   * để mạng chập chờn không khiến server gọi AI nhiều lần cho cùng một tin nhắn.
+   * Idempotency-Key cho lần xin đề xuất đang diễn ra.
+   *
+   * TỪNG lưu theo messageId và dùng lại mãi, nhưng máy chủ coi khoá đã dùng là
+   * trùng lặp và trả lỗi *"Yêu cầu AI này đang được xử lý hoặc đã kết thúc"* —
+   * chứ không trả lại kết quả cũ. Hệ quả: nhấn giữ lần hai cùng một tin nhắn là
+   * gặp màn báo lỗi, không cách nào xem lại đề xuất.
+   *
+   * Nay mỗi lần nhấn giữ sinh một khoá mới. Khoá vẫn giữ nguyên trong suốt một
+   * lần gọi, nên vẫn chặn được việc mạng chập chờn gọi AI hai lần.
    */
   const idempotencyKeys = useRef(new Map<string, string>());
 
   /** Công việc đã tạo nhưng chưa gắn được, để thử lại đúng bước gắn thay vì tạo trùng. */
   const orphanTaskId = useRef<string | null>(null);
 
-  const getIdempotencyKey = useCallback((messageId: string) => {
-    const existing = idempotencyKeys.current.get(messageId);
-    if (existing) return existing;
+  const newIdempotencyKey = useCallback((messageId: string) => {
     const created = createLocalId();
     idempotencyKeys.current.set(messageId, created);
     return created;
@@ -268,7 +273,7 @@ export default function ChatThreadScreen() {
         const result = await requestTaskSuggestion(
           projectId,
           messageId,
-          getIdempotencyKey(messageId),
+          newIdempotencyKey(messageId),
         );
         setSuggestion(result);
       } catch (err) {
@@ -278,7 +283,7 @@ export default function ChatThreadScreen() {
         setSheetLoading(false);
       }
     },
-    [projectId, getIdempotencyKey],
+    [projectId, newIdempotencyKey],
   );
 
   const handleConfirm = useCallback(

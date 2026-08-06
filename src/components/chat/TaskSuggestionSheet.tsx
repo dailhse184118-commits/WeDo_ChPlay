@@ -150,7 +150,13 @@ export function TaskSuggestionSheet({
               </View>
             ) : null}
 
-            {suggestion && !suggestion.hasTask ? (
+            {/*
+              Khi có lỗi thì KHÔNG hiện lời nhắc này. Lúc gọi AI hỏng, màn chat gán
+              một đề xuất rỗng để người dùng vẫn tự nhập tay được — nhưng đề xuất
+              rỗng đó lại kích hoạt câu "không chứa công việc", chồng lên banner
+              lỗi thật thành hai thông báo mâu thuẫn nhau.
+            */}
+            {suggestion && !suggestion.hasTask && !error ? (
               <View style={styles.notice}>
                 <Text style={styles.noticeText}>Tin nhắn này có vẻ không chứa công việc</Text>
                 <Text style={styles.noticeBody}>

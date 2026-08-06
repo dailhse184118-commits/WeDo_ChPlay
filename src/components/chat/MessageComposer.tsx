@@ -30,6 +30,9 @@ export function MessageComposer({
         style={styles.input}
         multiline
         maxLength={2000}
+        // Từ điển tiếng Anh của Android gạch đỏ toàn bộ tiếng Việt.
+        spellCheck={false}
+        autoCorrect={false}
       />
 
       <Pressable
