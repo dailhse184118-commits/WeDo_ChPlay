@@ -61,7 +61,29 @@ export async function getGoogleIdToken(): Promise<string | null> {
   } catch (error) {
     // Thư viện thường tự dịch mã huỷ thành kết quả `cancelled`, nhưng vẫn có
     // đường ném thẳng lên. Coi cả hai là một.
-    if (maNativeCuaLoi(error) === statusCodes.SIGN_IN_CANCELLED) return null;
+    const ma = maNativeCuaLoi(error);
+    if (ma === statusCodes.SIGN_IN_CANCELLED) return null;
+
+    /*
+      Mã lỗi của Google là hằng số tiếng Anh: DEVELOPER_ERROR, INTERNAL_ERROR.
+      Màn hình hiện thẳng `error.message` nên nếu không dịch, người dùng nhận
+      được một băng đỏ ghi "INTERNAL_ERROR" — vô nghĩa với họ.
+
+      Vẫn giữ mã trong ngoặc: đó là thứ duy nhất lần ra được nguyên nhân khi
+      người kiểm thử chụp màn hình gửi về.
+    */
+    if (ma === 'DEVELOPER_ERROR') {
+      throw new Error(
+        'Google chưa chấp nhận ứng dụng này (DEVELOPER_ERROR). ' +
+          'Kiểm tra SHA-1 của chứng chỉ ký và trạng thái Publish trong Google Cloud Console.',
+      );
+    }
+    if (ma) {
+      throw new Error(
+        `Đăng nhập Google không thành công (${ma}). ` +
+          'Vui lòng thử lại, hoặc đăng nhập bằng email và mật khẩu.',
+      );
+    }
     throw error;
   }
 

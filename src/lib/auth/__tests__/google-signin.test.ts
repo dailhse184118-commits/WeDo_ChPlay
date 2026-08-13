@@ -82,9 +82,33 @@ describe('lấy ID token của Google', () => {
     );
   });
 
-  it('giữ nguyên lỗi lạ từ lớp native để còn lần ra nguyên nhân', async () => {
-    mockedSignIn.mockRejectedValue(nativeError('DEVELOPER_ERROR', 'DEVELOPER_ERROR'));
+  it('chỉ thẳng ra lỗi cấu hình khi Google từ chối chính ứng dụng', async () => {
+    /*
+      DEVELOPER_ERROR gần như luôn là sai SHA-1 hoặc chưa Publish app. Người
+      kiểm thử đọc "DEVELOPER_ERROR" thì không biết làm gì, còn chủ dự án đọc
+      câu này là biết mở Google Cloud Console.
+    */
+    mockedSignIn.mockRejectedValue(nativeError('DEVELOPER_ERROR'));
 
-    await expect(getGoogleIdToken()).rejects.toThrow('DEVELOPER_ERROR');
+    await expect(getGoogleIdToken()).rejects.toThrow(
+      /SHA-1.*Publish|Publish.*SHA-1/,
+    );
+  });
+
+  it('dịch mã lỗi lạ sang tiếng Việt nhưng vẫn kèm mã để còn lần ra nguyên nhân', async () => {
+    // Máy ảo chưa có tài khoản Google trả đúng mã này. Trước đây băng đỏ hiện
+    // nguyên chữ "INTERNAL_ERROR" cho người dùng.
+    mockedSignIn.mockRejectedValue(nativeError('INTERNAL_ERROR'));
+
+    const loi = await getGoogleIdToken().catch((e: Error) => e);
+
+    expect((loi as Error).message).toContain('INTERNAL_ERROR');
+    expect((loi as Error).message).toMatch(/[àâăêôơưđáảãạ]/i);
+  });
+
+  it('giữ nguyên lỗi không mang mã, vì không có gì để dịch', async () => {
+    mockedSignIn.mockRejectedValue(new Error('Không thể kết nối máy chủ.'));
+
+    await expect(getGoogleIdToken()).rejects.toThrow('Không thể kết nối máy chủ.');
   });
 });
