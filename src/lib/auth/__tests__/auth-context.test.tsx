@@ -4,24 +4,30 @@ import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import { AuthProvider, useAuth } from '../auth-context';
 import * as authApi from '../../api/auth';
+import * as googleSignIn from '../google-signin';
 import * as tokenStorage from '../token-storage';
 
 jest.mock('../../api/auth');
 jest.mock('../token-storage');
+jest.mock('../google-signin');
 
 const mockedAuthApi = authApi as jest.Mocked<typeof authApi>;
 const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
+const mockedGoogle = googleSignIn as jest.Mocked<typeof googleSignIn>;
 
 const profile = { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' };
 
 function Probe() {
-  const { status, user, signIn, signOut } = useAuth();
+  const { status, user, signIn, signInWithGoogle, signOut } = useAuth();
   return (
     <>
       <Text testID="status">{status}</Text>
       <Text testID="user">{user?.fullName ?? 'trong'}</Text>
       <Pressable testID="signin" onPress={() => signIn('a@b.c', 'matkhau')}>
         <Text>vao</Text>
+      </Pressable>
+      <Pressable testID="signin-google" onPress={() => signInWithGoogle()}>
+        <Text>vao bang google</Text>
       </Pressable>
       <Pressable testID="signout" onPress={() => signOut()}>
         <Text>ra</Text>
@@ -92,6 +98,37 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
     expect(mockedStorage.saveToken).toHaveBeenCalledWith('tok-moi');
+  });
+
+  it('đổi ID token của Google lấy phiên của WeDo', async () => {
+    mockedGoogle.getGoogleIdToken.mockResolvedValue('id-token-cua-google');
+    mockedAuthApi.loginWithGoogle.mockResolvedValue({
+      message: 'ok',
+      accessToken: 'tok-google',
+      user: { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' },
+    } as never);
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin-google'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedAuthApi.loginWithGoogle).toHaveBeenCalledWith('id-token-cua-google');
+    expect(mockedStorage.saveToken).toHaveBeenCalledWith('tok-google');
+  });
+
+  it('không gọi máy chủ khi người dùng đóng hộp thoại Google', async () => {
+    mockedGoogle.getGoogleIdToken.mockResolvedValue(null);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin-google'));
+
+    expect(mockedAuthApi.loginWithGoogle).not.toHaveBeenCalled();
+    expect(getByTestId('status').props.children).toBe('signedOut');
   });
 
   it('xoá token khi đăng xuất', async () => {

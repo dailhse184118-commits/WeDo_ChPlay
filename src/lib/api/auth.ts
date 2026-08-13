@@ -33,6 +33,23 @@ export function register(input: RegisterInput): Promise<AuthResponse> {
   });
 }
 
+/**
+ * Đăng nhập bằng Google.
+ *
+ * Gửi **ID token** chứ không phải access token: máy chủ đối chiếu `aud` của
+ * token với một `GOOGLE_CLIENT_ID` duy nhất — client dạng Web. Trên Android,
+ * access token do thư viện cấp gắn với client dạng Android nên `aud` lệch và
+ * máy chủ từ chối; còn ID token thì được cấp cho `webClientId` mà ứng dụng khai
+ * báo, nên khớp.
+ */
+export function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>('/auth/google', {
+    method: 'POST',
+    body: { idToken },
+    skipAuth: true,
+  });
+}
+
 export function getMe(): Promise<UserProfile> {
   return apiRequest<UserProfile>('/users/me');
 }
