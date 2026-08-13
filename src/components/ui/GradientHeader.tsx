@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
+import { GIOI_HAN_CO_CHU } from '../../theme/responsive';
+import { colors, fontSize, gradients, radius, sizes, spacing } from '../../theme/tokens';
 
 interface GradientHeaderProps {
   title: string;
@@ -59,16 +60,24 @@ export function GradientHeader({
             hitSlop={12}
             style={({ pressed }) => [styles.back, pressed ? styles.backPressed : null]}
           >
-            <Ionicons name="chevron-back" size={24} color="#ffffff" />
+            <Ionicons name="chevron-back" size={sizes.icon} color={colors.onPrimary} />
           </Pressable>
         ) : null}
 
+        {/*
+          Chặn cỡ chữ ở 130%: header cao cố định và không cuộn được, chữ phóng
+          hết 200% là tràn ra ngoài vùng gradient. Nội dung bên trong màn hình
+          thì không chặn gì.
+
+          Tiêu đề cho xuống hai dòng — tên dự án dài gặp cỡ chữ lớn mà chỉ một
+          dòng thì mất gần hết chữ.
+        */}
         <View style={styles.titleBlock}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={2} maxFontSizeMultiplier={GIOI_HAN_CO_CHU}>
             {title}
           </Text>
           {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={styles.subtitle} numberOfLines={1} maxFontSizeMultiplier={GIOI_HAN_CO_CHU}>
               {subtitle}
             </Text>
           ) : null}
@@ -95,8 +104,14 @@ const styles = StyleSheet.create({
   back: { marginRight: spacing.sm, marginLeft: -spacing.xs },
   backPressed: { opacity: 0.6 },
   titleBlock: { flex: 1 },
-  title: { color: '#ffffff', fontSize: fontSize.lg, fontWeight: '700' },
-  subtitle: { color: '#ffffff', fontSize: fontSize.xs, marginTop: 2 },
+  /*
+    Không đặt `lineHeight` cho hai dòng này. Token `lineHeight` nới theo cỡ chữ
+    hệ thống THẬT, còn chữ ở đây bị chặn ở 130% — ghép hai thứ lại thì ở mức
+    200% khoảng dòng rộng gấp rưỡi chữ, trông như bị hở. Để React Native tự
+    tính khoảng dòng theo cỡ chữ nó thật sự dựng.
+  */
+  title: { color: colors.onPrimary, fontSize: fontSize.lg, fontWeight: '700' },
+  subtitle: { color: colors.onPrimary, fontSize: fontSize.xs, marginTop: spacing.xxs },
   right: { marginLeft: spacing.md },
   children: { marginTop: spacing.md },
 });

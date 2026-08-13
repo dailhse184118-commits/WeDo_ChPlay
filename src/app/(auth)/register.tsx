@@ -14,13 +14,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { GoogleButton } from '../../components/ui/GoogleButton';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
 import { useAuth } from '../../lib/auth/auth-context';
 import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
 export default function RegisterScreen() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [fullName, setFullName] = useState('');
@@ -28,6 +29,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!fullName.trim()) {
@@ -66,6 +68,23 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleGoogle = async () => {
+    setError('');
+    setGoogleSubmitting(true);
+    try {
+      /*
+        Không hiện hộp thoại chào mừng như đường đăng ký thường: `/auth/google`
+        vừa tạo tài khoản mới vừa nhận lại tài khoản cũ, phía ứng dụng không biết
+        được là cái nào, nên chúc mừng "đã tạo tài khoản" sẽ sai với người quay lại.
+      */
+      await signInWithGoogle();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <KeyboardAvoidingView
@@ -86,7 +105,7 @@ export default function RegisterScreen() {
               },
             ]}
           >
-            <WeDoLogo testID="wedo-logo" width={140} tintColor="#ffffff" />
+            <WeDoLogo testID="wedo-logo" width={140} tintColor={colors.onPrimary} />
             <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
           </View>
 
@@ -121,7 +140,26 @@ export default function RegisterScreen() {
                 secureTextEntry
               />
 
-              <Button testID="submit" label="Đăng ký" onPress={handleSubmit} loading={submitting} />
+              <Button
+                testID="submit"
+                label="Đăng ký"
+                onPress={handleSubmit}
+                loading={submitting}
+                disabled={googleSubmitting}
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerLabel}>hoặc</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <GoogleButton
+                testID="google"
+                onPress={handleGoogle}
+                loading={googleSubmitting}
+                disabled={submitting}
+              />
             </Card>
 
             <Link href="/login" style={styles.link}>
@@ -146,8 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primary,
   },
-  brand: { color: '#ffffff', fontSize: 30, fontWeight: '700', letterSpacing: 0.5 },
-  tagline: { color: '#ffffff', fontSize: fontSize.sm, marginTop: spacing.xs },
+  tagline: { color: colors.onPrimary, fontSize: fontSize.sm, marginTop: spacing.xs },
   body: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
   form: { padding: spacing.lg },
   formTitle: {
@@ -156,6 +193,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.md,
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginVertical: spacing.md,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerLabel: { color: colors.textMuted, fontSize: fontSize.sm },
   link: {
     marginTop: spacing.lg,
     textAlign: 'center',

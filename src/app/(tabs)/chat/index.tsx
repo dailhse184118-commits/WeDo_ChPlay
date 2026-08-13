@@ -20,7 +20,7 @@ import { listProjects } from '../../../lib/api/projects';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
-import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } from '../../../theme/tokens';
 
 /** Giới hạn để tránh N+1 request bắn cùng lúc trên mạng di động. */
 const MAX_UNREAD_QUERIES = 6;
@@ -172,18 +172,19 @@ export default function ChatListScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   avatar: {
-    width: 40,
-    height: 40,
+    width: scale(40),
+    height: scale(40),
     borderRadius: radius.pill,
     backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: '#ffffff', fontWeight: '700', fontSize: fontSize.md },
+  avatarText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.md },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
+    // Ô có chữ bên trong: `minHeight` để chữ phóng to thì ô cao theo.
+    minHeight: scaleWithFont(44),
     borderRadius: radius.md,
     backgroundColor: 'rgba(255,255,255,0.18)',
     paddingHorizontal: spacing.sm + 4,
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: spacing.sm,
-    color: '#ffffff',
+    color: colors.onPrimary,
     fontSize: fontSize.sm,
     paddingVertical: 0,
   },
@@ -201,8 +202,8 @@ const styles = StyleSheet.create({
   list: { paddingTop: spacing.md, paddingBottom: spacing.xl },
   empty: { paddingTop: spacing.xl, alignItems: 'center' },
   emptyIcon: {
-    width: 64,
-    height: 64,
+    width: scale(64),
+    height: scale(64),
     borderRadius: radius.pill,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
@@ -219,6 +220,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 21,
+    lineHeight: lineHeight.sm,
   },
 });

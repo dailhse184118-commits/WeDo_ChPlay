@@ -1,9 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { getMe, login as loginRequest, register as registerRequest } from '../api/auth';
+import {
+  getMe,
+  login as loginRequest,
+  loginWithGoogle as loginWithGoogleRequest,
+  register as registerRequest,
+} from '../api/auth';
 import type { RegisterInput } from '../api/auth';
 import { onUnauthorized } from '../api/client';
 import type { UserProfile } from '../types';
+import { getGoogleIdToken } from './google-signin';
 import { clearToken, loadToken, saveToken } from './token-storage';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -12,6 +18,8 @@ export interface AuthState {
   status: AuthStatus;
   user: UserProfile | null;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Người dùng đóng hộp thoại Google thì kết thúc êm, không đổi trạng thái. */
+  signInWithGoogle: () => Promise<void>;
   signUp: (input: RegisterInput) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -74,6 +82,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [establishSession],
   );
 
+  const signInWithGoogle = useCallback(async () => {
+    const idToken = await getGoogleIdToken();
+    // null nghĩa là người dùng tự đóng hộp thoại — không phải lỗi, không báo gì.
+    if (!idToken) return;
+
+    const response = await loginWithGoogleRequest(idToken);
+    await establishSession(response.accessToken);
+  }, [establishSession]);
+
   const signUp = useCallback(
     async (input: RegisterInput) => {
       const response = await registerRequest(input);
@@ -83,8 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<AuthState>(
-    () => ({ status, user, signIn, signUp, signOut }),
-    [status, user, signIn, signUp, signOut],
+    () => ({ status, user, signIn, signInWithGoogle, signUp, signOut }),
+    [status, user, signIn, signInWithGoogle, signUp, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

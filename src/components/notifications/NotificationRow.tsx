@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Card } from '../ui/Card';
 import { IconTile, type IconTileTone } from '../ui/IconTile';
 import type { NotificationItem, NotificationType } from '../../lib/types';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../theme/tokens';
 
 /** Mỗi loại thông báo có một ô icon tô màu theo ý nghĩa. */
 const LOOK: Record<
@@ -60,10 +60,10 @@ export function NotificationRow({
         <IconTile testID={`notification-icon-${item.id}`} name={look.icon} tone={look.tone} />
 
         <View style={styles.body}>
-          <Text style={[styles.title, unread ? styles.titleUnread : null]} numberOfLines={1}>
+          <Text style={[styles.title, unread ? styles.titleUnread : null]} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={styles.message} numberOfLines={2}>
+          <Text style={styles.message} numberOfLines={3}>
             {item.message}
           </Text>
           <Text style={styles.when}>{formatWhen(item.createdAt)}</Text>
@@ -82,11 +82,11 @@ const styles = StyleSheet.create({
   body: { flex: 1, marginHorizontal: spacing.sm + 4 },
   title: { fontSize: fontSize.md, color: colors.text, fontWeight: '600' },
   titleUnread: { fontWeight: '700' },
-  message: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2, lineHeight: 19 },
+  message: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs, lineHeight: lineHeight.sm },
   when: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs },
   dot: {
-    width: 10,
-    height: 10,
+    width: scale(10),
+    height: scale(10),
     borderRadius: radius.pill,
     backgroundColor: colors.primary,
     marginTop: spacing.xs,

@@ -14,7 +14,7 @@ import { Button } from '../ui/Button';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { TextField } from '../ui/TextField';
 import type { ChatTaskSuggestion, UserSummary } from '../../lib/types';
-import { colors, fontSize, radius, shadows, spacing } from '../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, shadows, spacing } from '../../theme/tokens';
 
 export interface TaskSuggestionValues {
   title: string;
@@ -283,8 +283,8 @@ const styles = StyleSheet.create({
     boxShadow: '0 -8px 32px rgba(4, 26, 58, 0.18)',
   },
   handle: {
-    width: 44,
-    height: 4,
+    width: scale(44),
+    height: scale(4),
     borderRadius: radius.pill,
     backgroundColor: colors.border,
     alignSelf: 'center',
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
   },
   loading: { paddingVertical: spacing.xl, alignItems: 'center' },
   spinnerRing: {
-    width: 72,
-    height: 72,
+    width: scale(72),
+    height: scale(72),
     borderRadius: radius.pill,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
@@ -307,12 +307,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: lineHeight.sm,
   },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.md },
   headingBlock: { flex: 1 },
   heading: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  headingSub: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  headingSub: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },
   confidence: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.successSoft,
     marginLeft: spacing.sm,
   },
-  confidenceText: { fontSize: 11, fontWeight: '700', color: colors.success },
+  confidenceText: { fontSize: fontSize.xxs, fontWeight: '700', color: colors.success },
   quote: {
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm + 4,
     marginBottom: spacing.md,
   },
-  quoteText: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic', lineHeight: 20 },
+  quoteText: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic', lineHeight: lineHeight.sm },
   // Viền trái thay vì viền vây quanh: nhẹ hơn, đọc nhanh hơn.
   notice: {
     borderLeftWidth: 4,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
+    minHeight: scaleWithFont(36),
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,

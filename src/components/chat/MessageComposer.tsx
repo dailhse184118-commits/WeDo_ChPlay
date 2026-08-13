@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, radius, scale, scaleWithFont, spacing } from '../../theme/tokens';
 
 interface MessageComposerProps {
   value: string;
@@ -46,7 +46,7 @@ export function MessageComposer({
         style={[styles.send, canSend ? null : styles.sendDisabled]}
       >
         {sending ? (
-          <ActivityIndicator color="#ffffff" size="small" />
+          <ActivityIndicator color={colors.onPrimary} size="small" />
         ) : (
           <Text style={styles.sendText}>Gửi</Text>
         )}
@@ -79,13 +79,13 @@ const styles = StyleSheet.create({
   },
   send: {
     marginLeft: spacing.sm,
-    minWidth: 64,
-    height: 44,
+    minWidth: scale(64),
+    minHeight: scaleWithFont(44),
     borderRadius: radius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendDisabled: { opacity: 0.4 },
-  sendText: { color: '#ffffff', fontWeight: '700', fontSize: fontSize.sm },
+  sendText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.sm },
 });

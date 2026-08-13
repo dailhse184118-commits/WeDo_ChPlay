@@ -1,4 +1,4 @@
-import { login, register, getMe } from '../auth';
+import { login, loginWithGoogle, register, getMe } from '../auth';
 import { apiRequest } from '../client';
 
 jest.mock('../client', () => ({
@@ -41,6 +41,15 @@ describe('auth API', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/auth/register', {
       method: 'POST',
       body: { email: 'a@b.c', password: 'matkhau', fullName: 'Đại', phone: '0900000000' },
+      skipAuth: true,
+    });
+  });
+
+  it('POST /auth/google với ID token và bỏ qua header auth', async () => {
+    await loginWithGoogle('id-token-cua-google');
+    expect(mockedRequest).toHaveBeenCalledWith('/auth/google', {
+      method: 'POST',
+      body: { idToken: 'id-token-cua-google' },
       skipAuth: true,
     });
   });

@@ -9,10 +9,9 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
-import { colors, fontSize, radius, sizes, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../../theme/tokens';
 
 /** Số pixel thẻ danh tính chồng lên mép dưới của gradient header. */
-const CARD_OVERLAP = 12;
 
 /*
   Đặt qua biến môi trường chứ không nhúng cứng: trang chính sách còn chưa dựng
@@ -158,7 +157,7 @@ const styles = StyleSheet.create({
     Khung cuộn kéo lên bằng phần chồng lên gradient cộng nửa avatar, để cả avatar
     nằm trong khung nhìn và không bị xén.
   */
-  scrollView: { marginTop: -(CARD_OVERLAP + sizes.profileAvatar / 2) },
+  scrollView: { marginTop: -(sizes.cardOverlap + sizes.profileAvatar / 2) },
   /* Đệm trên bằng nửa avatar, nên mép trên của thẻ cắt ngang đúng giữa avatar. */
   identityBlock: { paddingTop: sizes.profileAvatar / 2 },
   identity: {
@@ -176,7 +175,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: colors.primary, fontWeight: '700', fontSize: 30 },
+  avatarText: { color: colors.primary, fontWeight: '700', fontSize: fontSize.xl },
   name: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
   email: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
   workspace: {
@@ -201,12 +200,12 @@ const styles = StyleSheet.create({
   menuPressed: { opacity: 0.7 },
   menuBody: { flex: 1, marginLeft: spacing.sm + 4 },
   menuLabel: { fontSize: fontSize.md, color: colors.text, fontWeight: '600' },
-  menuHint: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  menuHint: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },
   note: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: spacing.lg,
-    lineHeight: 18,
+    lineHeight: lineHeight.xs,
   },
 });

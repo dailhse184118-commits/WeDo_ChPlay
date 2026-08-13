@@ -9,7 +9,7 @@ import { GradientHeader } from '../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../components/ui/IconTile';
 import { getPreferences, updatePreferences } from '../../lib/api/notifications';
 import type { NotificationPreferences } from '../../lib/types';
-import { colors, fontSize, spacing } from '../../theme/tokens';
+import { colors, fontSize, lineHeight, spacing } from '../../theme/tokens';
 
 interface Row {
   key: keyof NotificationPreferences;
@@ -133,12 +133,12 @@ const styles = StyleSheet.create({
   divider: { borderBottomWidth: 1, borderBottomColor: colors.divider },
   body: { flex: 1, marginHorizontal: spacing.sm + 4 },
   label: { fontSize: fontSize.md, color: colors.text, fontWeight: '600' },
-  hint: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
+  hint: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs, lineHeight: lineHeight.xs },
   note: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
     marginTop: spacing.lg,
-    lineHeight: 18,
+    lineHeight: lineHeight.xs,
     textAlign: 'center',
   },
 });

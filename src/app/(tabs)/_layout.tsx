@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 
+import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
 import { getUnreadCount } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
@@ -13,10 +14,7 @@ import { taskIdFromResponse } from '../../lib/notifications/handler';
 import { useRealtimeSync } from '../../lib/realtime/use-realtime-sync';
 import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
-import { colors, sizes } from '../../theme/tokens';
-
-/** Chiều cao phần bấm được của thanh tab, chưa tính vùng cử chỉ hệ thống. */
-const TAB_BAR_HEIGHT = 60;
+import { colors, fontSize, sizes, spacing } from '../../theme/tokens';
 
 /**
  * Chạm vào nhắc hạn thì mở thẳng công việc đó.
@@ -92,17 +90,20 @@ function TabsWithWorkspace() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          // Bốn ô đều nhau, cao 60 cộng vùng cử chỉ hệ thống. Android 16 ép
-          // edge-to-edge nên phải tự cộng inset, không thì nhãn nằm dưới thanh vuốt.
-          height: TAB_BAR_HEIGHT + insets.bottom,
+          /*
+            `sizes.tabBar` đã nới theo cỡ chữ hệ thống (chặn ở 130%), cộng vùng
+            cử chỉ. Android 16 ép edge-to-edge nên phải tự cộng inset, không thì
+            nhãn nằm dưới thanh vuốt.
+          */
+          height: sizes.tabBar + insets.bottom,
           paddingBottom: insets.bottom,
-          paddingTop: 8,
+          paddingTop: spacing.sm,
           backgroundColor: colors.background,
           borderTopWidth: 1,
           borderTopColor: colors.divider,
           elevation: 0,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
+        tabBarLabel: ({ color, children }) => <TabLabel color={color}>{children}</TabLabel>,
         tabBarItemStyle: { flex: 1 },
       }}
     >
@@ -147,7 +148,7 @@ function TabsWithWorkspace() {
           tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.danger,
-            fontSize: 10,
+            fontSize: fontSize.xxs,
             fontWeight: '700',
           },
           tabBarIcon: ({ color, focused }) => (

@@ -18,6 +18,7 @@ const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 describe('màn hình đăng nhập', () => {
   const signIn = jest.fn();
+  const signInWithGoogle = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -25,6 +26,7 @@ describe('màn hình đăng nhập', () => {
       status: 'signedOut',
       user: null,
       signIn,
+      signInWithGoogle,
       signUp: jest.fn(),
       signOut: jest.fn(),
     });
@@ -66,6 +68,25 @@ describe('màn hình đăng nhập', () => {
     await fireEvent.press(getByTestId('submit'));
 
     await waitFor(() => expect(getByText('Email hoặc mật khẩu không đúng')).toBeTruthy());
+  });
+
+  it('gọi signInWithGoogle khi bấm nút Google, không cần điền form', async () => {
+    signInWithGoogle.mockResolvedValue(undefined);
+    const { getByTestId } = await renderScreen(<LoginScreen />);
+
+    await fireEvent.press(getByTestId('google'));
+
+    await waitFor(() => expect(signInWithGoogle).toHaveBeenCalledTimes(1));
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('hiện lỗi khi đăng nhập Google thất bại', async () => {
+    signInWithGoogle.mockRejectedValue(new Error('Google token không thuộc ứng dụng WEDO'));
+    const { getByTestId, getByText } = await renderScreen(<LoginScreen />);
+
+    await fireEvent.press(getByTestId('google'));
+
+    await waitFor(() => expect(getByText('Google token không thuộc ứng dụng WEDO')).toBeTruthy());
   });
 
   it('cắt khoảng trắng thừa quanh email', async () => {

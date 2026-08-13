@@ -32,7 +32,7 @@ import {
 import { planReminders } from '../../../lib/notifications/scheduler';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
-import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../../theme/tokens';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -124,7 +124,7 @@ export default function NotificationsScreen() {
         right={
           unreadCount > 0 ? (
             <Pressable testID="mark-all-read" onPress={handleMarkAll} style={styles.markAll}>
-              <Ionicons name="checkmark-done-outline" size={16} color="#ffffff" />
+              <Ionicons name="checkmark-done-outline" size={16} color={colors.onPrimary} />
               <Text style={styles.markAllText}>Đọc hết</Text>
             </Pressable>
           ) : undefined
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
-  markAllText: { color: '#ffffff', fontSize: fontSize.xs, fontWeight: '600', marginLeft: 4 },
+  markAllText: { color: colors.onPrimary, fontSize: fontSize.xs, fontWeight: '600', marginLeft: 4 },
   body: { flex: 1, marginTop: -spacing.md, paddingHorizontal: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingTop: spacing.md, paddingBottom: spacing.xl },
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: spacing.sm,
   },
-  promptBody: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 21 },
+  promptBody: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: lineHeight.sm },
   promptActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -261,12 +261,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     marginLeft: spacing.sm,
   },
-  promptPrimaryText: { fontSize: fontSize.sm, color: '#ffffff', fontWeight: '700' },
+  promptPrimaryText: { fontSize: fontSize.sm, color: colors.onPrimary, fontWeight: '700' },
 
   empty: { paddingTop: spacing.xl, alignItems: 'center' },
   emptyIcon: {
-    width: 64,
-    height: 64,
+    width: scale(64),
+    height: scale(64),
     borderRadius: radius.pill,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
@@ -283,6 +283,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 21,
+    lineHeight: lineHeight.sm,
   },
 });

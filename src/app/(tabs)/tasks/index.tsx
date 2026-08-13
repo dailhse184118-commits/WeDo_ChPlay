@@ -20,7 +20,7 @@ import { useAuth } from '../../../lib/auth/auth-context';
 import { groupByDeadline, myTasks } from '../../../lib/tasks/deadline-groups';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
-import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../../theme/tokens';
 
 function CountBox({ value, label }: { value: number; label: string }) {
   return (
@@ -195,8 +195,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: spacing.sm,
   },
-  countValue: { color: '#ffffff', fontSize: fontSize.lg, fontWeight: '700' },
-  countLabel: { color: '#ffffff', fontSize: 11, marginTop: 2 },
+  countValue: { color: colors.onPrimary, fontSize: fontSize.lg, fontWeight: '700' },
+  countLabel: { color: colors.onPrimary, fontSize: fontSize.xxs, marginTop: spacing.xxs },
   body: { flex: 1, marginTop: -spacing.md, paddingHorizontal: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingTop: spacing.md, paddingBottom: spacing.xl },
@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
   },
   empty: { paddingTop: spacing.xl, alignItems: 'center' },
   emptyIcon: {
-    width: 64,
-    height: 64,
+    width: scale(64),
+    height: scale(64),
     borderRadius: radius.pill,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
@@ -229,6 +229,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 21,
+    lineHeight: lineHeight.sm,
   },
 });

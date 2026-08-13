@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { tapFeedback } from '../../lib/haptics';
 import type { ChatMessage } from '../../lib/types';
-import { colors, fontSize, gradients, radius, shadows, spacing } from '../../theme/tokens';
+import { colors, fontSize, gradients, lineHeight, radius, scale, shadows, spacing } from '../../theme/tokens';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -77,7 +77,7 @@ export function MessageBubble({
             </View>
             <View style={styles.taskBody}>
               <Text style={styles.taskLabel}>Đã tạo công việc</Text>
-              <Text style={styles.taskTitle} numberOfLines={2}>
+              <Text style={styles.taskTitle} numberOfLines={3}>
                 {message.task.title}
               </Text>
             </View>
@@ -122,8 +122,8 @@ const styles = StyleSheet.create({
   },
   bubblePending: { opacity: 0.6 },
   bubbleFailed: { borderWidth: 1, borderColor: colors.danger },
-  content: { fontSize: fontSize.md, color: colors.text, lineHeight: 22 },
-  contentMine: { color: '#ffffff' },
+  content: { fontSize: fontSize.md, color: colors.text, lineHeight: lineHeight.md },
+  contentMine: { color: colors.onPrimary },
   recalled: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
   recalledMine: { color: 'rgba(255,255,255,0.85)' },
   // Nhãn công việc là một dải nền sáng nằm TRONG bong bóng, đọc được trên cả hai nền.
@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   taskTick: {
-    width: 24,
-    height: 24,
+    width: scale(24),
+    height: scale(24),
     borderRadius: radius.sm,
     backgroundColor: colors.background,
     alignItems: 'center',
@@ -145,9 +145,9 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   taskBody: { flex: 1 },
-  taskLabel: { fontSize: 11, color: colors.primary, fontWeight: '700' },
-  taskTitle: { fontSize: fontSize.xs, color: colors.text, marginTop: 2, lineHeight: 17 },
-  time: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs, alignSelf: 'flex-end' },
+  taskLabel: { fontSize: fontSize.xxs, color: colors.primary, fontWeight: '700' },
+  taskTitle: { fontSize: fontSize.xs, color: colors.text, marginTop: spacing.xxs, lineHeight: lineHeight.xs },
+  time: { fontSize: fontSize.xxs, color: colors.textMuted, marginTop: spacing.xs, alignSelf: 'flex-end' },
   timeMine: { color: 'rgba(255,255,255,0.8)' },
   retry: { marginTop: spacing.xs },
   retryText: { fontSize: fontSize.xs, color: colors.danger, fontWeight: '600' },

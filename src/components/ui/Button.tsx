@@ -41,7 +41,7 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? colors.primary : '#ffffff'} />
+        <ActivityIndicator color={variant === 'secondary' ? colors.primary : colors.onPrimary} />
       ) : (
         <Text
           style={[
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9 },
   inactive: { backgroundColor: colors.primarySoft, boxShadow: 'none' },
-  label: { color: '#ffffff', fontSize: fontSize.md, fontWeight: '700' },
+  label: { color: colors.onPrimary, fontSize: fontSize.md, fontWeight: '700' },
   labelSecondary: { color: colors.primary },
   labelInactive: { color: colors.primary },
 });
