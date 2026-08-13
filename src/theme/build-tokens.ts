@@ -89,6 +89,17 @@ export function buildTokens(width: number, systemFontScale: number) {
      * màn hình ở mức cỡ chữ 200%.
      */
     tabBar: theoBeRongVaCoChu(60),
+
+    /**
+     * Đường kính badge số thông báo trên thanh tab.
+     *
+     * Đây là ngoại lệ duy nhất nhân theo cỡ chữ **thật** chứ không phải cỡ chữ
+     * đã chặn. Badge của react-navigation là một `<Text>` có `overflow: hidden`
+     * và chiều cao cứng 18dp; cỡ chữ bên trong nó chỉ đặt được qua style, mà
+     * style thì không nhận `maxFontSizeMultiplier`. Không chặn được chữ thì hộp
+     * phải nới hết mức, nếu không chữ số bị xén.
+     */
+    badge: Math.round(18 * heSoBeRong * Math.max(systemFontScale, 1)),
   };
 
   return {

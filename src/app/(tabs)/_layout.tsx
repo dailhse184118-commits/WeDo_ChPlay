@@ -146,10 +146,19 @@ function TabsWithWorkspace() {
         options={{
           title: 'Thông báo',
           tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
+          /*
+            Badge dựng sẵn cao cứng 18dp và cắt phần tràn, nên ở cỡ chữ lớn chữ
+            số bị xén mất. Ghi đè cả bốn số đo bằng `sizes.badge` — token duy
+            nhất nới theo cỡ chữ thật, vì chữ trong badge không chặn được.
+          */
           tabBarBadgeStyle: {
             backgroundColor: colors.danger,
             fontSize: fontSize.xxs,
             fontWeight: '700',
+            height: sizes.badge,
+            minWidth: sizes.badge,
+            lineHeight: sizes.badge - 1,
+            borderRadius: sizes.badge / 2,
           },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons

@@ -1,4 +1,5 @@
 import { buildTokens } from '../build-tokens';
+import { GIOI_HAN_CO_CHU } from '../responsive';
 
 const MAY_NHO = buildTokens(360, 1);
 const MAY_THUONG = buildTokens(411, 1);
@@ -54,6 +55,31 @@ describe('co giãn theo cỡ chữ hệ thống', () => {
 
   it('dừng nới thanh tab ở ngưỡng chặn, để nó không ăn hết màn hình', () => {
     expect(buildTokens(411, 3).sizes.tabBar).toBe(buildTokens(411, 1.3).sizes.tabBar);
+  });
+
+  it('nới badge theo cỡ chữ THẬT, không dừng ở ngưỡng chặn như thanh tab', () => {
+    /*
+      Badge của react-navigation là một `<Text>` có `overflow: hidden`, chiều cao
+      cố định 18dp. Không có đường nào chặn cỡ chữ của nó bằng style, nên hộp
+      phải lớn theo hết mức người dùng phóng, nếu không chữ số bị xén.
+    */
+    expect(buildTokens(411, 2).sizes.badge).toBeGreaterThan(
+      buildTokens(411, GIOI_HAN_CO_CHU).sizes.badge,
+    );
+  });
+
+  it('giữ badge đủ lớn chứa chữ số ở mọi kích cỡ', () => {
+    for (const [width, coChu] of [
+      [360, 1],
+      [411, 1],
+      [800, 1],
+      [411, 2],
+      [320, 2],
+    ] as const) {
+      const token = buildTokens(width, coChu);
+      // Chữ dựng ra cao `fontSize.xxs * coChu`, cộng chút đệm hai bên.
+      expect(token.sizes.badge).toBeGreaterThanOrEqual(token.fontSize.xxs * coChu + 4);
+    }
   });
 
   it('giữ thanh tab đủ cao cho icon cộng nhãn ở mọi kích cỡ', () => {
