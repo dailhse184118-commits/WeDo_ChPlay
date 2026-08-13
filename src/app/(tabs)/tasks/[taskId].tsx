@@ -12,7 +12,7 @@ import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
 import { acceptTask, getTask, rejectTask } from '../../../lib/api/tasks';
 import type { Task } from '../../../lib/types';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
-import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
 
 const STATUS_LABEL: Record<Task['status'], string> = {
   TODO: 'Cần làm',
@@ -55,7 +55,7 @@ function Row({
     <View style={[styles.row, last ? null : styles.rowDivider]}>
       <IconTile name={icon} tone={tone} size={32} />
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue} numberOfLines={2}>
+      <Text style={styles.rowValue} numberOfLines={3}>
         {value}
       </Text>
     </View>
@@ -258,12 +258,12 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: spacing.md, paddingBottom: spacing.xl },
   headCard: { marginBottom: spacing.md },
-  title: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, lineHeight: 28 },
+  title: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, lineHeight: lineHeight.lg },
   description: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
     marginTop: spacing.sm,
-    lineHeight: 21,
+    lineHeight: lineHeight.sm,
   },
   infoCard: { paddingVertical: 0 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm + 4 },
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   rejectTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.danger },
-  rejectText: { fontSize: fontSize.sm, color: colors.text, marginTop: spacing.xs, lineHeight: 20 },
+  rejectText: { fontSize: fontSize.sm, color: colors.text, marginTop: spacing.xs, lineHeight: lineHeight.sm },
   actions: { flexDirection: 'row', marginTop: spacing.lg },
   actionItem: { flex: 1 },
   actionSpacer: { width: spacing.md },
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textMuted,
     marginTop: spacing.lg,
-    lineHeight: 18,
+    lineHeight: lineHeight.xs,
     textAlign: 'center',
   },
 });

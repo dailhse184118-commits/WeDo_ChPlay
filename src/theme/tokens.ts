@@ -14,12 +14,12 @@ import { buildTokens } from './build-tokens';
   còn đổi cỡ chữ hệ thống trên Android làm khởi động lại activity nên module
   được nạp lại.
 */
-const { spacing, fontSize, lineHeight, sizes } = buildTokens(
+const { spacing, fontSize, lineHeight, sizes, scale, scaleWithFont } = buildTokens(
   Dimensions.get('window').width,
   PixelRatio.getFontScale(),
 );
 
-export { spacing, fontSize, lineHeight, sizes };
+export { spacing, fontSize, lineHeight, sizes, scale, scaleWithFont };
 
 export const colors = {
   primary: '#0055c7',

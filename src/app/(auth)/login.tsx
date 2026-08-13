@@ -82,7 +82,7 @@ export default function LoginScreen() {
             ]}
           >
             {/* Logo đảo sang trắng để nổi trên gradient xanh. */}
-            <WeDoLogo testID="wedo-logo" width={168} tintColor="#ffffff" />
+            <WeDoLogo testID="wedo-logo" width={168} tintColor={colors.onPrimary} />
             <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
           </View>
 
@@ -153,8 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primary,
   },
-  brand: { color: '#ffffff', fontSize: 34, fontWeight: '700', letterSpacing: 0.5 },
-  tagline: { color: '#ffffff', fontSize: fontSize.sm, marginTop: spacing.xs },
+  tagline: { color: colors.onPrimary, fontSize: fontSize.sm, marginTop: spacing.xs },
   body: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
   form: { padding: spacing.lg },
   formTitle: {

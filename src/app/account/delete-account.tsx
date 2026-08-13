@@ -16,7 +16,7 @@ import {
 } from '../../lib/api/account';
 import { useAuth } from '../../lib/auth/auth-context';
 import type { DeletionBlocker } from '../../lib/types';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, spacing } from '../../theme/tokens';
 
 /** Gõ đúng từ này mới bật được nút xoá. Chặn cú chạm nhầm vào việc không hoàn tác được. */
 const CONFIRM_WORD = 'XOA';
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.text,
     marginLeft: spacing.sm,
-    lineHeight: 20,
+    lineHeight: lineHeight.sm,
   },
   blockNote: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    lineHeight: 18,
+    lineHeight: lineHeight.xs,
     marginTop: spacing.xs,
   },
   blocker: { marginBottom: spacing.md, backgroundColor: colors.dangerSoft },
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   blockerBody: {
     fontSize: fontSize.sm,
     color: colors.text,
-    lineHeight: 20,
+    lineHeight: lineHeight.sm,
     marginTop: spacing.xs,
     marginBottom: spacing.md,
   },
@@ -253,6 +253,6 @@ const styles = StyleSheet.create({
   candidatePressed: { opacity: 0.7 },
   candidateBody: { flex: 1 },
   candidateName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
-  candidateEmail: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  candidateEmail: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },
   confirmField: { marginTop: spacing.sm },
 });

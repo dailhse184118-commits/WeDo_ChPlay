@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ErrorBanner } from '../ui/ErrorBanner';
-import { colors, fontSize, radius, shadows, spacing } from '../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scaleWithFont, shadows, sizes, spacing } from '../../theme/tokens';
 
 /**
  * Ba lý do chọn nhanh. Bắt buộc gõ tay sinh ra những lý do rỗng kiểu "không rảnh";
@@ -153,11 +153,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
     marginBottom: spacing.md,
-    lineHeight: 20,
+    lineHeight: lineHeight.sm,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
   chip: {
-    height: 36,
+    minHeight: scaleWithFont(36),
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   required: { fontSize: fontSize.xs, color: colors.textMuted },
   counter: { fontSize: fontSize.xs, color: colors.textMuted },
   submit: {
-    height: 48,
+    minHeight: sizes.control,
     borderRadius: radius.pill,
     backgroundColor: colors.danger,
     alignItems: 'center',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   submitPressed: { opacity: 0.9 },
   submitDisabled: { opacity: 0.6, boxShadow: shadows.card },
-  submitText: { color: '#ffffff', fontWeight: '700', fontSize: fontSize.md },
+  submitText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.md },
   cancel: { marginTop: spacing.md, alignItems: 'center' },
   cancelText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: '600' },
 });

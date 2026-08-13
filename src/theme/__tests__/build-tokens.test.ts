@@ -47,6 +47,40 @@ describe('co giãn theo cỡ chữ hệ thống', () => {
   it('dừng nới chiều cao ô nhập ở ngưỡng chặn, để nút không cao bằng nửa màn hình', () => {
     expect(buildTokens(411, 3).sizes.control).toBe(buildTokens(411, 1.3).sizes.control);
   });
+
+  it('nới thanh tab ra, vì nhãn dưới icon là thứ bị cắt trước nhất', () => {
+    expect(CHU_TO.sizes.tabBar).toBeGreaterThan(MAY_THUONG.sizes.tabBar);
+  });
+
+  it('dừng nới thanh tab ở ngưỡng chặn, để nó không ăn hết màn hình', () => {
+    expect(buildTokens(411, 3).sizes.tabBar).toBe(buildTokens(411, 1.3).sizes.tabBar);
+  });
+
+  it('giữ thanh tab đủ cao cho icon cộng nhãn ở mọi kích cỡ', () => {
+    for (const token of [MAY_NHO, MAY_THUONG, TABLET, CHU_TO, buildTokens(320, 2)]) {
+      expect(token.sizes.tabBar).toBeGreaterThan(token.sizes.icon + token.lineHeight.xxs);
+    }
+  });
+});
+
+describe('hai hàm co giãn cho kích cỡ lẻ', () => {
+  it('scale thu số đo hình học theo bề rộng máy', () => {
+    expect(MAY_NHO.scale(64)).toBeLessThan(MAY_THUONG.scale(64));
+    expect(TABLET.scale(64)).toBeGreaterThan(MAY_THUONG.scale(64));
+  });
+
+  it('scale bỏ qua cỡ chữ, vì hình vuông không chứa chữ chạy dài', () => {
+    expect(CHU_TO.scale(64)).toBe(MAY_THUONG.scale(64));
+  });
+
+  it('scaleWithFont nới hộp chứa chữ ra theo cỡ chữ', () => {
+    expect(CHU_TO.scaleWithFont(40)).toBeGreaterThan(MAY_THUONG.scaleWithFont(40));
+  });
+
+  it('cả hai trả về số nguyên', () => {
+    expect(Number.isInteger(MAY_NHO.scale(37))).toBe(true);
+    expect(Number.isInteger(CHU_TO.scaleWithFont(37))).toBe(true);
+  });
 });
 
 describe('thang bậc giữ đúng thứ tự ở mọi kích cỡ', () => {

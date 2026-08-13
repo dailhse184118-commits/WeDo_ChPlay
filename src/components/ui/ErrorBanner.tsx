@@ -13,7 +13,7 @@ export function ErrorBanner({ message }: { message: string }) {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#fdecea',
+    backgroundColor: colors.dangerSoft,
     borderRadius: radius.sm,
     padding: spacing.md,
     marginBottom: spacing.md,

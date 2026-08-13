@@ -79,7 +79,34 @@ export function buildTokens(width: number, systemFontScale: number) {
 
     /** Chiều cao ô nhập và nút. Dùng làm `minHeight`, không phải `height`. */
     control: theoBeRongVaCoChu(48),
+
+    /**
+     * Phần bấm được của thanh tab, CHƯA tính vùng cử chỉ hệ thống — nơi gọi
+     * phải tự cộng `insets.bottom`.
+     *
+     * Nới theo cỡ chữ đã chặn vì nhãn nằm ngay dưới icon, chỉ cần chữ cao thêm
+     * vài dp là nhãn bị cắt mất đuôi. Chặn ở 130% để thanh tab không ăn hết
+     * màn hình ở mức cỡ chữ 200%.
+     */
+    tabBar: theoBeRongVaCoChu(60),
   };
 
-  return { spacing, fontSize, lineHeight, sizes };
+  return {
+    spacing,
+    fontSize,
+    lineHeight,
+    sizes,
+
+    /**
+     * Co giãn một số đo lẻ không đáng đặt thành token: ô trống 64, chấm 10,
+     * tay nắm 44×4. Chỉ theo bề rộng máy — dùng cho hình vuông và hình tròn.
+     */
+    scale: theoBeRong,
+
+    /**
+     * Như `scale` nhưng nới thêm theo cỡ chữ. Dùng cho hộp có chữ bên trong:
+     * chip, nút phụ, ô tìm kiếm. Nhớ đặt vào `minHeight` chứ không phải `height`.
+     */
+    scaleWithFont: theoBeRongVaCoChu,
+  };
 }

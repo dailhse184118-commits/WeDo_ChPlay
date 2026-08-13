@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../ui/Card';
 import type { Project } from '../../lib/types';
-import { colors, fontSize, gradients, radius, sizes, spacing } from '../../theme/tokens';
+import { colors, fontSize, gradients, radius, scaleWithFont, sizes, spacing } from '../../theme/tokens';
 
 interface ProjectRowProps {
   project: Project;
@@ -20,7 +20,7 @@ interface ProjectRowProps {
  */
 function avatarStyle(index: number) {
   if (index === 0) {
-    return { experimental_backgroundImage: gradients.header, textColor: '#ffffff' };
+    return { experimental_backgroundImage: gradients.header, textColor: colors.onPrimary };
   }
   return index % 2 === 1
     ? { backgroundColor: colors.warningSoft, textColor: colors.warningText }
@@ -41,7 +41,7 @@ export function ProjectRow({ project, unreadCount, onPress, index = 0 }: Project
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={styles.name} numberOfLines={2}>
             {project.name}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
@@ -76,10 +76,10 @@ const styles = StyleSheet.create({
   avatarText: { fontWeight: '700', fontSize: fontSize.lg },
   body: { flex: 1, marginLeft: spacing.sm + 4 },
   name: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
-  meta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  meta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },
   badge: {
-    minWidth: 24,
-    height: 24,
+    minWidth: scaleWithFont(24),
+    minHeight: scaleWithFont(24),
     borderRadius: radius.pill,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -87,5 +87,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs + 2,
     marginLeft: spacing.sm,
   },
-  badgeText: { color: '#ffffff', fontSize: fontSize.xs, fontWeight: '700' },
+  badgeText: { color: colors.onPrimary, fontSize: fontSize.xs, fontWeight: '700' },
 });

@@ -5,7 +5,7 @@ import { Card } from '../ui/Card';
 import { IconTile, type IconTileTone } from '../ui/IconTile';
 import { bucketOf, type DeadlineBucket } from '../../lib/tasks/deadline-groups';
 import type { Task } from '../../lib/types';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scaleWithFont, spacing } from '../../theme/tokens';
 
 interface TaskRowProps {
   task: Task;
@@ -105,7 +105,7 @@ export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: T
         />
 
         <View style={styles.body}>
-          <Text style={[styles.title, done ? styles.titleDone : null]} numberOfLines={2}>
+          <Text style={[styles.title, done ? styles.titleDone : null]} numberOfLines={3}>
             {task.title}
           </Text>
           {subtitle ? (
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   cardOverdue: { borderLeftWidth: 4, borderLeftColor: colors.danger },
   top: { flexDirection: 'row', alignItems: 'flex-start' },
   body: { flex: 1, marginHorizontal: spacing.sm + 4 },
-  title: { fontSize: fontSize.md, fontWeight: '600', color: colors.text, lineHeight: 22 },
+  title: { fontSize: fontSize.md, fontWeight: '600', color: colors.text, lineHeight: lineHeight.md },
   titleDone: { textDecorationLine: 'line-through', color: colors.textMuted },
   subtitle: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs },
   subtitleOverdue: { color: colors.danger, fontWeight: '600' },
@@ -184,16 +184,16 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', marginTop: spacing.md },
   accept: {
     flex: 1,
-    height: 40,
+    minHeight: scaleWithFont(40),
     borderRadius: radius.pill,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  acceptText: { color: '#ffffff', fontWeight: '700', fontSize: fontSize.xs },
+  acceptText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.xs },
   reject: {
     flex: 1,
-    height: 40,
+    minHeight: scaleWithFont(40),
     marginLeft: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
