@@ -1,3 +1,26 @@
+import { Dimensions, PixelRatio } from 'react-native';
+
+import { buildTokens } from './build-tokens';
+
+/*
+  Số đo thiết bị đọc ĐÚNG MỘT LẦN lúc module nạp.
+
+  Nhờ vậy mọi `StyleSheet.create` trong repo vẫn là hằng số tĩnh — không phải
+  chuyển style vào thân hàm render ở khoảng 20 file, và không mất tối ưu của
+  `StyleSheet`.
+
+  Đánh đổi: token không đổi theo khi kích thước cửa sổ hay cỡ chữ thay đổi giữa
+  lúc app đang chạy. Chấp nhận được vì `app.json` khoá `orientation: portrait`,
+  còn đổi cỡ chữ hệ thống trên Android làm khởi động lại activity nên module
+  được nạp lại.
+*/
+const { spacing, fontSize, lineHeight, sizes } = buildTokens(
+  Dimensions.get('window').width,
+  PixelRatio.getFontScale(),
+);
+
+export { spacing, fontSize, lineHeight, sizes };
+
 export const colors = {
   primary: '#0055c7',
   primaryDark: '#00408f',
@@ -35,14 +58,14 @@ export const colors = {
 
   /** Chữ trên nền vàng nhạt. #b26a00 trên #fdf4e3 không đạt 4,5:1, màu này đạt. */
   warningText: '#8a5200',
-} as const;
 
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
+  /**
+   * Chữ và icon nằm TRÊN nền màu thương hiệu: header gradient, nút chính, chip.
+   *
+   * Trùng giá trị với `background` nhưng khác hẳn ý nghĩa — `background` là nền
+   * trang, đổi nó sang màu tối thì `onPrimary` vẫn phải là trắng.
+   */
+  onPrimary: '#ffffff',
 } as const;
 
 export const radius = {
@@ -51,14 +74,6 @@ export const radius = {
   lg: 16,
   xl: 24,
   pill: 999,
-} as const;
-
-export const fontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 20,
-  xl: 26,
 } as const;
 
 /**
@@ -80,16 +95,3 @@ export const shadows = {
   bubble: '0 1px 4px rgba(0, 60, 140, 0.06)',
 } as const;
 
-/** Kích cỡ lặp lại nhiều lần trong bộ thiết kế. */
-export const sizes = {
-  /** Ô icon vuông bo góc, tô màu nhạt theo ý nghĩa. */
-  iconTile: 40,
-  /** Avatar dự án trong danh sách. */
-  projectAvatar: 48,
-  /** Avatar lớn trên thẻ danh tính màn Tài khoản. */
-  profileAvatar: 80,
-  /** Chiều cao ô nhập và nút. */
-  control: 48,
-  /** Icon Lucide/Ionicons mặc định. */
-  icon: 24,
-} as const;
