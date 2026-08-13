@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,6 +47,18 @@ export default function RegisterScreen() {
     setSubmitting(true);
     try {
       await signUp({ email: email.trim(), password, fullName: fullName.trim() });
+
+      /*
+        Đăng ký xong là vào thẳng app, không qua bước xác minh email nào. Không
+        báo gì thì người dùng không chắc mình đã có tài khoản hay chưa — người
+        kiểm thử phản ánh đúng điểm này ngày 11/08/2026.
+
+        Dùng Alert của hệ thống vì nó nổi trên cả lần điều hướng ngay sau đó.
+      */
+      Alert.alert(
+        'Đăng ký thành công',
+        `Chào ${fullName.trim()}, tài khoản của bạn đã sẵn sàng. Tạo dự án đầu tiên để bắt đầu nhé.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {

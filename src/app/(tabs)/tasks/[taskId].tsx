@@ -120,7 +120,17 @@ export default function TaskDetailScreen() {
 
   const task = taskQuery.data;
 
-  if (taskQuery.isLoading) {
+  /*
+    Chờ khi CHƯA CÓ dữ liệu, không chỉ khi `isLoading`.
+
+    Truy vấn bị vô hiệu bởi `enabled: Boolean(taskId)` lúc tham số route chưa về —
+    react-query khi đó báo `isLoading = false`, nên nhánh vòng xoay bị bỏ qua và
+    màn hình rơi xuống nhánh chính với `task` rỗng, vẽ ra trang trắng. Người dùng
+    chạm thông báo là thấy trắng, thoát ra vào lại mới có.
+
+    Người kiểm thử báo đúng hiện tượng này ngày 13/08/2026.
+  */
+  if (!task && !taskQuery.isError) {
     return (
       <View style={styles.screen}>
         <GradientHeader title="Chi tiết công việc" onBack={goBack} dense />
