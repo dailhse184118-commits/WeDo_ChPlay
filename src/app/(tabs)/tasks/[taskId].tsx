@@ -1,18 +1,39 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
+import {
+  TaskSubmissionPanel,
+  type ThaoTacTask,
+} from '../../../components/tasks/TaskSubmissionPanel';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
-import { acceptTask, getTask, rejectTask } from '../../../lib/api/tasks';
+import { listProjects } from '../../../lib/api/projects';
+import {
+  acceptTask,
+  approveReview,
+  getTask,
+  rejectReview,
+  rejectTask,
+  submitForReview,
+  uploadSubmissions,
+  type TepChon,
+} from '../../../lib/api/tasks';
+import { useAuth } from '../../../lib/auth/auth-context';
+import { chonTaiLieu } from '../../../lib/files/pick-documents';
+import { quyenTrenTask } from '../../../lib/tasks/task-permissions';
 import type { Task } from '../../../lib/types';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
+import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
+
+/** Lý do trả bài hay gặp, thay cho ba lý do từ chối nhận việc. */
+const LY_DO_TRA_BAI = ['Thiếu nội dung', 'Sai định dạng', 'Cần bổ sung số liệu'] as const;
 
 const STATUS_LABEL: Record<Task['status'], string> = {
   TODO: 'Cần làm',
@@ -77,7 +98,11 @@ export default function TaskDetailScreen() {
   }, [router]);
 
   const [rejecting, setRejecting] = useState(false);
+  const [rejectingReview, setRejectingReview] = useState(false);
   const [actionError, setActionError] = useState('');
+
+  const { user } = useAuth();
+  const { workspaces } = useWorkspace();
 
   const taskQuery = useQuery({
     queryKey: ['task', taskId],
@@ -91,6 +116,31 @@ export default function TaskDetailScreen() {
     khác đã sửa vẫn thấy bản cũ.
   */
   useRefetchOnScreenFocus(taskQuery.refetch);
+
+  const task = taskQuery.data;
+
+  /*
+    Chỉ để biết mình có phải leader của dự án này không — `GET /tasks/:id` không
+    kèm danh sách thành viên. Dùng đúng khoá mà tab Trò chuyện đã dùng nên
+    thường là đọc lại từ bộ nhớ đệm, không tốn thêm một vòng mạng.
+  */
+  const projectsQuery = useQuery({
+    queryKey: ['projects', task?.workspaceId],
+    queryFn: () => listProjects(task?.workspaceId),
+    enabled: Boolean(task?.workspaceId && task?.projectId),
+  });
+
+  const quyen = useMemo(() => {
+    if (!task || !user) {
+      return { nopTaiLieu: false, guiDuyet: false, duyetBai: false };
+    }
+    return quyenTrenTask({
+      task,
+      meId: user.id,
+      project: projectsQuery.data?.find((duAn) => duAn.id === task.projectId) ?? null,
+      workspace: workspaces.find((ws) => ws.id === task.workspaceId) ?? null,
+    });
+  }, [task, user, projectsQuery.data, workspaces]);
 
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['task', taskId] });
@@ -118,7 +168,68 @@ export default function TaskDetailScreen() {
       setActionError(err instanceof Error ? err.message : 'Không từ chối được việc này.'),
   });
 
-  const task = taskQuery.data;
+  const uploadMutation = useMutation({
+    mutationFn: (files: TepChon[]) => uploadSubmissions(taskId as string, files),
+    onSuccess: () => {
+      setActionError('');
+      invalidate();
+    },
+    onError: (err) =>
+      setActionError(err instanceof Error ? err.message : 'Không nộp được tài liệu.'),
+  });
+
+  const sendReviewMutation = useMutation({
+    mutationFn: () => submitForReview(taskId as string),
+    onSuccess: () => {
+      setActionError('');
+      invalidate();
+    },
+    onError: (err) =>
+      setActionError(err instanceof Error ? err.message : 'Không gửi duyệt được.'),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: () => approveReview(taskId as string),
+    onSuccess: () => {
+      setActionError('');
+      invalidate();
+    },
+    onError: (err) => setActionError(err instanceof Error ? err.message : 'Không duyệt được bài.'),
+  });
+
+  const rejectReviewMutation = useMutation({
+    mutationFn: (reason: string) => rejectReview(taskId as string, reason),
+    onSuccess: () => {
+      setActionError('');
+      setRejectingReview(false);
+      invalidate();
+    },
+    onError: (err) => setActionError(err instanceof Error ? err.message : 'Không trả bài được.'),
+  });
+
+  /*
+    Mở hộp chọn tệp TRƯỚC rồi mới gọi mutation. Gộp cả hai vào `mutationFn` thì
+    vòng quay trên nút chạy suốt lúc người dùng còn đang lục tìm tệp trong máy.
+  */
+  const chonVaNop = useCallback(async () => {
+    setActionError('');
+    try {
+      const files = await chonTaiLieu();
+      // Mảng rỗng nghĩa là người dùng bấm huỷ — không phải lỗi, không báo gì.
+      if (files.length === 0) return;
+      uploadMutation.mutate(files);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Không chọn được tệp.');
+    }
+  }, [uploadMutation]);
+
+  const dangChay: ThaoTacTask = uploadMutation.isPending
+    ? 'nop'
+    : sendReviewMutation.isPending
+      ? 'guiDuyet'
+      : approveMutation.isPending
+        ? 'duyet'
+        : null;
 
   /*
     Chờ khi CHƯA CÓ dữ liệu, không chỉ khi `isLoading`.
@@ -234,10 +345,19 @@ export default function TaskDetailScreen() {
               </View>
             ) : null}
 
-            <Text style={styles.note}>
-              Muốn nộp bài hoặc đổi trạng thái công việc, bạn vào web WeDo. Bản di động tập trung
-              vào trò chuyện và theo dõi việc.
-            </Text>
+            <TaskSubmissionPanel
+              quyen={quyen}
+              submissions={task.submissions}
+              reviewRejectedReason={task.reviewRejectedReason}
+              dangChay={dangChay}
+              onPick={() => void chonVaNop()}
+              onSubmitForReview={() => sendReviewMutation.mutate()}
+              onApprove={() => approveMutation.mutate()}
+              onReject={() => {
+                setActionError('');
+                setRejectingReview(true);
+              }}
+            />
           </>
         ) : null}
       </ScrollView>
@@ -248,6 +368,18 @@ export default function TaskDetailScreen() {
         error={actionError || undefined}
         onConfirm={(reason) => rejectMutation.mutate(reason)}
         onDismiss={() => setRejecting(false)}
+      />
+
+      <RejectTaskSheet
+        visible={rejectingReview}
+        submitting={rejectReviewMutation.isPending}
+        error={actionError || undefined}
+        heading="Trả bài lại"
+        body="Người phụ trách sẽ đọc lý do này và làm lại, nên nói rõ phần nào cần sửa."
+        confirmLabel="Gửi yêu cầu sửa"
+        quickReasons={LY_DO_TRA_BAI}
+        onConfirm={(reason) => rejectReviewMutation.mutate(reason)}
+        onDismiss={() => setRejectingReview(false)}
       />
     </View>
   );
@@ -294,11 +426,4 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', marginTop: spacing.lg },
   actionItem: { flex: 1 },
   actionSpacer: { width: spacing.md },
-  note: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginTop: spacing.lg,
-    lineHeight: lineHeight.xs,
-    textAlign: 'center',
-  },
 });

@@ -92,6 +92,22 @@ export interface Project {
   _count?: { tasks: number; members?: number };
 }
 
+/** Một tài liệu người phụ trách đã nộp cho công việc. */
+export interface TaskSubmission {
+  id: string;
+  taskId: string;
+  uploaderId: string;
+  /** Tên tệp trên máy chủ. Đã được đổi để không trùng nhau. */
+  fileName: string;
+  /** Tên gốc lúc người dùng chọn — đây mới là tên đáng hiện ra. */
+  originalName: string;
+  mimeType?: string | null;
+  size: number;
+  url: string;
+  createdAt: string;
+  uploader?: UserSummary;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -100,7 +116,11 @@ export interface Task {
   dueDate?: string | null;
   completedAt?: string | null;
   assignmentStatus?: TaskAssignmentStatus | null;
+  /** Lý do từ chối *nhận việc*. Khác hẳn `reviewRejectedReason`. */
   rejectionReason?: string | null;
+  /** Lý do leader trả bài về làm lại. */
+  reviewRejectedReason?: string | null;
+  reviewedAt?: string | null;
   projectId?: string | null;
   workspaceId: string;
   assigneeId?: string | null;
@@ -108,6 +128,8 @@ export interface Task {
   updatedAt: string;
   assignee?: UserSummary | null;
   project?: Pick<Project, 'id' | 'name' | 'status'> | null;
+  /** Chỉ có ở `GET /tasks/:id`; danh sách `/tasks` không kèm. */
+  submissions?: TaskSubmission[];
 }
 
 export interface ChatMessage {

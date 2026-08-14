@@ -22,6 +22,15 @@ interface RejectTaskSheetProps {
   error?: string;
   /** Tên người giao việc, dùng trong câu giải thích. */
   assignerName?: string;
+  /*
+    Bốn chỗ chữ dưới đây để trống thì phiếu nói chuyện từ chối *nhận việc*.
+    Leader trả bài về cũng cần đúng phiếu này, chỉ khác lời — nên đổi chữ thay
+    vì nhân bản component, tránh hai bản trôi khỏi nhau.
+  */
+  heading?: string;
+  body?: string;
+  confirmLabel?: string;
+  quickReasons?: readonly string[];
   onConfirm: (reason: string) => void;
   onDismiss: () => void;
 }
@@ -31,6 +40,10 @@ export function RejectTaskSheet({
   submitting = false,
   error,
   assignerName,
+  heading = 'Từ chối công việc',
+  body,
+  confirmLabel = 'Gửi từ chối',
+  quickReasons = QUICK_REASONS,
   onConfirm,
   onDismiss,
 }: RejectTaskSheetProps) {
@@ -55,17 +68,19 @@ export function RejectTaskSheet({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        <Text style={styles.heading}>Từ chối công việc</Text>
+        <Text style={styles.heading}>{heading}</Text>
         <Text style={styles.body}>
-          {assignerName ? `${assignerName} sẽ thấy lý do của bạn` : 'Người giao việc sẽ thấy lý do'}
-          , nên viết ngắn gọn và cụ thể giúp nhóm sắp xếp lại.
+          {body ??
+            `${
+              assignerName ? `${assignerName} sẽ thấy lý do của bạn` : 'Người giao việc sẽ thấy lý do'
+            }, nên viết ngắn gọn và cụ thể giúp nhóm sắp xếp lại.`}
         </Text>
 
         {error ? <ErrorBanner message={error} /> : null}
         {localError ? <ErrorBanner message={localError} /> : null}
 
         <View style={styles.chips}>
-          {QUICK_REASONS.map((quick, index) => (
+          {quickReasons.map((quick, index) => (
             <Pressable
               key={quick}
               testID={`quick-reason-${index}`}
@@ -119,7 +134,7 @@ export function RejectTaskSheet({
             submitting ? styles.submitDisabled : null,
           ]}
         >
-          <Text style={styles.submitText}>{submitting ? 'Đang gửi…' : 'Gửi từ chối'}</Text>
+          <Text style={styles.submitText}>{submitting ? 'Đang gửi…' : confirmLabel}</Text>
         </Pressable>
 
         <Pressable testID="reject-cancel" onPress={onDismiss} style={styles.cancel}>

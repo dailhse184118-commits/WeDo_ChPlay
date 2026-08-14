@@ -87,6 +87,28 @@ describe('RejectTaskSheet', () => {
     expect(getByText('Task này không còn ở trạng thái chờ phản hồi')).toBeTruthy();
   });
 
+  it('dùng lại được cho việc trả bài, với chữ và lý do gợi ý riêng', async () => {
+    /*
+      Leader trả bài cũng cần đúng cái phiếu này, chỉ khác nội dung. Nhân bản cả
+      component chỉ để đổi mấy dòng chữ thì hai bản sẽ trôi khỏi nhau.
+    */
+    const { getByText, queryByText } = await render(
+      <RejectTaskSheet
+        visible
+        heading="Trả bài lại"
+        confirmLabel="Gửi yêu cầu sửa"
+        quickReasons={['Thiếu số liệu', 'Sai định dạng']}
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    expect(getByText('Trả bài lại')).toBeTruthy();
+    expect(getByText('Gửi yêu cầu sửa')).toBeTruthy();
+    expect(getByText('Thiếu số liệu')).toBeTruthy();
+    expect(queryByText(QUICK_REASONS[0])).toBeNull();
+  });
+
   it('gọi onDismiss khi bấm huỷ', async () => {
     const onDismiss = jest.fn();
     const { getByTestId } = await render(

@@ -19,7 +19,7 @@ const mockFetch = jest.fn();
 interface FetchInit {
   method: string;
   headers: Record<string, string>;
-  body?: string;
+  body?: string | FormData;
 }
 
 function lastInit(): FetchInit {
@@ -81,6 +81,22 @@ describe('apiRequest', () => {
 
     expect(lastInit().body).toBe('{"email":"a@b.c"}');
     expect(lastInit().headers['Content-Type']).toBe('application/json');
+  });
+
+  it('gửi thẳng FormData và để fetch tự đặt Content-Type', async () => {
+    /*
+      Upload tài liệu đi bằng multipart. JSON.stringify một FormData ra "{}",
+      còn tự đặt Content-Type thì thiếu tham số `boundary` — máy chủ không tách
+      nổi các phần và báo lỗi. Cả hai việc đó đều phải không xảy ra.
+    */
+    const form = new FormData();
+    form.append('files', 'noi-dung-gia');
+    mockFetchOnce({ ok: true });
+
+    await apiRequest('/tasks/t1/submissions', { method: 'POST', body: form });
+
+    expect(lastInit().body).toBe(form);
+    expect(lastInit().headers['Content-Type']).toBeUndefined();
   });
 
   it('trả dữ liệu đã parse khi thành công', async () => {

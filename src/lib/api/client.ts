@@ -14,10 +14,23 @@ export class ApiError extends Error {
 
 export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  /** Object thường sẽ được serialize thành JSON; `FormData` thì gửi nguyên. */
   body?: unknown;
   headers?: Record<string, string>;
   /** Bỏ qua header Authorization. Dùng cho đăng nhập và đăng ký. */
   skipAuth?: boolean;
+}
+
+/**
+ * Body này là multipart, phải để nguyên.
+ *
+ * `JSON.stringify` một FormData cho ra `"{}"` — mất sạch tệp. Và tự đặt
+ * `Content-Type: multipart/form-data` cũng hỏng: chuỗi đó thiếu tham số
+ * `boundary` mà chỉ tầng fetch mới sinh ra được, nên máy chủ không tách nổi các
+ * phần. Cách duy nhất đúng là không đụng vào cả hai.
+ */
+function laFormData(body: unknown): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
 }
 
 const unauthorizedHandlers = new Set<() => void>();
@@ -99,7 +112,7 @@ export async function apiRequest<T = unknown>(
   const { method = 'GET', body, headers = {}, skipAuth = false } = options;
 
   const requestHeaders: Record<string, string> = { ...headers };
-  if (body !== undefined) {
+  if (body !== undefined && !laFormData(body)) {
     requestHeaders['Content-Type'] = 'application/json';
   }
   if (!skipAuth) {
@@ -118,7 +131,7 @@ export async function apiRequest<T = unknown>(
     response = await fetch(url, {
       method,
       headers: requestHeaders,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined || laFormData(body) ? (body as FormData | undefined) : JSON.stringify(body),
     });
   } catch {
     throw new ApiError('Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.', 0);
