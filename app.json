@@ -2,7 +2,7 @@
   "expo": {
     "name": "WeDo",
     "slug": "wedo",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wedo",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "vn.wedo.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#0055c7",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
