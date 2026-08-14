@@ -89,6 +89,11 @@ describe('màn hình đăng nhập', () => {
     await waitFor(() => expect(getByText('Google token không thuộc ứng dụng WEDO')).toBeTruthy());
   });
 
+  it('có đường tới màn quên mật khẩu, nếu không người dùng mất tài khoản vĩnh viễn', async () => {
+    const { getByText } = await renderScreen(<LoginScreen />);
+    expect(getByText('Quên mật khẩu?')).toBeTruthy();
+  });
+
   it('cắt khoảng trắng thừa quanh email', async () => {
     signIn.mockResolvedValue(undefined);
     const { getByTestId } = await renderScreen(<LoginScreen />);

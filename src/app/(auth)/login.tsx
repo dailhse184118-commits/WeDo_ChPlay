@@ -131,6 +131,10 @@ export default function LoginScreen() {
               />
             </Card>
 
+            <Link href="/forgot-password" style={styles.link}>
+              Quên mật khẩu?
+            </Link>
+
             <Link href="/register" style={styles.link}>
               Chưa có tài khoản? Đăng ký
             </Link>

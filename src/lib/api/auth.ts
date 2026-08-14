@@ -50,6 +50,34 @@ export function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   });
 }
 
+/**
+ * Xin mã đặt lại mật khẩu gửi về email.
+ *
+ * Máy chủ trả về cùng một câu dù email có tài khoản hay không — cố ý như vậy
+ * để không ai dò được danh sách người dùng. Nên màn hình gọi hàm này cũng phải
+ * hiện đúng một thông báo cho mọi trường hợp.
+ */
+export function forgotPassword(email: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+    skipAuth: true,
+  });
+}
+
+/** Đổi mật khẩu bằng mã 6 số nhận qua email. */
+export function resetPassword(
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: { email, code, newPassword },
+    skipAuth: true,
+  });
+}
+
 export function getMe(): Promise<UserProfile> {
   return apiRequest<UserProfile>('/users/me');
 }
