@@ -161,6 +161,72 @@ describe('AuthProvider', () => {
     expect(mockedStorage.clearToken).toHaveBeenCalled();
   });
 
+  it('thu hồi phiên phía máy chủ khi đăng xuất', async () => {
+    /*
+      Chỉ xoá token trong máy thì bản sao refresh token bị đánh cắp vẫn sống
+      thêm 60 ngày. Phải bảo máy chủ cắt phiên đó đi.
+    */
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadRefreshToken.mockResolvedValue('rt-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await fireEvent.press(getByTestId('signout'));
+
+    await waitFor(() => expect(mockedAuthApi.logout).toHaveBeenCalledWith('rt-1'));
+  });
+
+  it('vẫn đăng xuất được khi máy chủ không phản hồi', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadRefreshToken.mockResolvedValue('rt-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+    mockedAuthApi.logout.mockRejectedValue(new Error('mat mang'));
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await fireEvent.press(getByTestId('signout'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+  });
+
+  it('lưu refresh token nhận được lúc đăng nhập', async () => {
+    mockedAuthApi.login.mockResolvedValue({
+      message: 'ok',
+      accessToken: 'tok-moi',
+      refreshToken: 'rt-moi',
+      user: { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' },
+    } as never);
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin'));
+
+    await waitFor(() => expect(mockedStorage.saveRefreshToken).toHaveBeenCalledWith('rt-moi'));
+  });
+
+  it('chịu được máy chủ cũ chưa trả refresh token', async () => {
+    // Ban backend cu chua co truong nay. Khong duoc vi the ma dang nhap that bai.
+    mockedAuthApi.login.mockResolvedValue({
+      message: 'ok',
+      accessToken: 'tok-moi',
+      user: { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' },
+    } as never);
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedStorage.saveRefreshToken).not.toHaveBeenCalled();
+  });
+
   it('xoá token khi đăng xuất', async () => {
     mockedStorage.loadToken.mockResolvedValue('tok-1');
     mockedAuthApi.getMe.mockResolvedValue(profile as never);

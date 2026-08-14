@@ -1,4 +1,4 @@
-import { loadToken } from '../auth/token-storage';
+import { loadRefreshToken, loadToken, saveRefreshToken, saveToken } from '../auth/token-storage';
 
 export class ApiError extends Error {
   status: number;
@@ -48,6 +48,50 @@ function extractMessage(payload: unknown, status: number): string {
   return `Máy chủ trả lỗi ${status}.`;
 }
 
+/**
+ * Một lượt gia hạn đang chạy, nếu có.
+ *
+ * Màn hình thường bắn nhiều yêu cầu cùng lúc. Token hết hạn thì tất cả cùng
+ * nhận 401 và cùng đòi gia hạn — mà máy chủ xoay refresh token mỗi lần dùng,
+ * nên lượt thứ hai sẽ cầm token đã bị huỷ và bị coi là đánh cắp, cắt sạch phiên.
+ * Gom chung về một lời hứa để chỉ có đúng một lượt gia hạn chạy.
+ */
+let dangGiaHan: Promise<string | null> | null = null;
+
+async function giaHanPhien(): Promise<string | null> {
+  const refreshToken = await loadRefreshToken();
+  if (!refreshToken) return null;
+
+  const response = await fetch(`${baseUrl()}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) return null;
+
+  // Đọc bằng `text()` rồi tự parse, giống hệt phần còn lại của tệp này.
+  const raw = await response.text();
+  const payload = (raw ? JSON.parse(raw) : {}) as {
+    accessToken?: string;
+    refreshToken?: string;
+  };
+  if (!payload.accessToken || !payload.refreshToken) return null;
+
+  // Lưu cả cặp: token cũ đã bị máy chủ huỷ ngay khi đổi.
+  await saveToken(payload.accessToken);
+  await saveRefreshToken(payload.refreshToken);
+
+  return payload.accessToken;
+}
+
+function giaHanMotLuot(): Promise<string | null> {
+  dangGiaHan ??= giaHanPhien().finally(() => {
+    dangGiaHan = null;
+  });
+  return dangGiaHan;
+}
+
 export async function apiRequest<T = unknown>(
   path: string,
   options: ApiRequestOptions = {},
@@ -84,6 +128,24 @@ export async function apiRequest<T = unknown>(
   const payload = raw ? (JSON.parse(raw) as unknown) : undefined;
 
   if (!response.ok) {
+    /*
+      401 với yêu cầu có xác thực: thử gia hạn phiên rồi gửi lại đúng một lần.
+      Người dùng không thấy gì cả — trước đây họ bị đá về màn đăng nhập.
+
+      `skipAuth` là các lượt đăng nhập, đăng ký, quên mật khẩu. 401 ở đó nghĩa
+      là sai mật khẩu, gia hạn không giúp được gì mà còn dễ thành vòng lặp.
+    */
+    if (response.status === 401 && !skipAuth) {
+      const tokenMoi = await giaHanMotLuot();
+
+      if (tokenMoi) {
+        return apiRequest<T>(path, { ...options, skipAuth: true, headers: {
+          ...headers,
+          Authorization: `Bearer ${tokenMoi}`,
+        } });
+      }
+    }
+
     if (response.status === 401) {
       unauthorizedHandlers.forEach((handler) => handler());
     }

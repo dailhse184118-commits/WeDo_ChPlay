@@ -34,6 +34,8 @@ export interface UserProfile extends UserSummary {
 export interface AuthResponse {
   message: string;
   accessToken: string;
+  /** Máy chủ bản cũ chưa trả trường này, nên phải tuỳ chọn. */
+  refreshToken?: string;
   user: {
     id: string;
     email: string;

@@ -78,6 +78,20 @@ export function resetPassword(
   });
 }
 
+/**
+ * Bảo máy chủ cắt phiên này.
+ *
+ * Không có bước này thì bản sao refresh token bị đánh cắp vẫn sống thêm 60
+ * ngày sau khi người dùng đã đăng xuất.
+ */
+export function logout(refreshToken: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/logout', {
+    method: 'POST',
+    body: { refreshToken },
+    skipAuth: true,
+  });
+}
+
 export function getMe(): Promise<UserProfile> {
   return apiRequest<UserProfile>('/users/me');
 }

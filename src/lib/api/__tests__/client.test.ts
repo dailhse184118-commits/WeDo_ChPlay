@@ -1,11 +1,17 @@
 import { apiRequest, ApiError, onUnauthorized } from '../client';
-import { loadToken } from '../../auth/token-storage';
+import { loadRefreshToken, loadToken, saveRefreshToken, saveToken } from '../../auth/token-storage';
 
 jest.mock('../../auth/token-storage', () => ({
   loadToken: jest.fn(async () => null),
+  loadRefreshToken: jest.fn(async () => null),
+  saveToken: jest.fn(async () => undefined),
+  saveRefreshToken: jest.fn(async () => undefined),
 }));
 
 const mockedLoadToken = loadToken as jest.MockedFunction<typeof loadToken>;
+const mockedLoadRefresh = loadRefreshToken as jest.MockedFunction<typeof loadRefreshToken>;
+const mockedSaveToken = saveToken as jest.MockedFunction<typeof saveToken>;
+const mockedSaveRefresh = saveRefreshToken as jest.MockedFunction<typeof saveRefreshToken>;
 
 /** Mock fetch có kiểu rõ ràng, tránh phải kéo @types/node chỉ để dùng `global`. */
 const mockFetch = jest.fn();
@@ -36,6 +42,9 @@ describe('apiRequest', () => {
     mockFetch.mockReset();
     globalThis.fetch = mockFetch as unknown as typeof fetch;
     mockedLoadToken.mockResolvedValue(null);
+    mockedLoadRefresh.mockResolvedValue(null);
+    mockedSaveToken.mockClear();
+    mockedSaveRefresh.mockClear();
   });
 
   it('ghép base URL với đường dẫn', async () => {
@@ -148,5 +157,80 @@ describe('apiRequest', () => {
     await expect(apiRequest('/users/me')).rejects.toThrow(
       'Thiếu EXPO_PUBLIC_API_BASE_URL. Kiểm tra file .env.',
     );
+  });
+});
+
+describe('tự gia hạn phiên khi gặp 401', () => {
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
+    mockFetch.mockReset();
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+    mockedLoadToken.mockResolvedValue('tok-cu');
+    mockedLoadRefresh.mockResolvedValue('rt-cu');
+    mockedSaveToken.mockClear();
+    mockedSaveRefresh.mockClear();
+  });
+
+  it('làm mới token rồi thử lại, người dùng không thấy gì cả', async () => {
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ accessToken: 'tok-moi', refreshToken: 'rt-moi' });
+    mockFetchOnce({ id: 'u-1' });
+
+    await expect(apiRequest('/users/me')).resolves.toMatchObject({ id: 'u-1' });
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(mockFetch.mock.calls[1][0]).toBe('https://api.test/auth/refresh');
+  });
+
+  it('lưu lại cả cặp token mới, vì token cũ đã bị máy chủ huỷ', async () => {
+    // May chu xoay refresh token moi lan dung. Giu lai cai cu la lan sau hong.
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ accessToken: 'tok-moi', refreshToken: 'rt-moi' });
+    mockFetchOnce({ id: 'u-1' });
+
+    await apiRequest('/users/me');
+
+    expect(mockedSaveToken).toHaveBeenCalledWith('tok-moi');
+    expect(mockedSaveRefresh).toHaveBeenCalledWith('rt-moi');
+  });
+
+  it('gửi lại yêu cầu cũ với token mới chứ không phải token đã hết hạn', async () => {
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ accessToken: 'tok-moi', refreshToken: 'rt-moi' });
+    mockFetchOnce({ id: 'u-1' });
+
+    await apiRequest('/users/me');
+
+    const lanCuoi = mockFetch.mock.calls[2][1] as FetchInit;
+    expect(lanCuoi.headers.Authorization).toBe('Bearer tok-moi');
+  });
+
+  it('đá người dùng ra khi chính lượt gia hạn cũng bị từ chối', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ message: 'Phiên đăng nhập không hợp lệ' }, { status: 401 });
+
+    await expect(apiRequest('/users/me')).rejects.toThrow(ApiError);
+    expect(handler).toHaveBeenCalled();
+    huy();
+  });
+
+  it('không thử gia hạn khi máy chưa có refresh token', async () => {
+    // Ban cu dang nhap tu truoc khong co refresh token. Dung goi /auth/refresh vo ich.
+    mockedLoadRefresh.mockResolvedValue(null);
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+
+    await expect(apiRequest('/users/me')).rejects.toThrow(ApiError);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('không tự gia hạn cho chính lượt đăng nhập, tránh vòng lặp', async () => {
+    mockFetchOnce({ message: 'Email hoặc mật khẩu không đúng' }, { status: 401 });
+
+    await expect(
+      apiRequest('/auth/login', { method: 'POST', body: {}, skipAuth: true }),
+    ).rejects.toThrow(ApiError);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

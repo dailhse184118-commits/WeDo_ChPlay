@@ -4,13 +4,20 @@ import {
   getMe,
   login as loginRequest,
   loginWithGoogle as loginWithGoogleRequest,
+  logout as logoutRequest,
   register as registerRequest,
 } from '../api/auth';
 import type { RegisterInput } from '../api/auth';
 import { onUnauthorized } from '../api/client';
 import type { UserProfile } from '../types';
 import { getGoogleIdToken, signOutFromGoogle } from './google-signin';
-import { clearToken, loadToken, saveToken } from './token-storage';
+import {
+  clearToken,
+  loadRefreshToken,
+  loadToken,
+  saveRefreshToken,
+  saveToken,
+} from './token-storage';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
 
@@ -31,6 +38,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
 
   const signOut = useCallback(async () => {
+    /*
+      Bảo máy chủ cắt phiên TRƯỚC khi xoá token khỏi máy — xoá trước thì không
+      còn gì để gửi lên. Bọc lại vì mất mạng không được phép giữ người dùng ở
+      lại trong app.
+    */
+    try {
+      const refreshToken = await loadRefreshToken();
+      if (refreshToken) {
+        await logoutRequest(refreshToken);
+      }
+    } catch {
+      // Máy chủ không phản hồi. Phiên vẫn hết hạn sau 60 ngày.
+    }
+
     await clearToken();
     setUser(null);
     setStatus('signedOut');
@@ -67,7 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(profile);
         setStatus('signedIn');
       } catch {
-        // Token hết hạn (hạn 7 ngày, không có refresh token) hoặc tài khoản đã bị xoá.
+        /*
+          Tầng API đã tự thử gia hạn bằng refresh token trước khi ném lỗi tới
+          đây. Tới được chỗ này nghĩa là cả refresh token cũng hết hạn hoặc bị
+          thu hồi, hoặc tài khoản đã bị xoá.
+        */
         await clearToken();
         if (!cancelled) setStatus('signedOut');
       }
@@ -81,9 +106,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Bất kỳ 401 nào từ tầng API cũng đá người dùng về màn đăng nhập.
   useEffect(() => onUnauthorized(() => void signOut()), [signOut]);
 
-  const establishSession = useCallback(async (accessToken: string) => {
+  const establishSession = useCallback(async (accessToken: string, refreshToken?: string) => {
     // Lưu token TRƯỚC khi gọi getMe, nếu không request sẽ thiếu header Authorization.
     await saveToken(accessToken);
+
+    /*
+      Máy chủ bản cũ chưa trả `refreshToken`. Thiếu thì bỏ qua chứ không được
+      để đăng nhập thất bại — app mới phải chạy được với cả backend chưa cập nhật.
+    */
+    if (refreshToken) {
+      await saveRefreshToken(refreshToken);
+    }
     const profile = await getMe();
     setUser(profile);
     setStatus('signedIn');
@@ -92,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(
     async (email: string, password: string) => {
       const response = await loginRequest(email, password);
-      await establishSession(response.accessToken);
+      await establishSession(response.accessToken, response.refreshToken);
     },
     [establishSession],
   );
@@ -103,13 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!idToken) return;
 
     const response = await loginWithGoogleRequest(idToken);
-    await establishSession(response.accessToken);
+    await establishSession(response.accessToken, response.refreshToken);
   }, [establishSession]);
 
   const signUp = useCallback(
     async (input: RegisterInput) => {
       const response = await registerRequest(input);
-      await establishSession(response.accessToken);
+      await establishSession(response.accessToken, response.refreshToken);
     },
     [establishSession],
   );

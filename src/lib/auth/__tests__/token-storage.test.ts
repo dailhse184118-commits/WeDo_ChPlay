@@ -1,11 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import {
-  saveToken,
-  loadToken,
-  clearToken,
-  saveActiveWorkspaceId,
-  loadActiveWorkspaceId,
-} from '../token-storage';
+import { clearToken, loadActiveWorkspaceId, loadRefreshToken, loadToken, saveActiveWorkspaceId, saveRefreshToken, saveToken } from '../token-storage';
 
 jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn(async () => undefined),
@@ -52,5 +46,27 @@ describe('token-storage', () => {
   it('trả null thay vì ném lỗi khi SecureStore hỏng', async () => {
     mockedStore.getItemAsync.mockRejectedValueOnce(new Error('keystore unavailable'));
     await expect(loadToken()).resolves.toBeNull();
+  });
+});
+
+describe('refresh token', () => {
+  it('ghi refresh token vào khoá riêng, không đè lên access token', async () => {
+    await saveRefreshToken('rt-abc');
+    expect(mockedStore.setItemAsync).toHaveBeenCalledWith('wedo.refreshToken', 'rt-abc');
+  });
+
+  it('đọc refresh token đã lưu', async () => {
+    mockedStore.getItemAsync.mockResolvedValueOnce('rt-abc');
+    await expect(loadRefreshToken()).resolves.toBe('rt-abc');
+  });
+
+  it('xoá token là xoá cả refresh token, không để sót phiên cũ', async () => {
+    /*
+      Sót refresh token sau khi đăng xuất là chuyện nguy hiểm: ai cầm máy sau đó
+      vẫn gia hạn được phiên của người trước.
+    */
+    await clearToken();
+
+    expect(mockedStore.deleteItemAsync).toHaveBeenCalledWith('wedo.refreshToken');
   });
 });
