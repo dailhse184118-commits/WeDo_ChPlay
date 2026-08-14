@@ -108,8 +108,13 @@ export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: T
           <Text style={[styles.title, done ? styles.titleDone : null]} numberOfLines={3}>
             {task.title}
           </Text>
+          {/*
+            Dòng phụ để hai dòng chứ không phải một: nó ghép tên dự án với hạn
+            chót, mà tên dự án dài là hạn chót bị cắt mất — đúng thứ người dùng
+            cần đọc nhất trên thẻ.
+          */}
           {subtitle ? (
-            <Text style={[styles.subtitle, overdue ? styles.subtitleOverdue : null]} numberOfLines={1}>
+            <Text style={[styles.subtitle, overdue ? styles.subtitleOverdue : null]} numberOfLines={2}>
               {subtitle}
             </Text>
           ) : null}

@@ -166,3 +166,25 @@ describe('TaskRow', () => {
     expect(getByTestId('task-icon-t1')).toBeTruthy();
   });
 });
+
+describe('dòng phụ của thẻ công việc', () => {
+  it('cho xuống hai dòng, vì tên dự án dài ăn mất hạn chót', async () => {
+    /*
+      Bắt được trên máy thật với dữ liệu thật: "Ra mắt sản phẩm WeDoMobile · Hạn
+      0…" — tên dự án chiếm hết một dòng nên hạn chót, thứ quan trọng nhất trên
+      thẻ, bị cắt cụt.
+    */
+    const { getByText } = await render(
+      <TaskRow
+        task={makeTask({
+          project: { id: 'p1', name: 'Ra mắt sản phẩm WeDoMobile' },
+          dueDate: iso(2026, 8, 2),
+        } as Partial<Task>)}
+        now={NOW}
+        onPress={() => {}}
+      />,
+    );
+
+    expect(getByText(/Ra mắt sản phẩm WeDoMobile/).props.numberOfLines).toBe(2);
+  });
+});
