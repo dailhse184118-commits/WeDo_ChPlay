@@ -23,13 +23,20 @@ function makeWorkspace(id: string) {
 }
 
 function Probe() {
-  const { status, active, create } = useWorkspace();
+  const { status, active, workspaces, create, switchTo } = useWorkspace();
   return (
     <>
       <Text testID="status">{status}</Text>
       <Text testID="active">{active?.id ?? 'khong'}</Text>
+      <Text testID="so-luong">{String(workspaces.length)}</Text>
       <Pressable testID="create" onPress={() => create('Nhóm đồ án')}>
         <Text>tao</Text>
+      </Pressable>
+      <Pressable testID="chuyen-sang-b" onPress={() => switchTo('b')}>
+        <Text>chuyen</Text>
+      </Pressable>
+      <Pressable testID="chuyen-sang-khong-co" onPress={() => switchTo('khong-ton-tai')}>
+        <Text>chuyen bay</Text>
       </Pressable>
     </>
   );
@@ -90,5 +97,41 @@ describe('WorkspaceProvider', () => {
     await waitFor(() => expect(getByTestId('status').props.children).toBe('ready'));
     expect(mockedApi.createWorkspace).toHaveBeenCalledWith({ name: 'Nhóm đồ án' });
     expect(mockedStorage.saveActiveWorkspaceId).toHaveBeenCalledWith('moi');
+  });
+});
+
+describe('chuyển không gian làm việc', () => {
+  beforeEach(() => {
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a'), makeWorkspace('b')]);
+    mockedStorage.loadActiveWorkspaceId.mockResolvedValue('a');
+    mockedStorage.saveActiveWorkspaceId.mockResolvedValue(undefined);
+  });
+
+  it('đổi workspace đang dùng sang cái được chọn', async () => {
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('active').props.children).toBe('a'));
+
+    await fireEvent.press(getByTestId('chuyen-sang-b'));
+
+    await waitFor(() => expect(getByTestId('active').props.children).toBe('b'));
+  });
+
+  it('nhớ lựa chọn xuống máy, để mở lại app không nhảy về cái cũ', async () => {
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('active').props.children).toBe('a'));
+
+    await fireEvent.press(getByTestId('chuyen-sang-b'));
+
+    await waitFor(() => expect(mockedStorage.saveActiveWorkspaceId).toHaveBeenCalledWith('b'));
+  });
+
+  it('bỏ qua id không có trong danh sách, không xoá trắng workspace đang dùng', async () => {
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('active').props.children).toBe('a'));
+
+    // Workspace vừa bị xoá ở máy khác, hoặc người dùng bị mời ra.
+    await fireEvent.press(getByTestId('chuyen-sang-khong-co'));
+
+    expect(getByTestId('active').props.children).toBe('a');
   });
 });

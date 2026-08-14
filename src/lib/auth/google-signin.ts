@@ -25,6 +25,24 @@ const CLIENT_ID_DU_PHONG =
 export const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || CLIENT_ID_DU_PHONG;
 
+/**
+ * Bảo Google quên phiên đã chọn trên máy này.
+ *
+ * Không gọi hàm này thì đăng xuất khỏi WeDo chỉ xoá token của WeDo, còn Google
+ * vẫn nhớ tài khoản — lần sau bấm "Tiếp tục với Google" là vào thẳng tài khoản
+ * cũ, không hiện hộp chọn. Người dùng không đổi được tài khoản.
+ *
+ * Nuốt mọi lỗi: người đăng nhập bằng email chưa hề chạm tới Google, và việc
+ * đăng xuất khỏi WeDo không được phụ thuộc vào việc Google có hợp tác hay không.
+ */
+export async function signOutFromGoogle(): Promise<void> {
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // Không có phiên Google nào để xoá. Đúng ý muốn.
+  }
+}
+
 function maNativeCuaLoi(error: unknown): string | null {
   if (error && typeof error === 'object' && 'code' in error) {
     const code = (error as { code: unknown }).code;

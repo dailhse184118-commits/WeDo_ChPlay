@@ -9,7 +9,7 @@ import {
 import type { RegisterInput } from '../api/auth';
 import { onUnauthorized } from '../api/client';
 import type { UserProfile } from '../types';
-import { getGoogleIdToken } from './google-signin';
+import { getGoogleIdToken, signOutFromGoogle } from './google-signin';
 import { clearToken, loadToken, saveToken } from './token-storage';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -34,6 +34,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearToken();
     setUser(null);
     setStatus('signedOut');
+
+    /*
+      Xoá luôn phiên phía Google, nếu không Google vẫn nhớ tài khoản: lần sau
+      bấm "Tiếp tục với Google" là vào thẳng tài khoản cũ, không hiện hộp chọn,
+      người dùng không đổi được tài khoản.
+
+      Làm SAU khi đã đăng xuất khỏi WeDo, và bọc lại: người đăng nhập bằng email
+      chưa hề chạm tới Google, và trục trặc phía Google không được phép giữ
+      người dùng ở lại trong app.
+    */
+    try {
+      await signOutFromGoogle();
+    } catch {
+      // Không có phiên Google, hoặc Google trục trặc. Người dùng đã ra khỏi app rồi.
+    }
   }, []);
 
   // Khôi phục phiên lúc khởi động.

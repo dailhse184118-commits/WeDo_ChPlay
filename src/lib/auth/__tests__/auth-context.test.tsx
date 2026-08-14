@@ -131,6 +131,36 @@ describe('AuthProvider', () => {
     expect(getByTestId('status').props.children).toBe('signedOut');
   });
 
+  it('bảo Google quên phiên khi đăng xuất, để còn đổi được tài khoản', async () => {
+    /*
+      Chỉ xoá token của WeDo thì Google vẫn nhớ tài khoản: bấm lại nút Google là
+      vào thẳng tài khoản cũ, không hiện hộp chọn.
+    */
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await fireEvent.press(getByTestId('signout'));
+
+    await waitFor(() => expect(mockedGoogle.signOutFromGoogle).toHaveBeenCalled());
+  });
+
+  it('vẫn đăng xuất khỏi WeDo được khi phía Google trục trặc', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+    mockedGoogle.signOutFromGoogle.mockRejectedValue(new Error('Google hỏng'));
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await fireEvent.press(getByTestId('signout'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+    expect(mockedStorage.clearToken).toHaveBeenCalled();
+  });
+
   it('xoá token khi đăng xuất', async () => {
     mockedStorage.loadToken.mockResolvedValue('tok-1');
     mockedAuthApi.getMe.mockResolvedValue(profile as never);

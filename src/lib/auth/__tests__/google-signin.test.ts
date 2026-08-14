@@ -1,6 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-import { GOOGLE_WEB_CLIENT_ID, getGoogleIdToken } from '../google-signin';
+import { GOOGLE_WEB_CLIENT_ID, getGoogleIdToken, signOutFromGoogle } from '../google-signin';
 
 // Lớp native là ranh giới duy nhất được giả lập, qua `__mocks__` ở gốc dự án.
 const mockedSignIn = GoogleSignin.signIn as jest.MockedFunction<typeof GoogleSignin.signIn>;
@@ -110,5 +110,34 @@ describe('lấy ID token của Google', () => {
     mockedSignIn.mockRejectedValue(new Error('Không thể kết nối máy chủ.'));
 
     await expect(getGoogleIdToken()).rejects.toThrow('Không thể kết nối máy chủ.');
+  });
+});
+
+describe('đăng xuất khỏi Google', () => {
+  const mockedGoogleSignOut = GoogleSignin.signOut as jest.MockedFunction<
+    typeof GoogleSignin.signOut
+  >;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('bảo Google quên phiên, để lần sau còn chọn được tài khoản khác', async () => {
+    mockedGoogleSignOut.mockResolvedValue(null);
+
+    await signOutFromGoogle();
+
+    expect(mockedGoogleSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('nuốt lỗi khi người dùng chưa từng đăng nhập bằng Google', async () => {
+    /*
+      Người đăng nhập bằng email chưa hề chạm tới Google. `signOut` của thư viện
+      có thể ném lỗi trong trường hợp đó, và không được để nó chặn việc đăng xuất
+      khỏi WeDo.
+    */
+    mockedGoogleSignOut.mockRejectedValue(new Error('SIGN_IN_REQUIRED'));
+
+    await expect(signOutFromGoogle()).resolves.toBeUndefined();
   });
 });

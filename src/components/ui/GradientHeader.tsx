@@ -16,6 +16,11 @@ interface GradientHeaderProps {
    * BẮT BUỘC truyền — vào từ thông báo thì không còn đường nào lùi lại.
    */
   onBack?: () => void;
+  /**
+   * Có truyền thì phụ đề thành nút, kèm mũi tên xuống. Dùng cho chỗ phụ đề là
+   * thứ đổi được — ví dụ tên không gian làm việc đang mở.
+   */
+  onPressSubtitle?: () => void;
   /** Bớt đệm dưới, cho màn hình cần nhường chỗ như trò chuyện. */
   dense?: boolean;
   /** Nội dung phụ nằm dưới tiêu đề, ví dụ ô tìm kiếm hoặc ba ô đếm. */
@@ -37,6 +42,7 @@ export function GradientHeader({
   subtitle,
   right,
   onBack,
+  onPressSubtitle,
   dense,
   children,
 }: GradientHeaderProps) {
@@ -76,7 +82,25 @@ export function GradientHeader({
           <Text style={styles.title} numberOfLines={2} maxFontSizeMultiplier={GIOI_HAN_CO_CHU}>
             {title}
           </Text>
-          {subtitle ? (
+          {subtitle && onPressSubtitle ? (
+            <Pressable
+              testID="header-subtitle-button"
+              accessibilityRole="button"
+              accessibilityLabel={`${subtitle}. Chạm để đổi`}
+              onPress={onPressSubtitle}
+              hitSlop={8}
+              style={({ pressed }) => [styles.subtitleRow, pressed ? styles.backPressed : null]}
+            >
+              <Text
+                style={styles.subtitle}
+                numberOfLines={1}
+                maxFontSizeMultiplier={GIOI_HAN_CO_CHU}
+              >
+                {subtitle}
+              </Text>
+              <Ionicons name="chevron-down" size={fontSize.sm} color={colors.onPrimary} />
+            </Pressable>
+          ) : subtitle ? (
             <Text style={styles.subtitle} numberOfLines={1} maxFontSizeMultiplier={GIOI_HAN_CO_CHU}>
               {subtitle}
             </Text>
@@ -112,6 +136,7 @@ const styles = StyleSheet.create({
   */
   title: { color: colors.onPrimary, fontSize: fontSize.lg, fontWeight: '700' },
   subtitle: { color: colors.onPrimary, fontSize: fontSize.xs, marginTop: spacing.xxs },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   right: { marginLeft: spacing.md },
   children: { marginTop: spacing.md },
 });

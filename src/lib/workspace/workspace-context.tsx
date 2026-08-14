@@ -13,6 +13,8 @@ export interface WorkspaceState {
   workspaces: Workspace[];
   refresh: () => Promise<void>;
   create: (name: string) => Promise<void>;
+  /** Đổi sang workspace khác. Id không có trong danh sách thì không làm gì. */
+  switchTo: (workspaceId: string) => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceState | null>(null);
@@ -45,13 +47,29 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     setStatus('ready');
   }, []);
 
+  const switchTo = useCallback(
+    async (workspaceId: string) => {
+      /*
+        Tìm trong danh sách đang có thay vì tin thẳng id gọi vào. Workspace có
+        thể vừa bị xoá ở máy khác, hoặc người dùng vừa bị mời ra — khi đó đặt
+        `active` thành null sẽ đá cả app về màn tạo workspace.
+      */
+      const chosen = workspaces.find((workspace) => workspace.id === workspaceId);
+      if (!chosen || chosen.id === active?.id) return;
+
+      setActive(chosen);
+      await saveActiveWorkspaceId(chosen.id);
+    },
+    [workspaces, active],
+  );
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
   const value = useMemo<WorkspaceState>(
-    () => ({ status, active, workspaces, refresh, create }),
-    [status, active, workspaces, refresh, create],
+    () => ({ status, active, workspaces, refresh, create, switchTo }),
+    [status, active, workspaces, refresh, create, switchTo],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
