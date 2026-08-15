@@ -46,3 +46,8 @@ example
 
 # cau hinh Claude Code rieng tung may
 .claude/settings.local.json
+
+# Cau hinh Firebase cho Android. Chua API key rieng cua du an; kho nay cong
+# khai nen giu ngoai git. Build tai may thi file da nam san o thu muc goc;
+# build tren EAS thi nap len bang bien moi truong dang tep.
+google-services.json
