@@ -9,6 +9,7 @@ import {
 } from '../api/auth';
 import type { RegisterInput } from '../api/auth';
 import { onUnauthorized } from '../api/client';
+import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
 import type { UserProfile } from '../types';
 import { getGoogleIdToken, signOutFromGoogle } from './google-signin';
 import {
@@ -43,6 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       còn gì để gửi lên. Bọc lại vì mất mạng không được phép giữ người dùng ở
       lại trong app.
     */
+    /*
+      Gỡ thiết bị TRƯỚC khi cắt phiên và xoá token: request này cần header xác
+      thực. Bỏ qua bước này thì người vừa đăng xuất vẫn nhận thông báo công việc
+      trên chiếc máy họ vừa trả lại.
+    */
+    await huyDangKyPushToken();
+
     try {
       const refreshToken = await loadRefreshToken();
       if (refreshToken) {
@@ -87,6 +95,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         setUser(profile);
         setStatus('signedIn');
+
+        /*
+          Đồng bộ lại cả ở đường khôi phục phiên, không chỉ lúc đăng nhập mới.
+          Expo cấp token mới sau khi cài lại app hoặc xoá dữ liệu, mà phần lớn
+          lần mở app đi qua đúng nhánh này chứ không qua màn đăng nhập.
+        */
+        void dongBoPushToken();
       } catch {
         /*
           Tầng API đã tự thử gia hạn bằng refresh token trước khi ném lỗi tới
@@ -120,6 +135,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const profile = await getMe();
     setUser(profile);
     setStatus('signedIn');
+
+    /*
+      Ghi nhận thiết bị để máy chủ đẩy thông báo xuống. Đặt sau khi đã vào được
+      app: hàm này tự nuốt lỗi, nhưng nó có thể hiện hộp xin quyền hệ thống, và
+      hỏi quyền trước khi người dùng thấy màn hình nào thì rất khó hiểu.
+    */
+    void dongBoPushToken();
   }, []);
 
   const signIn = useCallback(
