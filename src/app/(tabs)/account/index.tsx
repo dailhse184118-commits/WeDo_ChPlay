@@ -117,6 +117,14 @@ export default function AccountScreen() {
             nghiệm cần một đường báo lỗi từ trong app, không phải nhắn tin riêng.
           */}
           <MenuRow
+            testID="account-contributions"
+            icon="podium-outline"
+            tone="info"
+            label="Bảng đóng góp"
+            hint="Ai làm bao nhiêu, ai đúng hạn"
+            onPress={() => router.push('/account/contributions')}
+          />
+          <MenuRow
             testID="account-feedback"
             icon="chatbox-ellipses-outline"
             tone="info"

@@ -121,3 +121,33 @@ export function rejectReview(id: string, reason: string): Promise<Task> {
     body: { reason: trimmed },
   });
 }
+
+export interface DongGopThanhVien {
+  userId: string;
+  duocGiao: number;
+  hoanThanh: number;
+  dungHan: number;
+  treHan: number;
+  chuaXong: number;
+  daNop: number;
+  /** Số VIỆC từng bị trả lại, không phải số lần — máy chủ chỉ lưu lý do gần nhất. */
+  biTraLai: number;
+  /** `null` khi chưa hoàn thành việc nào có hạn, tức chưa có gì để đo. */
+  tyLeDungHanPhanTram: number | null;
+  user: { id: string; fullName: string; email: string; avatarUrl?: string | null } | null;
+}
+
+export interface BangDongGop {
+  generatedAt: string;
+  thanhVien: DongGopThanhVien[];
+}
+
+/** Ai làm bao nhiêu, ai đúng hạn, ai để việc trôi. */
+export function getContributions(
+  workspaceId: string,
+  projectId?: string,
+): Promise<BangDongGop> {
+  const params = new URLSearchParams({ workspaceId });
+  if (projectId) params.set('projectId', projectId);
+  return apiRequest<BangDongGop>(`/tasks/contributions?${params.toString()}`);
+}
