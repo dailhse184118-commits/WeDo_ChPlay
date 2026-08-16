@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { MessageBubble } from '../../../components/chat/MessageBubble';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
@@ -27,7 +27,10 @@ import {
   requestTaskSuggestion,
   sendProjectMessage,
 } from '../../../lib/api/chat';
+import { MA_HET_LUOT_AI, getEntitlements } from '../../../lib/api/entitlements';
 import { listProjects } from '../../../lib/api/projects';
+import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
+import { ApiError } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { createTaskFromMessage } from '../../../lib/chat/create-task-from-message';
 import { createLocalId } from '../../../lib/chat/local-id';
@@ -82,6 +85,23 @@ export default function ChatThreadScreen() {
   const [sheetSubmitting, setSheetSubmitting] = useState(false);
   const [suggestion, setSuggestion] = useState<ChatTaskSuggestion | undefined>(undefined);
   const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
+
+  /*
+    Hạn mức AI của tháng. Đây là thứ người dùng trả tiền để có, và cũng là thứ
+    duy nhất bị tính lượt — nhưng trước đây mobile không hề nhắc tới nó: người
+    dùng chạm trần rồi nhận một băng đỏ khó hiểu.
+
+    Đọc ở màn chat vì đây đúng là nơi tiêu lượt: nhấn giữ tin nhắn để AI đọc hộ.
+  */
+  const hanMucQuery = useQuery({
+    queryKey: ['entitlements', active?.id],
+    queryFn: () => getEntitlements(active?.id),
+    enabled: Boolean(active?.id),
+  });
+
+  const hanMuc = hanMucQuery.data
+    ? trangThaiHanMuc(hanMucQuery.data.usage.aiDetections)
+    : null;
 
   /**
    * Idempotency-Key cho lần xin đề xuất đang diễn ra.
@@ -276,14 +296,29 @@ export default function ChatThreadScreen() {
           newIdempotencyKey(messageId),
         );
         setSuggestion(result);
+        // Vừa tiêu một lượt. Đọc lại để con số hiện ra khớp thực tế ngay.
+        void hanMucQuery.refetch();
       } catch (err) {
-        setSheetError(err instanceof Error ? err.message : 'Không phân tích được tin nhắn.');
+        /*
+          Hết lượt là trường hợp riêng, không phải lỗi kỹ thuật. Máy chủ có trả
+          câu tiếng Việt nhưng thiếu hai thứ người dùng cần nhất: bao giờ có lại,
+          và còn cách nào khác để tạo việc. Đọc lại hạn mức rồi dựng câu đầy đủ.
+        */
+        if (err instanceof ApiError && err.code === MA_HET_LUOT_AI) {
+          const moi = await hanMucQuery.refetch();
+          const trangThai = moi.data
+            ? trangThaiHanMuc(moi.data.usage.aiDetections)
+            : null;
+          setSheetError(trangThai?.loiNhan ?? err.message);
+        } else {
+          setSheetError(err instanceof Error ? err.message : 'Không phân tích được tin nhắn.');
+        }
         setSuggestion({ hasTask: false, title: '', confidence: 'low' });
       } finally {
         setSheetLoading(false);
       }
     },
-    [projectId, newIdempotencyKey],
+    [projectId, newIdempotencyKey, hanMucQuery],
   );
 
   const handleConfirm = useCallback(
@@ -387,6 +422,17 @@ export default function ChatThreadScreen() {
       >
         {loadError ? <ErrorBanner message={loadError} /> : null}
 
+        {/*
+          Nhắc trước khi chạm trần, không phải sau. Người dùng đang giữa việc mà
+          bị chặn đột ngột thì khó chịu hơn nhiều so với biết trước còn mấy lượt.
+          Im lặng khi còn dư dả — nhắc quá sớm thì họ học cách phớt lờ.
+        */}
+        {hanMuc && hanMuc.muc !== 'du' ? (
+          <View style={hanMuc.muc === 'het' ? styles.hanMucHet : styles.hanMucSapHet}>
+            <Text style={styles.hanMucChu}>{hanMuc.loiNhan}</Text>
+          </View>
+        ) : null}
+
         <FlatList
           inverted
           data={display}
@@ -461,6 +507,25 @@ export default function ChatThreadScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
+  /*
+    Sắp hết dùng màu cảnh báo, hết hẳn dùng màu lỗi — đây là hai mức khác nhau
+    và người dùng cần phân biệt được bằng mắt trước khi kịp đọc chữ.
+  */
+  hanMucSapHet: {
+    backgroundColor: '#fff7e6',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.warning,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  hanMucHet: {
+    backgroundColor: '#fdecea',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.danger,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  hanMucChu: { fontSize: fontSize.sm, color: colors.text, lineHeight: fontSize.sm * 1.5 },
   // Nền khung chat xám nhạt để bong bóng trắng của người khác nổi lên.
   flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

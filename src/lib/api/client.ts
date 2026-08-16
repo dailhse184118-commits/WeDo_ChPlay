@@ -3,13 +3,33 @@ import { loadRefreshToken, loadToken, saveRefreshToken, saveToken } from '../aut
 export class ApiError extends Error {
   status: number;
 
-  constructor(message: string, status: number) {
+  /**
+   * Mã lỗi do máy chủ đặt tên, ví dụ `AI_DETECTION_LIMIT_REACHED`.
+   *
+   * Cần thiết vì mã HTTP không đủ để phân biệt: 429 có thể là hết hạn mức AI,
+   * cũng có thể là chặn tần suất chung. Xử lý hai thứ đó giống nhau thì người
+   * dùng bị bảo "hết lượt tháng này" trong khi thật ra chỉ cần bấm lại sau vài
+   * giây.
+   */
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
     super(message);
     // Cần thiết để `instanceof ApiError` vẫn đúng sau khi transpile.
     Object.setPrototypeOf(this, ApiError.prototype);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
+}
+
+/** Đọc `code` do máy chủ gắn kèm, nếu có. */
+function extractCode(payload: unknown): string | undefined {
+  if (payload && typeof payload === 'object' && 'code' in payload) {
+    const code = (payload as { code: unknown }).code;
+    if (typeof code === 'string') return code;
+  }
+  return undefined;
 }
 
 export interface ApiRequestOptions {
@@ -162,7 +182,11 @@ export async function apiRequest<T = unknown>(
     if (response.status === 401) {
       unauthorizedHandlers.forEach((handler) => handler());
     }
-    throw new ApiError(extractMessage(payload, response.status), response.status);
+    throw new ApiError(
+      extractMessage(payload, response.status),
+      response.status,
+      extractCode(payload),
+    );
   }
 
   return payload as T;
