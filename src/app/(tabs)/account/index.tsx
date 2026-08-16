@@ -113,6 +113,18 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/notification-settings')}
           />
           {/*
+            Đặt ngay dưới Cài đặt thông báo, trên Chính sách bảo mật: người thử
+            nghiệm cần một đường báo lỗi từ trong app, không phải nhắn tin riêng.
+          */}
+          <MenuRow
+            testID="account-feedback"
+            icon="chatbox-ellipses-outline"
+            tone="info"
+            label="Góp ý cho WeDo"
+            hint="Nói cho chúng tôi biết chỗ nào khó dùng"
+            onPress={() => router.push('/account/feedback')}
+          />
+          {/*
             Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
             chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.
           */}
