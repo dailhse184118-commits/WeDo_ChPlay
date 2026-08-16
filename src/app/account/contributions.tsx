@@ -1,7 +1,18 @@
-import React from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+
+import { coWeb, duongDanWeb } from '../../lib/web-link';
 
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../components/ui/GradientHeader';
@@ -53,9 +64,19 @@ function The({ nguoi, hang }: { nguoi: DongGopThanhVien; hang: number }) {
   );
 }
 
+/**
+ * Số người hiện sẵn trên mobile.
+ *
+ * Nhóm sinh viên thường 5–8 người, nhưng workspace lớn có thể vài chục. Đổ hết
+ * ra một màn hình dọc thì thành danh sách dài lê thê mà chẳng ai đọc tới cuối —
+ * ba người đầu đã trả lời xong câu hỏi "ai đang gánh".
+ */
+const SO_NGUOI_HIEN_SAN = 3;
+
 export default function ManDongGop() {
   const router = useRouter();
   const { active } = useWorkspace();
+  const [xemHet, setXemHet] = useState(false);
 
   const bang = useQuery({
     queryKey: ['contributions', active?.id],
@@ -96,9 +117,39 @@ export default function ManDongGop() {
             <Text style={styles.moDau}>
               Xếp theo số việc đã hoàn thành. Việc không đặt hạn không tính vào tỷ lệ đúng hạn.
             </Text>
-            {bang.data!.thanhVien.map((nguoi, i) => (
+
+            {(xemHet
+              ? bang.data!.thanhVien
+              : bang.data!.thanhVien.slice(0, SO_NGUOI_HIEN_SAN)
+            ).map((nguoi, i) => (
               <The key={nguoi.userId} nguoi={nguoi} hang={i + 1} />
             ))}
+
+            {!xemHet && bang.data!.thanhVien.length > SO_NGUOI_HIEN_SAN ? (
+              <Pressable onPress={() => setXemHet(true)} style={styles.nutPhu}>
+                <Text style={styles.nutPhuChu}>
+                  Xem thêm {bang.data!.thanhVien.length - SO_NGUOI_HIEN_SAN} người
+                </Text>
+              </Pressable>
+            ) : null}
+
+            {/*
+              Bảng đầy đủ có nhiều cột hơn hẳn — đọc trên màn hình dọc rất mệt.
+              Mobile giữ bản rút gọn, ai cần chi tiết thì mở web.
+
+              `duongDanWeb` chặn sẵn mọi đường dẫn dính thanh toán, nên nút này
+              không thể vô tình trở thành lối lách Google Play Billing.
+            */}
+            {coWeb() ? (
+              <Pressable
+                onPress={() => void Linking.openURL(duongDanWeb('workspace'))}
+                style={styles.nutWeb}
+                accessibilityRole="link"
+              >
+                <Ionicons name="open-outline" size={16} color={colors.primary} />
+                <Text style={styles.nutWebChu}>Xem đầy đủ trên web</Text>
+              </Pressable>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -147,4 +198,18 @@ const styles = StyleSheet.create({
   oSo: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
   oNhan: { fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center' },
   traLai: { fontSize: fontSize.xs, color: colors.warning },
+  nutPhu: { alignItems: 'center', paddingVertical: spacing.sm },
+  nutPhuChu: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '500' },
+  nutWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  nutWebChu: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '500' },
 });
