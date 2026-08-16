@@ -4,7 +4,6 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   View,
@@ -416,10 +415,19 @@ export default function ChatThreadScreen() {
       {/* Trạng thái "đang gõ" vẫn nằm sát ô soạn tin, không đưa lên header. */}
       <GradientHeader title={projectName} onBack={goBack} dense />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      {/*
+        `behavior="padding"` cho CẢ Android, không chỉ iOS.
+
+        Trước đây Android để `undefined`, tức phó mặc cho hệ điều hành tự thu
+        cửa sổ. Cách đó chạy tốt cho tới khi bật `edgeToEdgeEnabled` — từ Expo
+        SDK 53 app vẽ tràn ra sau thanh hệ thống, Android không thu cửa sổ như
+        cũ nữa, và ô soạn tin nằm khuất hẳn sau bàn phím. Người dùng gõ mà không
+        nhìn thấy mình gõ gì.
+
+        Không cần `keyboardVerticalOffset`: thanh tab đã bị ẩn ở màn này (khai
+        trong (tabs)/_layout.tsx) nên dưới ô soạn tin không còn gì chen vào.
+      */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         {loadError ? <ErrorBanner message={loadError} /> : null}
 
         {/*

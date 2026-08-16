@@ -122,16 +122,24 @@ function TabsWithWorkspace() {
       />
 
       {/*
-        Mọi file dưới (tabs)/ đều tự thành một tab. Hai route động này chỉ được mở
-        từ danh sách, nên phải ẩn khỏi thanh tab bằng href: null.
+        Mọi file dưới (tabs)/ đều TỰ ĐỘNG thành một tab, kể cả màn chỉ mở từ nơi
+        khác. Quên khai `href: null` là nó hiện thành tab với tên file làm nhãn và
+        icon rỗng — đúng chuyện đã xảy ra với `tasks/new`.
+
+        Riêng phòng chat còn ẩn luôn thanh tab: đó là màn hình toàn phần, giành
+        lại chỗ cho tin nhắn và gỡ hẳn cảnh bàn phím phải chen với thanh tab.
       */}
-      <Tabs.Screen name="chat/[projectId]" options={{ href: null }} />
+      <Tabs.Screen
+        name="chat/[projectId]"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
       <Tabs.Screen name="tasks/[taskId]" options={{ href: null }} />
+      <Tabs.Screen name="tasks/new" options={{ href: null }} />
 
       <Tabs.Screen
         name="tasks/index"
         options={{
-          title: 'Việc của tôi',
+          title: 'Công việc',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'checkbox' : 'checkbox-outline'}
