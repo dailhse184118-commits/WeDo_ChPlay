@@ -142,7 +142,7 @@ export default function ManDongGop() {
             */}
             {coWeb() ? (
               <Pressable
-                onPress={() => void Linking.openURL(duongDanWeb('workspace'))}
+                onPress={() => void Linking.openURL(duongDanWeb('contributions'))}
                 style={styles.nutWeb}
                 accessibilityRole="link"
               >
