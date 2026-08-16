@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
+  Pressable,
   SectionList,
   StyleSheet,
   Text,
@@ -94,7 +95,21 @@ export default function MyTasksScreen() {
 
   return (
     <View style={styles.screen}>
-      <GradientHeader title="Việc của tôi" subtitle={active?.name}>
+      <GradientHeader
+        title="Việc của tôi"
+        subtitle={active?.name}
+        right={
+          <Pressable
+            onPress={() => router.push('/tasks/new')}
+            style={styles.nutTao}
+            accessibilityRole="button"
+            accessibilityLabel="Tạo công việc mới"
+            testID="nut-mo-tao-task"
+          >
+            <Ionicons name="add" size={scale(22)} color={colors.surface} />
+          </Pressable>
+        }
+      >
         <View style={styles.counts}>
           <CountBox value={counts.total} label="Đang mở" />
           <CountBox value={counts.pending} label="Chờ nhận" />
@@ -156,13 +171,14 @@ export default function MyTasksScreen() {
                   </View>
                   <Text style={styles.emptyTitle}>Chưa có việc nào cho bạn</Text>
                   {/*
-                    Câu này dạy luôn cử chỉ nhấn giữ. Đó là tính năng cốt lõi của app
-                    nhưng không có chỗ nào nhìn thấy được, nên người dùng mới sẽ không
-                    tự tìm ra nếu trạng thái rỗng không nói.
+                    Nêu cả hai đường tạo việc. Nút dấu cộng thì nhìn thấy được,
+                    còn cử chỉ nhấn giữ trong chat là tính năng cốt lõi nhưng
+                    không có chỗ nào lộ ra — người dùng mới sẽ không tự tìm thấy
+                    nếu trạng thái rỗng không nói.
                   */}
                   <Text style={styles.emptyBody}>
-                    Khi nhóm chốt việc trong chat, bạn nhấn giữ tin nhắn đó để WeDo tạo công việc.
-                    Việc giao cho bạn sẽ xuất hiện ở đây.
+                    Bấm dấu cộng ở trên để thêm việc mới. Hoặc khi nhóm chốt việc trong chat, nhấn
+                    giữ tin nhắn đó để WeDo tạo công việc. Việc giao cho bạn sẽ xuất hiện ở đây.
                   </Text>
                 </View>
               )
@@ -186,6 +202,15 @@ export default function MyTasksScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
+  // Nền mờ trên dải gradient của header, cùng lối với các nút khác đặt ở đó.
+  nutTao: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
   counts: { flexDirection: 'row' },
   countBox: {
     flex: 1,

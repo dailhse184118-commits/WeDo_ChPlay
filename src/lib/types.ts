@@ -55,6 +55,17 @@ export interface Workspace {
   owner?: UserSummary;
 }
 
+/**
+ * Workspace kèm thành viên, do `GET /workspaces/:id` trả về.
+ *
+ * Tách khỏi `Workspace` vì danh sách `GET /workspaces` KHÔNG kèm thành viên —
+ * gộp làm một kiểu thì `members` luôn phải tuỳ chọn và chỗ nào cũng phải kiểm
+ * lại, dễ quên.
+ */
+export interface WorkspaceChiTiet extends Workspace {
+  members: Array<{ id: string; role: string; user: UserSummary }>;
+}
+
 /** Một không gian làm việc đang chặn việc xoá tài khoản. */
 export interface DeletionBlocker {
   workspaceId: string;
