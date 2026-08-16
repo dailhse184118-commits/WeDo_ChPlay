@@ -20,6 +20,11 @@ module.exports = {
     signIn: jest.fn(),
     signOut: jest.fn(),
   },
+  /*
+    Giữ ĐÚNG hình dạng của thư viện thật: không có `DEVELOPER_ERROR` ở đây, vì
+    thư viện cũng không xuất hằng số đó. Thêm vào cho tiện là dựng lại một thế
+    giới không tồn tại — đúng cái bẫy đã che lỗi mã "10" ngày 15/08/2026.
+  */
   statusCodes: Object.freeze({
     SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
     IN_PROGRESS: 'IN_PROGRESS',

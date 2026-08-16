@@ -88,7 +88,14 @@ describe('lấy ID token của Google', () => {
       kiểm thử đọc "DEVELOPER_ERROR" thì không biết làm gì, còn chủ dự án đọc
       câu này là biết mở Google Cloud Console.
     */
-    mockedSignIn.mockRejectedValue(nativeError('DEVELOPER_ERROR'));
+    /*
+      Mớm ĐÚNG mã Android trả về là '10', không phải tên tiếng Anh.
+
+      Thư viện không xuất hằng số cho mã này nên không có gì để tham chiếu. Test
+      cũ mớm 'DEVELOPER_ERROR' — chuỗi Android không bao giờ trả về — nên nó xanh
+      trong khi máy thật thì hỏng.
+    */
+    mockedSignIn.mockRejectedValue(nativeError('10'));
 
     await expect(getGoogleIdToken()).rejects.toThrow(
       /SHA-1.*Publish|Publish.*SHA-1/,
