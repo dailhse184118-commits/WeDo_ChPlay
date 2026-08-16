@@ -10,6 +10,7 @@ import {
 import type { RegisterInput } from '../api/auth';
 import { onUnauthorized } from '../api/client';
 import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
+import { xoaCacheBenBi } from '../query';
 import type { UserProfile } from '../types';
 import { getGoogleIdToken, signOutFromGoogle } from './google-signin';
 import {
@@ -61,6 +62,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     await clearToken();
+
+    /*
+      Xoá cache đã ghi xuống đĩa. Nó chứa công việc, tin nhắn và tên dự án của
+      người vừa dùng — không xoá thì người đăng nhập tiếp theo trên cùng máy sẽ
+      thấy dữ liệu của người trước ngay khi mở app, trước cả khi lượt gọi mạng
+      đầu tiên kịp trả về.
+    */
+    await xoaCacheBenBi();
+
     setUser(null);
     setStatus('signedOut');
 

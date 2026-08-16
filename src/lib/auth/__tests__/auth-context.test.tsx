@@ -5,15 +5,18 @@ import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '../auth-context';
 import * as authApi from '../../api/auth';
 import * as googleSignIn from '../google-signin';
+import * as query from '../../query';
 import * as tokenStorage from '../token-storage';
 
 jest.mock('../../api/auth');
 jest.mock('../token-storage');
 jest.mock('../google-signin');
+jest.mock('../../query', () => ({ xoaCacheBenBi: jest.fn() }));
 
 const mockedAuthApi = authApi as jest.Mocked<typeof authApi>;
 const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
 const mockedGoogle = googleSignIn as jest.Mocked<typeof googleSignIn>;
+const mockedQuery = query as jest.Mocked<typeof query>;
 
 const profile = { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' };
 
@@ -238,5 +241,22 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
     expect(mockedStorage.clearToken).toHaveBeenCalled();
+  });
+
+  it('xoá cache đã ghi xuống đĩa khi đăng xuất', async () => {
+    /*
+      Cache bền bỉ chứa công việc, tin nhắn và tên dự án của người vừa dùng.
+      Không xoá thì người đăng nhập tiếp theo trên cùng máy thấy dữ liệu của
+      người trước ngay khi mở app, trước cả khi lượt gọi mạng đầu tiên trả về.
+    */
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await fireEvent.press(getByTestId('signout'));
+
+    await waitFor(() => expect(mockedQuery.xoaCacheBenBi).toHaveBeenCalled());
   });
 });
