@@ -141,6 +141,23 @@ function TabsWithWorkspace() {
           ),
         }}
       />
+      {/*
+        Đặt giữa Việc của tôi và Thông báo: lịch là thứ người dùng xem cùng nhịp
+        với danh sách việc, không phải thứ tra cứu thỉnh thoảng như Tài khoản.
+      */}
+      <Tabs.Screen
+        name="calendar/index"
+        options={{
+          title: 'Lịch',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'calendar' : 'calendar-outline'}
+              color={color}
+              size={sizes.icon}
+            />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="notifications/index"
         options={{
