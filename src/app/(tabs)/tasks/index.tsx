@@ -118,7 +118,12 @@ export default function MyTasksScreen() {
       </GradientHeader>
 
       <View style={styles.body}>
-        {tasksQuery.isError ? (
+        {/*
+          Chỉ báo lỗi to khi KHÔNG có gì để xem. Còn dữ liệu cũ trong cache thì
+          lần gọi hỏng không chặn đường, dội băng đỏ lên là làm người dùng tưởng
+          app hỏng trong khi danh sách vẫn đọc được.
+        */}
+        {tasksQuery.isError && !tasksQuery.data ? (
           <ErrorBanner
             message={
               tasksQuery.error instanceof Error
@@ -126,6 +131,12 @@ export default function MyTasksScreen() {
                 : 'Không tải được danh sách công việc.'
             }
           />
+        ) : null}
+
+        {tasksQuery.isError && tasksQuery.data ? (
+          <Text style={styles.ngoaiTuyen}>
+            Đang xem dữ liệu đã lưu. Kết nối lại để cập nhật.
+          </Text>
         ) : null}
         {actionError ? <ErrorBanner message={actionError} /> : null}
 
@@ -210,6 +221,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  ngoaiTuyen: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingTop: spacing.sm,
   },
   counts: { flexDirection: 'row' },
   countBox: {

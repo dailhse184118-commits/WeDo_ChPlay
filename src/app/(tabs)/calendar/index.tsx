@@ -88,12 +88,23 @@ export default function ManLich() {
       <GradientHeader title="Lịch" subtitle={active?.name} />
 
       <View style={styles.than}>
-        {lich.isError ? (
+        {/*
+          Chỉ báo lỗi to khi KHÔNG có gì để xem. Còn dữ liệu cũ trong cache thì
+          lần gọi hỏng không phải chuyện chặn đường — dội một băng đỏ lên trên
+          danh sách vẫn đọc được là làm người dùng tưởng app hỏng.
+        */}
+        {lich.isError && !lich.data ? (
           <ErrorBanner
             message={
               lich.error instanceof Error ? lich.error.message : 'Không tải được lịch.'
             }
           />
+        ) : null}
+
+        {lich.isError && lich.data ? (
+          <Text style={styles.ngoaiTuyen}>
+            Đang xem dữ liệu đã lưu. Kết nối lại để cập nhật.
+          </Text>
         ) : null}
 
         {lich.isLoading ? (
@@ -144,6 +155,12 @@ const styles = StyleSheet.create({
   than: { flex: 1, paddingHorizontal: spacing.lg },
   giua: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   danhSach: { paddingVertical: spacing.md, gap: spacing.sm },
+  ngoaiTuyen: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingTop: spacing.sm,
+  },
   tieuDeNgay: {
     fontSize: fontSize.sm,
     fontWeight: '600',

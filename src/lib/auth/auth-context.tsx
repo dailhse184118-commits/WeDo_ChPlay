@@ -8,7 +8,7 @@ import {
   register as registerRequest,
 } from '../api/auth';
 import type { RegisterInput } from '../api/auth';
-import { onUnauthorized } from '../api/client';
+import { ApiError, onUnauthorized } from '../api/client';
 import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
 import { xoaCacheBenBi } from '../query';
 import type { UserProfile } from '../types';
@@ -16,9 +16,11 @@ import { getGoogleIdToken, signOutFromGoogle } from './google-signin';
 import {
   clearToken,
   loadRefreshToken,
+  loadUserProfile,
   loadToken,
   saveRefreshToken,
   saveToken,
+  saveUserProfile,
 } from './token-storage';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -105,6 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         setUser(profile);
         setStatus('signedIn');
+        // Làm mới bản lưu mỗi lần vào được, để lần mở app ngoại tuyến sau dùng
+        // hồ sơ mới nhất chứ không phải bản từ lúc đăng nhập lần đầu.
+        void saveUserProfile(profile);
 
         /*
           Đồng bộ lại cả ở đường khôi phục phiên, không chỉ lúc đăng nhập mới.
@@ -112,7 +117,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           lần mở app đi qua đúng nhánh này chứ không qua màn đăng nhập.
         */
         void dongBoPushToken();
-      } catch {
+      } catch (err) {
+        /*
+          MẤT MẠNG KHÔNG PHẢI LÀ HẾT PHIÊN.
+
+          Trước đây chỗ này bắt mọi lỗi rồi xoá token. Hệ quả: mở app lúc không
+          có sóng — thang máy, tàu điện, hết dung lượng — là bị đăng xuất và mất
+          luôn token, phải nhập mật khẩu lại. Cache dữ liệu ghi xuống máy cũng
+          thành vô dụng vì người dùng bị chặn ngay ở cổng, không màn nào kịp hiện.
+
+          `status === 0` là lỗi kết nối do tầng API đặt ra. Lúc đó giữ nguyên
+          token và khôi phục hồ sơ đã lưu, để người dùng vào được app và đọc dữ
+          liệu ngoại tuyến.
+        */
+        const matMang = err instanceof ApiError && err.status === 0;
+
+        if (matMang) {
+          const luuSan = await loadUserProfile();
+          if (cancelled) return;
+
+          if (luuSan) {
+            setUser(luuSan);
+            setStatus('signedIn');
+            return;
+          }
+          /*
+            Chưa từng lưu hồ sơ — tài khoản đăng nhập từ bản cũ hơn bản có tính
+            năng này. Không có gì để dựng màn hình, đành về màn đăng nhập, nhưng
+            GIỮ token để lần sau có mạng thì vào thẳng.
+          */
+          setStatus('signedOut');
+          return;
+        }
+
         /*
           Tầng API đã tự thử gia hạn bằng refresh token trước khi ném lỗi tới
           đây. Tới được chỗ này nghĩa là cả refresh token cũng hết hạn hoặc bị
@@ -145,6 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const profile = await getMe();
     setUser(profile);
     setStatus('signedIn');
+    // Lưu để lần mở app sau không có mạng vẫn vào được.
+    await saveUserProfile(profile);
 
     /*
       Ghi nhận thiết bị để máy chủ đẩy thông báo xuống. Đặt sau khi đã vào được

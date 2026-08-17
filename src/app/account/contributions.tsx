@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import * as WebBrowser from 'expo-web-browser';
 
 import { coWeb, duongDanWeb } from '../../lib/web-link';
 
@@ -94,7 +94,11 @@ export default function ManDongGop() {
       />
 
       <ScrollView style={styles.than} contentContainerStyle={styles.thanNoiDung}>
-        {bang.isError ? (
+        {/*
+          Chỉ báo lỗi to khi KHÔNG có gì để xem. Còn dữ liệu cũ trong cache thì
+          lần gọi hỏng không chặn đường.
+        */}
+        {bang.isError && !bang.data ? (
           <ErrorBanner
             message={
               bang.error instanceof Error
@@ -104,11 +108,23 @@ export default function ManDongGop() {
           />
         ) : null}
 
+        {bang.isError && bang.data ? (
+          <Text style={styles.ngoaiTuyen}>
+            Đang xem dữ liệu đã lưu. Kết nối lại để cập nhật.
+          </Text>
+        ) : null}
+
         {bang.isLoading ? (
           <View style={styles.giua}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        ) : (bang.data?.thanhVien.length ?? 0) === 0 ? (
+        ) : bang.isError && !bang.data ? null : (bang.data?.thanhVien.length ?? 0) === 0 ? (
+          /*
+            Chỉ nói "chưa có việc nào" khi máy chủ THẬT SỰ trả về danh sách rỗng.
+            Trước đây nhánh này còn nuốt cả trường hợp lỗi, nên mất mạng lại báo
+            là nhóm chưa giao việc cho ai — sai hoàn toàn và làm người dùng hoang
+            mang về dữ liệu của chính mình.
+          */
           <Text style={styles.trong}>
             Chưa có việc nào được giao cho ai trong không gian làm việc này.
           </Text>
@@ -142,7 +158,7 @@ export default function ManDongGop() {
             */}
             {coWeb() ? (
               <Pressable
-                onPress={() => void Linking.openURL(duongDanWeb('contributions'))}
+                onPress={() => void WebBrowser.openBrowserAsync(duongDanWeb('contributions'))}
                 style={styles.nutWeb}
                 accessibilityRole="link"
               >
@@ -163,6 +179,7 @@ const styles = StyleSheet.create({
   thanNoiDung: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   giua: { paddingTop: spacing.xl * 2, alignItems: 'center' },
   moDau: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: fontSize.xs * 1.6 },
+  ngoaiTuyen: { fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center' },
   trong: {
     fontSize: fontSize.sm,
     color: colors.textMuted,

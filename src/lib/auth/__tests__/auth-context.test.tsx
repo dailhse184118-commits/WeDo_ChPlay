@@ -3,6 +3,7 @@ import { Text, Pressable } from 'react-native';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import { AuthProvider, useAuth } from '../auth-context';
+import { ApiError } from '../../api/client';
 import * as authApi from '../../api/auth';
 import * as googleSignIn from '../google-signin';
 import * as query from '../../query';
@@ -84,6 +85,47 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
     expect(mockedStorage.clearToken).toHaveBeenCalled();
+  });
+
+  it('KHÔNG đăng xuất khi chỉ là mất mạng, mà dùng hồ sơ đã lưu', async () => {
+    /*
+      Trước đây đường khôi phục phiên bắt mọi lỗi rồi xoá token. Mở app lúc không
+      có sóng — thang máy, tàu điện, hết dung lượng — là bị đăng xuất và mất luôn
+      token, phải nhập mật khẩu lại. Cache dữ liệu ghi xuống máy cũng thành vô
+      dụng vì người dùng bị chặn ngay ở cổng.
+    */
+    mockedStorage.loadToken.mockResolvedValue('con-tot');
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.getMe.mockRejectedValue(
+      new ApiError('Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.', 0),
+    );
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedStorage.clearToken).not.toHaveBeenCalled();
+  });
+
+  it('về màn đăng nhập khi mất mạng mà chưa từng lưu hồ sơ, nhưng GIỮ token', async () => {
+    // Tài khoản đăng nhập từ bản cũ hơn bản có tính năng này: không có gì để
+    // dựng màn hình, nhưng xoá token thì lần sau có mạng vẫn phải nhập lại.
+    mockedStorage.loadToken.mockResolvedValue('con-tot');
+    mockedStorage.loadUserProfile.mockResolvedValue(null);
+    mockedAuthApi.getMe.mockRejectedValue(new ApiError('mất mạng', 0));
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+    expect(mockedStorage.clearToken).not.toHaveBeenCalled();
+  });
+
+  it('lưu hồ sơ để lần mở app ngoại tuyến sau còn dùng', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    await renderProbe();
+
+    await waitFor(() => expect(mockedStorage.saveUserProfile).toHaveBeenCalledWith(profile));
   });
 
   it('lưu token rồi mới chuyển sang signedIn khi đăng nhập', async () => {
