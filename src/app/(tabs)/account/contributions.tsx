@@ -12,13 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
 
-import { coWeb, duongDanWeb } from '../../lib/web-link';
+import { coWeb, duongDanWeb } from '../../../lib/web-link';
 
-import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { GradientHeader } from '../../components/ui/GradientHeader';
-import { getContributions, type DongGopThanhVien } from '../../lib/api/tasks';
-import { useWorkspace } from '../../lib/workspace/workspace-context';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { ErrorBanner } from '../../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { getContributions, type DongGopThanhVien } from '../../../lib/api/tasks';
+import { useWorkspace } from '../../../lib/workspace/workspace-context';
+import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
 function O({ so, nhan }: { so: number | string; nhan: string }) {
   return (

@@ -135,6 +135,14 @@ function TabsWithWorkspace() {
       />
       <Tabs.Screen name="tasks/[taskId]" options={{ href: null }} />
       <Tabs.Screen name="tasks/new" options={{ href: null }} />
+      {/*
+        Bảng đóng góp PHẢI nằm trong nhóm này, không phải ở src/app/account/.
+        Nó gọi `useWorkspace()`, mà `WorkspaceProvider` chỉ được gắn ở layout này
+        — đặt ngoài là hook ném lỗi giữa lúc render và app chết hẳn, văng về màn
+        hình chính. Đường dẫn vẫn là /account/contributions vì (tabs) chỉ là
+        nhóm, không nằm trong URL.
+      */}
+      <Tabs.Screen name="account/contributions" options={{ href: null }} />
 
       <Tabs.Screen
         name="tasks/index"
