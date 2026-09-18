@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -87,10 +86,18 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.screen}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      {/*
+        `KeyboardAvoidingView` này lấy từ `react-native-keyboard-controller`.
+
+        Bản của React Native dựa vào sự kiện `keyboardDidShow` để biết bàn phím
+        cao bao nhiêu; dưới edge-to-edge, bàn phím của mỗi hãng báo mỗi kiểu nên
+        ô nhập bị che trên máy này mà không che trên máy khác. Bản này đọc thẳng
+        `WindowInsetsAnimation` của hệ điều hành, không còn phụ thuộc máy.
+
+        Nhờ vậy `behavior="padding"` dùng được cho cả Android, không phải tách
+        theo nền tảng như trước.
+      */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding" automaticOffset>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"

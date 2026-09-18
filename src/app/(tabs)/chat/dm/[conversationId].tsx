@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
   StyleSheet,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { MessageBubble } from '../../../../components/chat/MessageBubble';
 import { EmptyChat } from '../../../../components/chat/EmptyChat';
@@ -91,15 +92,9 @@ export default function ManTinNhanRieng() {
     <View style={styles.man}>
       <GradientHeader title={ten || 'Tin nhắn'} onBack={() => router.back()} dense />
 
-      {/*
-        `behavior="padding"` cho CẢ Android, giống màn chat dự án. Từ khi bật
-        `edgeToEdgeEnabled`, Android không tự thu cửa sổ nữa và ô soạn tin nằm
-        khuất hẳn sau bàn phím.
-
-        Không cần `keyboardVerticalOffset`: thanh tab đã bị ẩn ở màn này (khai
-        trong (tabs)/_layout.tsx) nên dưới ô soạn tin không còn gì chen vào.
-      */}
-      <KeyboardAvoidingView style={styles.than} behavior="padding">
+      {/* Cùng lý do đã ghi ở màn chat dự án: bản của thư viện đọc bàn phím từ
+          hệ điều hành, không qua sự kiện mà mỗi hãng báo mỗi kiểu. */}
+      <KeyboardAvoidingView style={styles.than} behavior="padding" automaticOffset>
         {loi ? <ErrorBanner message={loi} /> : null}
 
         {messagesQuery.isLoading && !messagesQuery.data ? (

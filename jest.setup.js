@@ -12,3 +12,12 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+
+/*
+  `react-native-keyboard-controller` đọc bàn phím qua API native của Android
+  (`WindowInsetsAnimation`), thứ không tồn tại trong Jest. Thư viện có sẵn mock
+  chính thức — dùng nó, đừng tự viết.
+*/
+jest.mock('react-native-keyboard-controller', () =>
+  require('react-native-keyboard-controller/jest'),
+);

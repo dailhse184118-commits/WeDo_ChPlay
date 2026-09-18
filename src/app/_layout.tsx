@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '../lib/auth/auth-context';
@@ -57,18 +58,26 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       {/*
-        Khôi phục cache từ đĩa trước khi dựng cây màn hình, để mở app lúc không
-        có mạng vẫn thấy dữ liệu lần trước thay vì màn hình trắng.
+        Bọc cả app để bàn phím được đọc từ `WindowInsetsAnimation` của Android —
+        nguồn sự thật của hệ điều hành — thay vì sự kiện `keyboardDidShow` mà
+        bàn phím của mỗi hãng báo mỗi kiểu khi chạy edge-to-edge. Đó là nguyên
+        nhân ô soạn tin bị che trên một số máy, người kiểm thử báo 18/09/2026.
       */}
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{ persister: cacheBenBi, maxAge: HAN_CACHE_BEN_BI_MS }}
-      >
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }} />
-        </AuthProvider>
-      </PersistQueryClientProvider>
+      <KeyboardProvider>
+        {/*
+          Khôi phục cache từ đĩa trước khi dựng cây màn hình, để mở app lúc không
+          có mạng vẫn thấy dữ liệu lần trước thay vì màn hình trắng.
+        */}
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{ persister: cacheBenBi, maxAge: HAN_CACHE_BEN_BI_MS }}
+        >
+          <AuthProvider>
+            <StatusBar style="dark" />
+            <Stack screenOptions={{ headerShown: false }} />
+          </AuthProvider>
+        </PersistQueryClientProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

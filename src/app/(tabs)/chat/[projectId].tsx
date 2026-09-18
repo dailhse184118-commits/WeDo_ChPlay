@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   StyleSheet,
   Text,
   View,
@@ -12,6 +11,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { MessageBubble } from '../../../components/chat/MessageBubble';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+
 import { EmptyChat } from '../../../components/chat/EmptyChat';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
 import {
@@ -417,18 +418,21 @@ export default function ChatThreadScreen() {
       <GradientHeader title={projectName} onBack={goBack} dense />
 
       {/*
-        `behavior="padding"` cho CẢ Android, không chỉ iOS.
+        `KeyboardAvoidingView` này lấy từ `react-native-keyboard-controller`,
+        KHÔNG phải từ `react-native`.
 
-        Trước đây Android để `undefined`, tức phó mặc cho hệ điều hành tự thu
-        cửa sổ. Cách đó chạy tốt cho tới khi bật `edgeToEdgeEnabled` — từ Expo
-        SDK 53 app vẽ tràn ra sau thanh hệ thống, Android không thu cửa sổ như
-        cũ nữa, và ô soạn tin nằm khuất hẳn sau bàn phím. Người dùng gõ mà không
-        nhìn thấy mình gõ gì.
+        Bản của React Native tính phần chồng lấn bằng
+        `frame.y + frame.height - keyboardY`, tức phụ thuộc vào việc Android báo
+        đúng khung bàn phím qua `keyboardDidShow`. Dưới edge-to-edge, bàn phím
+        của mỗi hãng báo mỗi kiểu, nên ô soạn tin bị che trên một số máy mà
+        không phải máy khác — người kiểm thử báo 18/09/2026.
 
-        Không cần `keyboardVerticalOffset`: thanh tab đã bị ẩn ở màn này (khai
-        trong (tabs)/_layout.tsx) nên dưới ô soạn tin không còn gì chen vào.
+        Bản này đọc thẳng `WindowInsetsAnimation` của hệ điều hành nên không còn
+        phụ thuộc cấu hình máy. `automaticOffset` để nó tự đo vị trí của chính
+        mình dưới header gradient, khỏi phải chỉnh `keyboardVerticalOffset` bằng
+        tay cho từng màn.
       */}
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <KeyboardAvoidingView style={styles.flex} behavior="padding" automaticOffset>
         {loadError ? <ErrorBanner message={loadError} /> : null}
 
         {/*
