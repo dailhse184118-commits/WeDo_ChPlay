@@ -41,6 +41,7 @@ import { createLocalId } from '../../../lib/chat/local-id';
 import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
 import { useHeaderTep } from '../../../lib/chat/use-header-tep';
+import { datManDangMo, quenManDangMo } from '../../../lib/notifications/man-dang-mo';
 import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
@@ -138,6 +139,17 @@ export default function ChatThreadScreen() {
     idempotencyKeys.current.set(messageId, created);
     return created;
   }, []);
+
+  /*
+    Báo cho bộ xử lý thông báo biết đang mở dự án nào, để tin của chính phòng
+    này không nhảy banner đè lên thứ người dùng đang đọc.
+  */
+  useEffect(() => {
+    if (!projectId) return;
+
+    datManDangMo(`du-an:${projectId}`);
+    return () => quenManDangMo();
+  }, [projectId]);
 
   // Tải tin nhắn ban đầu, tên dự án và danh sách thành viên.
   useEffect(() => {

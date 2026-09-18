@@ -1,5 +1,7 @@
 import * as Notifications from 'expo-notifications';
 
+import { nenHienThongBao } from './man-dang-mo';
+
 /**
  * Cho thông báo hiện cả khi app đang mở.
  *
@@ -7,17 +9,23 @@ import * as Notifications from 'expo-notifications';
  * người dùng đang mở app thì vẫn phải thấy — nếu không, việc đến hạn trong lúc họ
  * đang chat sẽ trôi qua im lặng.
  *
+ * Ngoại lệ duy nhất: tin nhắn của đúng khung chat đang mở — xem `nenHienThongBao`.
+ *
  * Không đặt `shouldSetBadge`: badge trên icon do máy chủ đếm, không phải lịch cục bộ.
  */
 export function configureNotificationHandler(): void {
   try {
     Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
+      handleNotification: async (thongBao) => {
+        const hien = nenHienThongBao(thongBao?.request?.content?.data);
+
+        return {
+          shouldShowBanner: hien,
+          shouldShowList: hien,
+          shouldPlaySound: hien,
+          shouldSetBadge: false,
+        };
+      },
     });
   } catch {
     // Thiếu module native. Không được làm sập app lúc khởi động.

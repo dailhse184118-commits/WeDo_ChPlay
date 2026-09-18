@@ -26,6 +26,7 @@ import type { TepChon } from '../../../../lib/api/tasks';
 import { useAuth } from '../../../../lib/auth/auth-context';
 import { idsHienAvatar, idsHienTen } from '../../../../lib/chat/nhom-tin';
 import { useHeaderTep } from '../../../../lib/chat/use-header-tep';
+import { datManDangMo, quenManDangMo } from '../../../../lib/notifications/man-dang-mo';
 import { chonAnh, chupAnh } from '../../../../lib/images/pick-images';
 import { colors, spacing } from '../../../../theme/tokens';
 
@@ -74,6 +75,17 @@ export default function ManTinNhanRieng() {
       sendDirectFiles(conversationId, files, content),
     onSuccess: xongMotLuotGui,
   });
+
+  /*
+    Báo cho bộ xử lý thông báo biết đang mở hội thoại nào, để tin của chính hội
+    thoại này không nhảy banner đè lên thứ người dùng đang đọc.
+  */
+  useEffect(() => {
+    if (!conversationId) return;
+
+    datManDangMo(`dm:${conversationId}`);
+    return () => quenManDangMo();
+  }, [conversationId]);
 
   /*
     Đánh dấu đã đọc khi mở, và mỗi lần có tin mới về trong lúc màn đang mở.
