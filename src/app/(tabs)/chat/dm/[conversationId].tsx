@@ -8,7 +8,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 
 import { MessageBubble } from '../../../../components/chat/MessageBubble';
 import { EmptyChat } from '../../../../components/chat/EmptyChat';
@@ -49,6 +50,25 @@ export default function ManTinNhanRieng() {
   const [loiChonAnh, setLoiChonAnh] = useState('');
 
   const headerTep = useHeaderTep();
+
+  /*
+    ĐỪNG đổi lại thành `KeyboardAvoidingView`. Đây là lần vá thứ tư cùng một chỗ.
+
+    `KeyboardAvoidingView` tính đệm bằng `frame.y + frame.height - keyboardY`,
+    trong đó `frame` là vị trí CỦA CHÍNH NÓ trên màn hình, đo một lần lúc
+    `onLayout` rồi chốt luôn.
+
+    Màn chat dự án gắn nó SAU khi tải xong dữ liệu, tức sau khi hiệu ứng trượt
+    vào màn đã kết thúc, nên đo trúng. Màn này gắn ngay lúc mở, giữa lúc màn
+    hình còn đang trượt — nó chốt một con số sai và không bao giờ đo lại. Đó là
+    lý do chỉ màn này bị che ô nhập, còn chat dự án thì không.
+
+    `useReanimatedKeyboardAnimation` đưa thẳng chiều cao bàn phím do hệ điều
+    hành báo (`height` âm khi bàn phím mở), không đo đạc gì, nên không có gì để
+    đo sai.
+  */
+  const banPhim = useReanimatedKeyboardAnimation();
+  const kieuTruThem = useAnimatedStyle(() => ({ paddingBottom: -banPhim.height.value }));
 
   const messagesQuery = useQuery({
     queryKey: ['direct-messages', conversationId],
@@ -173,9 +193,7 @@ export default function ManTinNhanRieng() {
     <View style={styles.man}>
       <GradientHeader title={ten || 'Tin nhắn'} onBack={() => router.back()} dense />
 
-      {/* Cùng lý do đã ghi ở màn chat dự án: bản của thư viện đọc bàn phím từ
-          hệ điều hành, không qua sự kiện mà mỗi hãng báo mỗi kiểu. */}
-      <KeyboardAvoidingView style={styles.than} behavior="padding" automaticOffset>
+      <Reanimated.View style={[styles.than, kieuTruThem]}>
         {loi ? <ErrorBanner message={loi} /> : null}
 
         {messagesQuery.isLoading && !messagesQuery.data ? (
@@ -222,7 +240,7 @@ export default function ManTinNhanRieng() {
           onChonAnh={() => void nhanAnh(chonAnh)}
           onBoAnh={(viTri) => setAnhChoGui((hienCo) => hienCo.filter((_, i) => i !== viTri))}
         />
-      </KeyboardAvoidingView>
+      </Reanimated.View>
 
       <ImageViewer url={anhDangXem} headers={headerTep} onDong={() => setAnhDangXem(null)} />
     </View>
