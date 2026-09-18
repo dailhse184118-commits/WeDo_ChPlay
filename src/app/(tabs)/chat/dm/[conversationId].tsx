@@ -81,12 +81,21 @@ export default function ManTinNhanRieng() {
     [messagesQuery.data],
   );
 
+  /*
+    Lỗi gửi đứng trước lỗi tải: người dùng vừa bấm Gửi thì điều họ đang chờ là
+    kết quả của cú bấm đó.
+
+    Gửi hỏng mà không báo gì là im lặng nguy hiểm — ô soạn vẫn còn chữ, vòng
+    quay tắt, và người dùng tưởng tin đã đi.
+  */
   const loi =
-    messagesQuery.isError && !messagesQuery.data
-      ? messagesQuery.error instanceof Error
-        ? messagesQuery.error.message
-        : 'Không tải được tin nhắn.'
-      : '';
+    guiMutation.error instanceof Error
+      ? guiMutation.error.message
+      : messagesQuery.isError && !messagesQuery.data
+        ? messagesQuery.error instanceof Error
+          ? messagesQuery.error.message
+          : 'Không tải được tin nhắn.'
+        : '';
 
   return (
     <View style={styles.man}>
