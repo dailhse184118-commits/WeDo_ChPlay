@@ -143,9 +143,24 @@ export interface Task {
   submissions?: TaskSubmission[];
 }
 
+/**
+ * Một tệp đính kèm trong tin nhắn, dùng chung cho chat dự án và tin nhắn riêng.
+ *
+ * `url` là đường dẫn TƯƠNG ĐỐI trên máy chủ WeDo (`/chat/attachments/<id>`) và
+ * nằm sau lớp xác thực — muốn tải phải kèm token, xem `duongDanTepDinhKem`.
+ */
+export interface ChatAttachment {
+  id: string;
+  originalName: string;
+  mimeType?: string | null;
+  size: number;
+  url: string;
+}
+
 export interface ChatMessage {
   id: string;
   content: string;
+  attachments?: ChatAttachment[];
   workspaceId: string;
   projectId: string;
   authorId: string;
@@ -252,6 +267,7 @@ export interface DirectMessage {
   updatedAt: string;
   deletedAt?: string | null;
   replyToId?: string | null;
+  attachments?: ChatAttachment[];
   /** Khác chat dự án: ở đây người gửi tên là `sender`, không phải `author`. */
   sender?: UserSummary;
 }

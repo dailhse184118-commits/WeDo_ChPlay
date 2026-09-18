@@ -47,7 +47,15 @@
           "color": "#0055c7"
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "WeDo cần máy ảnh để bạn chụp và gửi ảnh ngay trong khung chat.",
+          "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

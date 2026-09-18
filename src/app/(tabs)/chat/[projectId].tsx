@@ -14,6 +14,7 @@ import { MessageBubble } from '../../../components/chat/MessageBubble';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { EmptyChat } from '../../../components/chat/EmptyChat';
+import { ImageViewer } from '../../../components/chat/ImageViewer';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
 import {
   TaskSuggestionSheet,
@@ -26,8 +27,10 @@ import {
   getProjectMessages,
   markProjectRead,
   requestTaskSuggestion,
+  sendProjectFiles,
   sendProjectMessage,
 } from '../../../lib/api/chat';
+import type { TepChon } from '../../../lib/api/tasks';
 import { MA_HET_LUOT_AI, getEntitlements } from '../../../lib/api/entitlements';
 import { listProjects } from '../../../lib/api/projects';
 import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
@@ -36,11 +39,16 @@ import { useAuth } from '../../../lib/auth/auth-context';
 import { createTaskFromMessage } from '../../../lib/chat/create-task-from-message';
 import { createLocalId } from '../../../lib/chat/local-id';
 import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
+import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
+import { useHeaderTep } from '../../../lib/chat/use-header-tep';
+import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import type { ChatMessage, ChatTaskSuggestion, UserSummary } from '../../../lib/types';
 import { colors, fontSize, spacing } from '../../../theme/tokens';
+
+const GOC_MAY_CHU = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 
 interface PendingItem {
   localId: string;
@@ -69,6 +77,11 @@ export default function ChatThreadScreen() {
   const [loadError, setLoadError] = useState('');
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+
+  const [anhChoGui, setAnhChoGui] = useState<TepChon[]>([]);
+  const [anhDangXem, setAnhDangXem] = useState<string | null>(null);
+
+  const headerTep = useHeaderTep();
 
   const [cursor, setCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -265,7 +278,53 @@ export default function ChatThreadScreen() {
     [socket, projectId],
   );
 
+  /*
+    Ảnh KHÔNG đi qua đường lạc quan như tin chữ.
+
+    Tin chữ hiện ngay rồi mới gửi, vì nội dung đã nằm sẵn trong tay. Ảnh thì
+    phải tải lên xong máy chủ mới trả về đường dẫn để dựng — bịa một bong bóng
+    trước cho ra một ô trống nằm chờ, không nhanh hơn chút nào.
+  */
+  const doSendAnh = useCallback(
+    async (files: TepChon[], content: string) => {
+      if (!projectId) return;
+      setSending(true);
+      setLoadError('');
+      try {
+        const saved = await sendProjectFiles(projectId, files, content);
+        setMessages((current) => mergeMessages(current, [saved]));
+        setAnhChoGui([]);
+        setDraft('');
+      } catch (loi) {
+        setLoadError(loi instanceof Error ? loi.message : 'Không gửi được ảnh.');
+      } finally {
+        setSending(false);
+      }
+    },
+    [projectId],
+  );
+
+  const nhanAnh = useCallback(async (lay: () => Promise<TepChon[]>) => {
+    setLoadError('');
+    try {
+      const them = await lay();
+      if (them.length === 0) return;
+
+      setAnhChoGui((hienCo) => [...hienCo, ...them]);
+    } catch (loi) {
+      setLoadError(loi instanceof Error ? loi.message : 'Không mở được ảnh.');
+    }
+  }, []);
+
   const handleSend = useCallback(() => {
+    typingSentAt.current = 0;
+    socket?.emit('typing:project', { projectId, typing: false });
+
+    if (anhChoGui.length > 0) {
+      void doSendAnh(anhChoGui, draft);
+      return;
+    }
+
     const content = draft.trim();
     if (!content) return;
 
@@ -273,11 +332,8 @@ export default function ChatThreadScreen() {
     setPending((current) => [...current, { localId, content, failed: false }]);
     setDraft('');
 
-    typingSentAt.current = 0;
-    socket?.emit('typing:project', { projectId, typing: false });
-
     void doSend(content, localId);
-  }, [draft, doSend, socket, projectId]);
+  }, [draft, anhChoGui, doSend, doSendAnh, socket, projectId]);
 
   const handleLongPress = useCallback(
     async (messageId: string) => {
@@ -390,6 +446,19 @@ export default function ChatThreadScreen() {
     return [...messages, ...pendingAsMessages].reverse();
   }, [messages, pending, active?.id, projectId, user?.id]);
 
+  /*
+    Tính trên thứ tự thời gian, tức đảo lại `display` — xem `idsHienAvatar`.
+    Gộp cả tin đang gửi để tin vừa gõ không nhảy ra một khối riêng rồi lại nhập
+    vào chuỗi khi máy chủ nhận xong.
+  */
+  const nhom = useMemo(() => {
+    const theoThoiGian = [...display]
+      .reverse()
+      .map((tin) => ({ id: tin.id, nguoiGuiId: tin.authorId }));
+
+    return { avatar: idsHienAvatar(theoThoiGian), ten: idsHienTen(theoThoiGian) };
+  }, [display]);
+
   const pendingById = new Map(pending.map((item) => [item.localId, item]));
 
   const typingText = useMemo(() => {
@@ -469,6 +538,11 @@ export default function ChatThreadScreen() {
                 isMine={item.authorId === user?.id}
                 isPending={Boolean(pendingItem) && !pendingItem?.failed}
                 isFailed={Boolean(pendingItem?.failed)}
+                hienAvatar={nhom.avatar.has(item.id)}
+                hienTen={nhom.ten.has(item.id)}
+                goc={GOC_MAY_CHU}
+                headers={headerTep}
+                onXemAnh={setAnhDangXem}
                 onLongPress={() => void handleLongPress(item.id)}
                 onRetry={
                   pendingItem
@@ -494,8 +568,14 @@ export default function ChatThreadScreen() {
           onChangeText={handleDraftChange}
           onSend={handleSend}
           sending={sending}
+          anhDaChon={anhChoGui}
+          onChup={() => void nhanAnh(chupAnh)}
+          onChonAnh={() => void nhanAnh(chonAnh)}
+          onBoAnh={(viTri) => setAnhChoGui((hienCo) => hienCo.filter((_, i) => i !== viTri))}
         />
       </KeyboardAvoidingView>
+
+      <ImageViewer url={anhDangXem} headers={headerTep} onDong={() => setAnhDangXem(null)} />
 
       <TaskSuggestionSheet
         visible={sheetOpen}

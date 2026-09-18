@@ -12,16 +12,24 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { MessageBubble } from '../../../../components/chat/MessageBubble';
 import { EmptyChat } from '../../../../components/chat/EmptyChat';
+import { ImageViewer } from '../../../../components/chat/ImageViewer';
 import { MessageComposer } from '../../../../components/chat/MessageComposer';
 import { ErrorBanner } from '../../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../../components/ui/GradientHeader';
 import {
   getDirectMessages,
   markConversationRead,
+  sendDirectFiles,
   sendDirectMessage,
 } from '../../../../lib/api/direct-chat';
+import type { TepChon } from '../../../../lib/api/tasks';
 import { useAuth } from '../../../../lib/auth/auth-context';
+import { idsHienAvatar, idsHienTen } from '../../../../lib/chat/nhom-tin';
+import { useHeaderTep } from '../../../../lib/chat/use-header-tep';
+import { chonAnh, chupAnh } from '../../../../lib/images/pick-images';
 import { colors, spacing } from '../../../../theme/tokens';
+
+const GOC_MAY_CHU = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 
 export default function ManTinNhanRieng() {
   const router = useRouter();
@@ -34,6 +42,12 @@ export default function ManTinNhanRieng() {
 
   // MessageComposer là controlled component, màn hình phải tự giữ nội dung đang soạn.
   const [noiDung, setNoiDung] = useState('');
+  const [anhChoGui, setAnhChoGui] = useState<TepChon[]>([]);
+  const [anhDangXem, setAnhDangXem] = useState<string | null>(null);
+  /** Lỗi từ máy ảnh hoặc thư viện ảnh — không phải lỗi máy chủ nên để riêng. */
+  const [loiChonAnh, setLoiChonAnh] = useState('');
+
+  const headerTep = useHeaderTep();
 
   const messagesQuery = useQuery({
     queryKey: ['direct-messages', conversationId],
@@ -41,15 +55,24 @@ export default function ManTinNhanRieng() {
     enabled: Boolean(conversationId),
   });
 
+  function xongMotLuotGui() {
+    // Xoá ô soạn SAU khi máy chủ nhận. Xoá trước mà mạng hỏng thì người dùng
+    // mất luôn câu vừa gõ và không có cách nào lấy lại.
+    setNoiDung('');
+    setAnhChoGui([]);
+    void queryClient.invalidateQueries({ queryKey: ['direct-messages', conversationId] });
+    void queryClient.invalidateQueries({ queryKey: ['direct-conversations'] });
+  }
+
   const guiMutation = useMutation({
     mutationFn: (content: string) => sendDirectMessage(conversationId, content),
-    onSuccess: () => {
-      // Xoá ô soạn SAU khi máy chủ nhận. Xoá trước mà mạng hỏng thì người dùng
-      // mất luôn câu vừa gõ và không có cách nào lấy lại.
-      setNoiDung('');
-      void queryClient.invalidateQueries({ queryKey: ['direct-messages', conversationId] });
-      void queryClient.invalidateQueries({ queryKey: ['direct-conversations'] });
-    },
+    onSuccess: xongMotLuotGui,
+  });
+
+  const guiAnhMutation = useMutation({
+    mutationFn: ({ files, content }: { files: TepChon[]; content: string }) =>
+      sendDirectFiles(conversationId, files, content),
+    onSuccess: xongMotLuotGui,
   });
 
   /*
@@ -82,20 +105,57 @@ export default function ManTinNhanRieng() {
   );
 
   /*
+    Tính trên danh sách theo thứ tự thời gian, TRƯỚC khi đảo — xem `idsHienAvatar`.
+  */
+  const nhom = useMemo(() => {
+    const theoThoiGian = (messagesQuery.data ?? []).map((tin) => ({
+      id: tin.id,
+      nguoiGuiId: tin.senderId,
+    }));
+
+    return { avatar: idsHienAvatar(theoThoiGian), ten: idsHienTen(theoThoiGian) };
+  }, [messagesQuery.data]);
+
+  async function nhanAnh(lay: () => Promise<TepChon[]>) {
+    setLoiChonAnh('');
+    try {
+      const them = await lay();
+      if (them.length === 0) return;
+
+      setAnhChoGui((hienCo) => [...hienCo, ...them]);
+    } catch (loi) {
+      setLoiChonAnh(loi instanceof Error ? loi.message : 'Không mở được ảnh.');
+    }
+  }
+
+  function gui() {
+    if (anhChoGui.length > 0) {
+      guiAnhMutation.mutate({ files: anhChoGui, content: noiDung });
+      return;
+    }
+
+    guiMutation.mutate(noiDung.trim());
+  }
+
+  const dangGui = guiMutation.isPending || guiAnhMutation.isPending;
+
+  /*
     Lỗi gửi đứng trước lỗi tải: người dùng vừa bấm Gửi thì điều họ đang chờ là
     kết quả của cú bấm đó.
 
     Gửi hỏng mà không báo gì là im lặng nguy hiểm — ô soạn vẫn còn chữ, vòng
     quay tắt, và người dùng tưởng tin đã đi.
   */
+  const loiGui = guiMutation.error ?? guiAnhMutation.error;
   const loi =
-    guiMutation.error instanceof Error
-      ? guiMutation.error.message
+    loiChonAnh ||
+    (loiGui instanceof Error
+      ? loiGui.message
       : messagesQuery.isError && !messagesQuery.data
         ? messagesQuery.error instanceof Error
           ? messagesQuery.error.message
           : 'Không tải được tin nhắn.'
-        : '';
+        : '');
 
   return (
     <View style={styles.man}>
@@ -127,6 +187,11 @@ export default function ManTinNhanRieng() {
               <MessageBubble
                 message={item}
                 isMine={item.senderId === user?.id}
+                hienAvatar={nhom.avatar.has(item.id)}
+                hienTen={nhom.ten.has(item.id)}
+                goc={GOC_MAY_CHU}
+                headers={headerTep}
+                onXemAnh={setAnhDangXem}
                 // Nhấn giữ để tạo công việc là tính năng của chat dự án. Tin
                 // nhắn riêng chưa có hành động nào, nhưng prop là bắt buộc.
                 onLongPress={() => undefined}
@@ -138,10 +203,16 @@ export default function ManTinNhanRieng() {
         <MessageComposer
           value={noiDung}
           onChangeText={setNoiDung}
-          onSend={() => guiMutation.mutate(noiDung.trim())}
-          sending={guiMutation.isPending}
+          onSend={gui}
+          sending={dangGui}
+          anhDaChon={anhChoGui}
+          onChup={() => void nhanAnh(chupAnh)}
+          onChonAnh={() => void nhanAnh(chonAnh)}
+          onBoAnh={(viTri) => setAnhChoGui((hienCo) => hienCo.filter((_, i) => i !== viTri))}
         />
       </KeyboardAvoidingView>
+
+      <ImageViewer url={anhDangXem} headers={headerTep} onDong={() => setAnhDangXem(null)} />
     </View>
   );
 }

@@ -1,4 +1,6 @@
 import { apiRequest } from './client';
+import { goiTepChat } from './chat-files';
+import type { TepChon } from './tasks';
 import type { DirectConversation, DirectMessage } from '../types';
 
 /**
@@ -47,6 +49,23 @@ export function sendDirectMessage(
   return apiRequest<DirectMessage>(duongDan(conversationId, '/messages'), {
     method: 'POST',
     body: { content },
+  });
+}
+
+/**
+ * Gửi ảnh vào một hội thoại riêng, kèm chú thích nếu có.
+ *
+ * Cả lô đi trong một lượt: máy chủ dựng đúng MỘT tin nhắn mang nhiều ảnh, thay
+ * vì mỗi ảnh một bong bóng.
+ */
+export async function sendDirectFiles(
+  conversationId: string,
+  files: TepChon[],
+  content: string,
+): Promise<DirectMessage> {
+  return apiRequest<DirectMessage>(duongDan(conversationId, '/files'), {
+    method: 'POST',
+    body: goiTepChat(files, content),
   });
 }
 

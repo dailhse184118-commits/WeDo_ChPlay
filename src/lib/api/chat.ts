@@ -1,4 +1,6 @@
 import { apiRequest } from './client';
+import { goiTepChat } from './chat-files';
+import type { TepChon } from './tasks';
 import type { ChatHistoryPage, ChatMessage, ChatTaskSuggestion } from '../types';
 
 /** Số tin nhắn tải mỗi lần cuộn lên. */
@@ -27,6 +29,23 @@ export function sendProjectMessage(
   const body: Record<string, string> = { content };
   if (replyToId) body.replyToId = replyToId;
   return apiRequest<ChatMessage>(`/projects/${projectId}/chat`, { method: 'POST', body });
+}
+
+/**
+ * Gửi ảnh vào chat dự án, kèm chú thích nếu có.
+ *
+ * Cả lô đi trong một lượt: máy chủ dựng đúng MỘT tin nhắn mang nhiều ảnh, thay
+ * vì mỗi ảnh một bong bóng.
+ */
+export async function sendProjectFiles(
+  projectId: string,
+  files: TepChon[],
+  content: string,
+): Promise<ChatMessage> {
+  return apiRequest<ChatMessage>(
+    `/projects/${encodeURIComponent(projectId)}/chat/files`,
+    { method: 'POST', body: goiTepChat(files, content) },
+  );
 }
 
 export function getProjectUnreadCount(projectId: string): Promise<{ count: number }> {
