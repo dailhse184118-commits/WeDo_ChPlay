@@ -1,5 +1,9 @@
 import * as Notifications from 'expo-notifications';
-import { configureNotificationHandler, taskIdFromResponse } from '../handler';
+import {
+  configureNotificationHandler,
+  duongDanTuThongBao,
+  taskIdFromResponse,
+} from '../handler';
 
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
@@ -54,5 +58,57 @@ describe('taskIdFromResponse', () => {
   it('trả null khi taskId rỗng hoặc sai kiểu', () => {
     expect(taskIdFromResponse(makeResponse({ taskId: '' }))).toBeNull();
     expect(taskIdFromResponse(makeResponse({ taskId: 42 }))).toBeNull();
+  });
+});
+
+describe('duongDanTuThongBao', () => {
+  it('tin nhắn riêng mở thẳng đúng hội thoại, kèm tên trên tiêu đề', () => {
+    expect(
+      duongDanTuThongBao(
+        makeResponse({ type: 'DIRECT_MESSAGE', conversationId: 'c1', tenNguoiGui: 'Lê Hữu Đại' }),
+      ),
+    ).toBe('/chat/dm/c1?ten=L%C3%AA%20H%E1%BB%AFu%20%C4%90%E1%BA%A1i');
+  });
+
+  it('thiếu tên người gửi vẫn mở được hội thoại', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'DIRECT_MESSAGE', conversationId: 'c1' }))).toBe(
+      '/chat/dm/c1?ten=',
+    );
+  });
+
+  it('tin nhắn dự án mở phòng chat của dự án', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'PROJECT_MESSAGE', projectId: 'p1' }))).toBe(
+      '/chat/p1',
+    );
+  });
+
+  it('lời mời kết bạn mở màn Bạn bè', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'FRIEND_REQUEST' }))).toBe('/chat/friends');
+  });
+
+  /*
+    Được duyệt kết bạn thì việc muốn làm tiếp là NHẮN TIN, không phải xem lại
+    danh sách. Nhưng lúc này chưa có hội thoại nào nên màn Bạn bè là đúng chỗ.
+  */
+  it('được duyệt kết bạn cũng mở màn Bạn bè', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'FRIEND_ACCEPTED' }))).toBe('/chat/friends');
+  });
+
+  /*
+    Nhắc hạn công việc đi đường CŨ, qua `taskIdFromResponse`. Hàm này phải trả
+    null cho chúng, nếu không hai đường cùng điều hướng và màn hình nhảy hai lần.
+  */
+  it('trả null cho thông báo công việc', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'TASK_ASSIGNED', taskId: 't1' }))).toBeNull();
+  });
+
+  it('trả null khi không có dữ liệu gì', () => {
+    expect(duongDanTuThongBao(makeResponse(undefined))).toBeNull();
+    expect(duongDanTuThongBao(null)).toBeNull();
+  });
+
+  it('trả null khi thiếu id cần thiết', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'DIRECT_MESSAGE' }))).toBeNull();
+    expect(duongDanTuThongBao(makeResponse({ type: 'PROJECT_MESSAGE' }))).toBeNull();
   });
 });

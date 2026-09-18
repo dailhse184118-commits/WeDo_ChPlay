@@ -10,14 +10,14 @@ import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
 import { getUnreadCount } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
-import { taskIdFromResponse } from '../../lib/notifications/handler';
+import { duongDanTuThongBao, taskIdFromResponse } from '../../lib/notifications/handler';
 import { useRealtimeSync } from '../../lib/realtime/use-realtime-sync';
 import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
 import { colors, fontSize, sizes, spacing } from '../../theme/tokens';
 
 /**
- * Chạm vào nhắc hạn thì mở thẳng công việc đó.
+ * Chạm vào thông báo thì mở thẳng thứ được báo.
  *
  * Đặt ở đây chứ không ở layout gốc vì layout này chỉ dựng khi đã đăng nhập — điều
  * hướng tới `/tasks/:id` lúc còn ở màn đăng nhập sẽ đưa người dùng vào màn hình họ
@@ -33,6 +33,17 @@ function useOpenTaskFromNotification() {
     function open(response: Notifications.NotificationResponse | null) {
       const key = response?.notification?.request?.identifier ?? null;
       if (!key || handled.current === key) return;
+
+      /*
+        Tin nhắn và kết bạn đi trước, vì chúng nói rõ mình muốn mở màn nào.
+        Nhắc hạn công việc chỉ kèm `taskId` nên xét sau.
+      */
+      const duongDan = duongDanTuThongBao(response);
+      if (duongDan) {
+        handled.current = key;
+        router.push(duongDan as never);
+        return;
+      }
 
       const taskId = taskIdFromResponse(response);
       if (!taskId) return;
