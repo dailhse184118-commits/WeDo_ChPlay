@@ -115,4 +115,24 @@ describe('MessageBubble', () => {
     await fireEvent.press(getByTestId('retry-m1'));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  /*
+    Tin nhắn riêng không có `projectId` lẫn `workspaceId`. Bong bóng chưa bao
+    giờ đọc tới hai trường ấy, nên bắt buộc phải có chúng chỉ là ràng buộc thừa.
+  */
+  it('dựng được tin nhắn riêng, thứ không có projectId lẫn workspaceId', async () => {
+    const tinRieng = {
+      id: 'd1',
+      content: 'chào bạn',
+      createdAt: '2026-09-18T12:00:00.000Z',
+      author: { id: 'u2', email: 'u2@wedo.vn', fullName: 'Tuấn' },
+    };
+
+    const { getByText } = await render(
+      <MessageBubble message={tinRieng} isMine={false} onLongPress={() => {}} />,
+    );
+
+    expect(getByText('chào bạn')).toBeTruthy();
+    expect(getByText('Tuấn')).toBeTruthy();
+  });
 });

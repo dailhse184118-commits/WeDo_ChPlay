@@ -3,11 +3,31 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { tapFeedback } from '../../lib/haptics';
-import type { ChatMessage } from '../../lib/types';
+import type { UserSummary } from '../../lib/types';
 import { colors, fontSize, gradients, lineHeight, radius, scale, shadows, spacing } from '../../theme/tokens';
 
+/**
+ * Hình dạng tối thiểu mà bong bóng thật sự đọc tới.
+ *
+ * Trước đây nhận thẳng `ChatMessage`, nên không dựng được tin nhắn riêng — thứ
+ * không có `projectId` lẫn `workspaceId`, và gọi người gửi là `sender`.
+ * Component chưa bao giờ đụng tới những trường ấy; bắt buộc phải có chúng chỉ
+ * là ràng buộc thừa.
+ *
+ * `ChatMessage` thoả kiểu này về mặt cấu trúc, nên mọi chỗ gọi cũ không phải
+ * sửa một dòng nào.
+ */
+export interface BongBongMessage {
+  id: string;
+  content: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  author?: UserSummary | null;
+  task?: { title: string } | null;
+}
+
 interface MessageBubbleProps {
-  message: ChatMessage;
+  message: BongBongMessage;
   isMine: boolean;
   isPending?: boolean;
   isFailed?: boolean;
