@@ -6,11 +6,13 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { UpdateGate } from '../components/update/UpdateGate';
 import { AuthProvider } from '../lib/auth/auth-context';
 import { bridgeAppStateToQueryFocus } from '../lib/app-focus';
 import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
 import { HAN_CACHE_BEN_BI_MS, cacheBenBi, queryClient } from '../lib/query';
+import { usePhienBan } from '../lib/version/use-phien-ban';
 
 // Phải chạy trước khi có thông báo nào tới, nên đặt ở tầng module chứ không trong
 // một effect nào đó.
@@ -52,6 +54,23 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
   );
 }
 
+/**
+ * Chặn cả app khi phiên bản quá cũ so với máy chủ.
+ *
+ * Phải nằm TRONG `PersistQueryClientProvider` vì nó dùng react-query, và phải
+ * nằm TRÊN `<Stack>` để chặn được cả màn đăng nhập — app cũ thì chính lượt đăng
+ * nhập cũng có thể hỏng.
+ */
+function CongPhienBan({ children }: { children: React.ReactNode }) {
+  const { muc, notes } = usePhienBan();
+
+  if (muc === 'bat-buoc') {
+    return <UpdateGate notes={notes} />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   useEffect(() => bridgeAppStateToQueryFocus(), []);
 
@@ -74,7 +93,9 @@ export default function RootLayout() {
         >
           <AuthProvider>
             <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false }} />
+            <CongPhienBan>
+              <Stack screenOptions={{ headerShown: false }} />
+            </CongPhienBan>
           </AuthProvider>
         </PersistQueryClientProvider>
       </KeyboardProvider>

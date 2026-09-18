@@ -16,6 +16,7 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { ConversationRow } from '../../../components/chat/ConversationRow';
 import { ProjectRow } from '../../../components/chat/ProjectRow';
 import { SegmentedTabs } from '../../../components/chat/SegmentedTabs';
+import { UpdateBanner } from '../../../components/update/UpdateBanner';
 import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
 import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
@@ -25,6 +26,7 @@ import { listConversations } from '../../../lib/api/direct-chat';
 import { listProjects } from '../../../lib/api/projects';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { useSocket } from '../../../lib/socket/socket-context';
+import { usePhienBan } from '../../../lib/version/use-phien-ban';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } from '../../../theme/tokens';
@@ -44,6 +46,13 @@ export default function ChatListScreen() {
   const [muc, setMuc] = useState<'du-an' | 'tin-nhan'>('du-an');
 
   const { onlineUserIds } = useSocket();
+
+  /*
+    ĐỪNG hủy cấu trúc ra thành `muc` — màn này đã có một biến tên `muc` cho
+    thanh chuyển Dự án / Tin nhắn. Cả hai đều là chuỗi nên trùng tên ở đây cho
+    ra một lỗi im lặng mà TypeScript không bắt được.
+  */
+  const capNhat = usePhienBan();
 
   const conversationsQuery = useQuery({
     queryKey: ['direct-conversations'],
@@ -142,6 +151,10 @@ export default function ChatListScreen() {
       </GradientHeader>
 
       <View style={styles.body}>
+        {capNhat.muc === 'nen-cap-nhat' ? (
+          <UpdateBanner phienBanMoi={capNhat.latest} notes={capNhat.notes} />
+        ) : null}
+
         {muc === 'du-an' && projectsQuery.isError ? (
           <ErrorBanner
             message={

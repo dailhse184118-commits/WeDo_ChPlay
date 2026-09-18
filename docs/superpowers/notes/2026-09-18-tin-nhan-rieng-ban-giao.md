@@ -66,6 +66,20 @@ người chưa kết bạn — toàn bộ tính năng này sẽ trông như hỏ
 phải là `1.0.9` / `versionCode 11`. Cố ý chưa tăng: chỉ tăng một lần ngay trước
 khi build.
 
+## Mỗi lần tăng phiên bản, nhớ đổi ở HAI chỗ
+
+Từ khi có tính năng nhắc cập nhật, số phiên bản nằm ở hai nơi và phải khớp nhau:
+
+1. `app.json` của `WeDo_ChPlay` — `expo.version` và `expo.android.versionCode`
+2. Biến `MOBILE_LATEST_VERSION` trên Azure của `BE_WEDO`
+
+Quên cái thứ hai thì người dùng đã cập nhật rồi vẫn bị nhắc mãi, hoặc tệ hơn là
+không ai được nhắc gì cả.
+
+`MOBILE_MINIMUM_VERSION` chỉ nâng khi backend đổi kiểu phá vỡ khiến app cũ không
+chạy nổi. Nâng nó là **chặn hẳn** người dùng cũ ra khỏi app, không phải nhắc nhở
+— đừng nâng theo thói quen mỗi lần phát hành.
+
 ## Đợt 2 — chưa động tới
 
 Kết bạn đầy đủ (`chat/friends.tsx`, tìm người, gửi lời mời, hộp lời mời,
