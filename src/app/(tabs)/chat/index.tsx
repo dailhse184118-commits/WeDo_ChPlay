@@ -25,6 +25,7 @@ import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
 import { listConversations, startConversation } from '../../../lib/api/direct-chat';
+import { listFriends } from '../../../lib/api/friends';
 import { listProjects } from '../../../lib/api/projects';
 import { getWorkspace } from '../../../lib/api/workspaces';
 import { useAuth } from '../../../lib/auth/auth-context';
@@ -89,6 +90,21 @@ export default function ChatListScreen() {
     },
   });
 
+  /*
+    Chỉ để đếm lời mời đang chờ mình duyệt, vẽ lên chấm đỏ ở nút Bạn bè. Không
+    có chấm này thì lời mời nằm im trong màn Bạn bè và chẳng ai vào xem.
+  */
+  const friendsQuery = useQuery({
+    queryKey: ['friends'],
+    queryFn: listFriends,
+    staleTime: 30_000,
+  });
+
+  // Duyệt lời mời trên web không có sự kiện socket nào, nên hỏi lại khi quay về.
+  useRefetchOnScreenFocus(friendsQuery.refetch);
+
+  const soLoiMoi = friendsQuery.data?.incoming.length ?? 0;
+
   const conversationsQuery = useQuery({
     queryKey: ['direct-conversations'],
     queryFn: listConversations,
@@ -148,10 +164,27 @@ export default function ChatListScreen() {
         subtitle={active?.name}
         onPressSubtitle={() => setSwitcherOpen(true)}
         right={
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(user?.fullName ?? '?').charAt(0).toUpperCase()}
-            </Text>
+          <View style={styles.headerPhai}>
+            <Pressable
+              testID="nut-ban-be"
+              accessibilityRole="button"
+              accessibilityLabel={
+                soLoiMoi > 0 ? `Bạn bè, ${soLoiMoi} lời mời đang chờ` : 'Bạn bè'
+              }
+              onPress={() => router.push('/chat/friends')}
+              hitSlop={8}
+              style={styles.nutBanBe}
+            >
+              <Ionicons name="people-outline" size={20} color={colors.onPrimary} />
+              {/* Chấm đỏ, không phải con số: ở cỡ chữ lớn con số bị xén mất. */}
+              {soLoiMoi > 0 ? <View testID="cham-loi-moi" style={styles.cham} /> : null}
+            </Pressable>
+
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(user?.fullName ?? '?').charAt(0).toUpperCase()}
+              </Text>
+            </View>
           </View>
         }
       >
@@ -267,7 +300,8 @@ export default function ChatListScreen() {
                     </View>
                     <Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
                     <Text style={styles.emptyBody}>
-                      Chạm "Nhắn tin mới" ở trên để chọn một người trong không gian làm việc.
+                      Chạm "Nhắn tin mới" để chọn một người trong không gian làm việc, hoặc bấm
+                      biểu tượng người ở góc trên để kết bạn với người ngoài không gian.
                     </Text>
                   </View>
                 )
@@ -364,6 +398,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.md },
+  headerPhai: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  nutBanBe: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cham: {
+    position: 'absolute',
+    top: scale(8),
+    right: scale(8),
+    width: scale(9),
+    height: scale(9),
+    borderRadius: radius.pill,
+    backgroundColor: colors.danger,
+  },
   nutNhanTinMoi: {
     flexDirection: 'row',
     alignItems: 'center',

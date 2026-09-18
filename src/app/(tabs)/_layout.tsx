@@ -137,6 +137,7 @@ function TabsWithWorkspace() {
         name="chat/dm/[conversationId]"
         options={{ href: null, tabBarStyle: { display: 'none' } }}
       />
+      <Tabs.Screen name="chat/friends" options={{ href: null }} />
       <Tabs.Screen name="tasks/[taskId]" options={{ href: null }} />
       <Tabs.Screen name="tasks/new" options={{ href: null }} />
       {/*
