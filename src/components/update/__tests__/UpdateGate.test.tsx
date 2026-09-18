@@ -29,7 +29,7 @@ describe('UpdateGate', () => {
   it('chạm nút thì mở CH Play', async () => {
     const { getByTestId } = await render(<UpdateGate notes="" />);
 
-    fireEvent.press(getByTestId('update-gate-cap-nhat'));
+    await fireEvent.press(getByTestId('update-gate-cap-nhat'));
 
     expect(mockMoChPlay).toHaveBeenCalled();
   });

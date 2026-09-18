@@ -42,7 +42,7 @@ describe('UpdateBanner', () => {
       <UpdateBanner phienBanMoi="1.0.11" notes="Bản mới." />,
     );
 
-    fireEvent.press(await findByTestId('update-banner-cap-nhat'));
+    await fireEvent.press(await findByTestId('update-banner-cap-nhat'));
 
     expect(mockMoChPlay).toHaveBeenCalled();
   });
@@ -52,7 +52,7 @@ describe('UpdateBanner', () => {
       <UpdateBanner phienBanMoi="1.0.11" notes="Bản mới." />,
     );
 
-    fireEvent.press(await findByTestId('update-banner-tat'));
+    await fireEvent.press(await findByTestId('update-banner-tat'));
 
     expect(mockGhiNho).toHaveBeenCalledWith('1.0.11');
     await waitFor(() => expect(queryByTestId('update-banner')).toBeNull());

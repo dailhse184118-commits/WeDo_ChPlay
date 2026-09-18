@@ -103,7 +103,7 @@ describe('ConversationRow', () => {
       />,
     );
 
-    fireEvent.press(getByTestId('conversation-row-c1'));
+    await fireEvent.press(getByTestId('conversation-row-c1'));
 
     expect(onPress).toHaveBeenCalled();
   });

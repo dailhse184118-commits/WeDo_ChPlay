@@ -61,7 +61,7 @@ describe('NewConversationSheet', () => {
   it('báo id người được chọn', async () => {
     const { getByTestId } = await dung();
 
-    fireEvent.press(getByTestId('nguoi-nhan-u2'));
+    await fireEvent.press(getByTestId('nguoi-nhan-u2'));
 
     expect(onChon).toHaveBeenCalledWith('u2', 'Tuấn');
   });
@@ -83,7 +83,7 @@ describe('NewConversationSheet', () => {
   it('khoá danh sách trong lúc đang tạo hội thoại', async () => {
     const { getByTestId } = await dung({ dangTao: true });
 
-    fireEvent.press(getByTestId('nguoi-nhan-u2'));
+    await fireEvent.press(getByTestId('nguoi-nhan-u2'));
 
     expect(onChon).not.toHaveBeenCalled();
   });

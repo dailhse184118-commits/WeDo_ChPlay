@@ -33,7 +33,7 @@ describe('SegmentedTabs', () => {
       <SegmentedTabs options={OPTIONS} value="du-an" onChange={onChange} />,
     );
 
-    fireEvent.press(getByTestId('segment-tin-nhan'));
+    await fireEvent.press(getByTestId('segment-tin-nhan'));
 
     expect(onChange).toHaveBeenCalledWith('tin-nhan');
   });
@@ -48,7 +48,7 @@ describe('SegmentedTabs', () => {
       <SegmentedTabs options={OPTIONS} value="du-an" onChange={onChange} />,
     );
 
-    fireEvent.press(getByTestId('segment-du-an'));
+    await fireEvent.press(getByTestId('segment-du-an'));
 
     expect(onChange).not.toHaveBeenCalled();
   });
