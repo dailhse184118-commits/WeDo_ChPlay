@@ -1,4 +1,4 @@
-# Bàn giao: kết bạn, avatar và gửi ảnh (1.0.11 → 1.0.12)
+# Bàn giao: kết bạn, avatar, gửi ảnh và thông báo đẩy (1.0.11 → 1.0.12)
 
 Ngày 18/09/2026.
 
@@ -87,10 +87,75 @@ của test kế tiếp mount ra **cây rỗng** — test đó đậu giả nếu
 KHÔNG có `READ_MEDIA_IMAGES`, nên **không phải khai báo "Photo and Video
 Permissions"** với Google Play.
 
+
+## Bản 1.0.12 (15) — máy ảnh tuỳ chọn và thông báo đẩy
+
+### Vá lỗi mất 417 thiết bị
+
+Bản 14 **không được phát hành**. Play cảnh báo mất 417 thiết bị: Ô tô 100%,
+Chromebook 86%, máy tính bảng 4%, và 67 điện thoại.
+
+Nguyên nhân: khai quyền `CAMERA` là Google Play **tự suy ra** app bắt buộc phải
+có máy ảnh, kể cả `android.hardware.camera.autofocus`. Hành vi có ghi trong tài
+liệu Android.
+
+Vá bằng `plugins/with-may-anh-tuy-chon.js`, khai ba `uses-feature` với
+`required="false"`. Đã kiểm bằng `expo prebuild`.
+
+> Lúc tải bản mới lên Play, soi bảng "Những thay đổi đối với thiết bị được hỗ
+> trợ": cột "Số thiết bị không còn được hỗ trợ" **phải là 0 ở mọi dòng**.
+
+### Thông báo đẩy cho tin nhắn và kết bạn
+
+Hạ tầng push đã chạy đủ từ trước — app xin quyền và đăng ký token lúc đăng
+nhập, backend có `ExpoPushService`. Nhưng `NotificationType` chỉ có công việc,
+cuộc họp, thanh toán. Nhắn tin riêng, chat dự án và kết bạn đều **không chạm
+được tới người dùng khi app đang đóng**.
+
+`src/chat/chat-push.service.ts` (BE_WEDO) nối vào chỗ trống đó.
+
+**CỐ Ý không tạo bản ghi `Notification`.** Tin nhắn đọc trong khung chat, lời
+mời đọc ở màn Bạn bè; đổ vào trung tâm thông báo chỉ làm danh sách ngập rồi
+người dùng bỏ qua luôn cả nhắc hạn công việc.
+
+Hệ quả phụ đáng giá: **không cần migration**. Quy trình deploy hiện tại KHÔNG
+chạy `prisma migrate deploy` — `start:azure` chỉ có `prisma generate`. Một thay
+đổi schema sẽ lên production trước khi cột tồn tại.
+
+**Chat dự án chặn ở một thông báo mỗi người mỗi dự án trong 10 phút.** Nhóm bàn
+bạc nửa tiếng mà đẩy hết là bốn chục lần rung máy — người ta gỡ app.
+
+**Không đẩy khi từ chối lời mời kết bạn.** Báo cho người bị từ chối là làm họ
+ngại và tổn thương vô ích.
+
+Phía app: `duongDanTuThongBao` đưa cú chạm tới thẳng đúng hội thoại / phòng chat
+/ màn Bạn bè. Và `man-dang-mo.ts` chặn banner cho tin nhắn của chính khung chat
+đang mở — đang đọc mà banner nhảy đè lên thứ vừa hiện là trông cẩu thả.
+
+### Món nợ để lại, có chủ ý
+
+- **Chưa có công tắc tắt riêng thông báo chat.** Cần thêm cột `notifyChat`, tức
+  cần migration. Hiện người dùng tắt được toàn bộ thông báo WeDo trong Cài đặt
+  Android.
+- **Chưa ai xác nhận push của WeDo từng tới máy thật.** Hạ tầng đúng và đủ,
+  nhưng nếu FCM cấu hình sai thì mọi thứ nằm im. Đây là thứ phải thử ĐẦU TIÊN.
+
+### Nghiệm thu thông báo đẩy
+
+1. **Tắt hẳn app** (vuốt khỏi danh sách gần đây). Nhờ người khác nhắn tin riêng
+   → máy phải rung và hiện tên người gửi kèm nội dung.
+2. Chạm vào thông báo đó → mở **thẳng** đúng cuộc trò chuyện, không phải màn
+   hình chính.
+3. Đang mở đúng cuộc trò chuyện đó, người kia nhắn tiếp → tin hiện trong khung
+   chat, **không** có banner nhảy ra.
+4. Đang ở màn khác trong app, người kia nhắn → **có** banner.
+5. Nhờ người khác gửi lời mời kết bạn → máy rung, chạm vào mở màn Bạn bè.
+6. Trong chat dự án, nhắn 5 tin liên tiếp → người kia chỉ nhận **một** thông báo.
+
 ## Việc phải làm theo đúng thứ tự
 
-1. Đăng `1.0.11 (13)` lên CH Play, kênh thử nghiệm kín. (`.aab` đã ở Desktop.)
-2. Chờ EAS build `1.0.12 (14)` xong, đăng tiếp.
+1. ~~Đăng `1.0.11 (13)`~~ — đã xuất bản 18/09 lúc 19:12.
+2. Đăng `1.0.12 (15)`. **Bỏ hẳn bản 14**, nó mất 417 thiết bị.
 3. **Sau khi Play đã phát hành xong bản cuối**, mới đổi biến môi trường trên
    Azure:
    - `MOBILE_LATEST_VERSION` → `1.0.12`
