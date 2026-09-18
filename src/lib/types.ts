@@ -186,6 +186,38 @@ export interface ChatHistoryPage {
   nextCursor?: string | null;
 }
 
+export type FriendshipStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface Friendship {
+  id: string;
+  /** Hai id đã sắp xếp rồi nối bằng dấu hai chấm. Máy chủ dùng để chống trùng. */
+  pairKey: string;
+  requesterId: string;
+  addresseeId: string;
+  status: FriendshipStatus;
+  createdAt: string;
+  updatedAt: string;
+  requester?: UserSummary;
+  addressee?: UserSummary;
+}
+
+/**
+ * `GET /friends` trả cả ba nhóm trong một lượt gọi.
+ *
+ * Giữ nguyên hình dạng đó thay vì tách ba truy vấn — máy chủ đã gom sẵn, tách
+ * ra chỉ tốn thêm hai vòng mạng.
+ */
+export interface FriendsList {
+  friends: Friendship[];
+  incoming: Friendship[];
+  outgoing: Friendship[];
+}
+
+/** Một người tìm được qua `GET /friends/search`, kèm quan hệ hiện có nếu có. */
+export interface NguoiTimDuoc extends UserSummary {
+  friendship?: Friendship | null;
+}
+
 /** Một người trong hội thoại riêng. */
 export interface DirectParticipant {
   id: string;
