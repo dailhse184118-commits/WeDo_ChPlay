@@ -13,7 +13,15 @@ import { colors, fontSize, spacing } from '../../theme/tokens';
  * vì lúc đó WorkspaceProvider chỉ tồn tại bên trong khung tab nên không điều hướng
  * sang route khác được.
  */
-export function CreateWorkspaceForm() {
+interface CreateWorkspaceFormProps {
+  /**
+   * Gọi sau khi tạo xong. Màn onboarding không truyền: ở đó `status` đổi sang
+   * `ready` và khung tab tự thay màn. Mở trong Modal thì phải có người đóng.
+   */
+  onDone?: () => void;
+}
+
+export function CreateWorkspaceForm({ onDone }: CreateWorkspaceFormProps = {}) {
   const { create } = useWorkspace();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -29,6 +37,7 @@ export function CreateWorkspaceForm() {
     setSubmitting(true);
     try {
       await create(name.trim());
+      onDone?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tạo được không gian làm việc.');
     } finally {

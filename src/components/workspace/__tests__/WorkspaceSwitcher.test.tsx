@@ -20,6 +20,7 @@ const B = makeWorkspace('b', 'Câu lạc bộ');
 describe('WorkspaceSwitcher', () => {
   const onSelect = jest.fn();
   const onDismiss = jest.fn();
+  const onCreate = jest.fn();
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -31,6 +32,7 @@ describe('WorkspaceSwitcher', () => {
         activeId="a"
         onSelect={onSelect}
         onDismiss={onDismiss}
+        onCreate={onCreate}
         {...props}
       />,
     );
@@ -71,5 +73,31 @@ describe('WorkspaceSwitcher', () => {
     const { queryByText } = await renderSheet({ visible: false });
 
     expect(queryByText('Nhóm đồ án')).toBeNull();
+  });
+
+  it('có dòng tạo không gian mới', async () => {
+    const { getByTestId } = await renderSheet();
+
+    expect(getByTestId('workspace-tao-moi')).toBeTruthy();
+  });
+
+  it('chạm dòng tạo mới thì đóng sheet rồi báo ra ngoài', async () => {
+    const { getByTestId } = await renderSheet();
+
+    await fireEvent.press(getByTestId('workspace-tao-moi'));
+
+    expect(onCreate).toHaveBeenCalled();
+    expect(onDismiss).toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  /*
+    Người chỉ thuộc một không gian trước đây không mở nổi sheet này. Nay sheet
+    mang thêm chức năng tạo mới, mà họ mới chính là người cần tạo thêm nhất.
+  */
+  it('vẫn dựng dòng tạo mới khi chỉ có một không gian', async () => {
+    const { getByTestId } = await renderSheet({ workspaces: [A] });
+
+    expect(getByTestId('workspace-tao-moi')).toBeTruthy();
   });
 });

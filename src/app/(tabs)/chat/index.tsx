@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   RefreshControl,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueries, useQuery } from '@tanstack/react-query';
 
 import { ProjectRow } from '../../../components/chat/ProjectRow';
+import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
 import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
@@ -34,12 +36,7 @@ export default function ChatListScreen() {
 
   const [query, setQuery] = useState('');
   const [switcherOpen, setSwitcherOpen] = useState(false);
-
-  /*
-    Chỉ cho bấm khi thật sự có cái để đổi. Người dùng chỉ thuộc một workspace mà
-    mở ra một danh sách một dòng thì chỉ tổ khó hiểu.
-  */
-  const coTheDoiWorkspace = workspaces.length > 1;
+  const [taoMoiOpen, setTaoMoiOpen] = useState(false);
 
   const projectsQuery = useQuery({
     queryKey: ['projects', workspaceId],
@@ -87,7 +84,7 @@ export default function ChatListScreen() {
       <GradientHeader
         title={firstName ? `Chào ${firstName}` : 'Trò chuyện'}
         subtitle={active?.name}
-        onPressSubtitle={coTheDoiWorkspace ? () => setSwitcherOpen(true) : undefined}
+        onPressSubtitle={() => setSwitcherOpen(true)}
         right={
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
@@ -180,8 +177,17 @@ export default function ChatListScreen() {
         workspaces={workspaces}
         activeId={workspaceId}
         onSelect={(id) => void switchTo(id)}
+        onCreate={() => setTaoMoiOpen(true)}
         onDismiss={() => setSwitcherOpen(false)}
       />
+
+      <Modal
+        visible={taoMoiOpen}
+        animationType="slide"
+        onRequestClose={() => setTaoMoiOpen(false)}
+      >
+        <CreateWorkspaceForm onDone={() => setTaoMoiOpen(false)} />
+      </Modal>
     </View>
   );
 }

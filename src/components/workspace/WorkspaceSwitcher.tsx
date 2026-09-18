@@ -20,6 +20,8 @@ interface WorkspaceSwitcherProps {
   activeId?: string;
   /** Chỉ gọi khi người dùng chọn một cái KHÁC cái đang dùng. */
   onSelect: (workspaceId: string) => void;
+  /** Mở luồng tạo không gian làm việc mới. Sheet tự đóng trước khi gọi. */
+  onCreate: () => void;
   onDismiss: () => void;
 }
 
@@ -35,6 +37,7 @@ export function WorkspaceSwitcher({
   workspaces,
   activeId,
   onSelect,
+  onCreate,
   onDismiss,
 }: WorkspaceSwitcherProps) {
   const handlePress = (workspaceId: string) => {
@@ -43,6 +46,13 @@ export function WorkspaceSwitcher({
       onSelect(workspaceId);
     }
     onDismiss();
+  };
+
+  const handleCreate = () => {
+    // Đóng trước rồi mới báo ra ngoài. Hai Modal chồng nhau trên Android làm cái
+    // mở sau không nhận được chạm.
+    onDismiss();
+    onCreate();
   };
 
   return (
@@ -83,6 +93,19 @@ export function WorkspaceSwitcher({
             );
           })}
         </ScrollView>
+
+        <Pressable
+          testID="workspace-tao-moi"
+          accessibilityRole="button"
+          accessibilityLabel="Tạo không gian làm việc mới"
+          onPress={handleCreate}
+          style={({ pressed }) => [styles.taoMoi, pressed ? styles.rowPressed : null]}
+        >
+          <View style={styles.taoMoiIcon}>
+            <Ionicons name="add" size={sizes.icon} color={colors.primary} />
+          </View>
+          <Text style={styles.taoMoiChu}>Tạo không gian mới</Text>
+        </Pressable>
       </View>
     </Modal>
   );
@@ -136,4 +159,29 @@ const styles = StyleSheet.create({
   avatarTextActive: { color: colors.primary },
   name: { flex: 1, fontSize: fontSize.md, lineHeight: lineHeight.md, color: colors.text },
   nameActive: { fontWeight: '700', color: colors.primary },
+  /* Đường kẻ tách hẳn hành động khỏi danh sách để không ai chạm nhầm. */
+  taoMoi: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    marginTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  taoMoiIcon: {
+    width: sizes.projectAvatar,
+    height: sizes.projectAvatar,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  taoMoiChu: {
+    flex: 1,
+    fontSize: fontSize.md,
+    lineHeight: lineHeight.md,
+    fontWeight: '600',
+    color: colors.primary,
+  },
 });

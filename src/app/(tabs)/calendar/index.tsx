@@ -1,10 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
 import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { getCalendar, type MucLich } from '../../../lib/api/calendar';
 import {
@@ -59,11 +68,7 @@ export default function ManLich() {
   const { active, workspaces, switchTo } = useWorkspace();
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
-
-  /*
-    Chỉ cho bấm khi thật sự có cái để đổi, y như tab Trò chuyện.
-  */
-  const coTheDoiWorkspace = workspaces.length > 1;
+  const [taoMoiOpen, setTaoMoiOpen] = useState(false);
 
   const khoang = useMemo(() => {
     const bayGio = new Date();
@@ -96,7 +101,7 @@ export default function ManLich() {
       <GradientHeader
         title="Lịch"
         subtitle={active?.name}
-        onPressSubtitle={coTheDoiWorkspace ? () => setSwitcherOpen(true) : undefined}
+        onPressSubtitle={() => setSwitcherOpen(true)}
       />
 
       <View style={styles.than}>
@@ -164,8 +169,17 @@ export default function ManLich() {
         workspaces={workspaces}
         activeId={active?.id}
         onSelect={(id) => void switchTo(id)}
+        onCreate={() => setTaoMoiOpen(true)}
         onDismiss={() => setSwitcherOpen(false)}
       />
+
+      <Modal
+        visible={taoMoiOpen}
+        animationType="slide"
+        onRequestClose={() => setTaoMoiOpen(false)}
+      >
+        <CreateWorkspaceForm onDone={() => setTaoMoiOpen(false)} />
+      </Modal>
     </View>
   );
 }
