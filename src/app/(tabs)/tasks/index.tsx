@@ -16,6 +16,7 @@ import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
 import { TaskRow } from '../../../components/tasks/TaskRow';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { acceptTask, listTasks, rejectTask } from '../../../lib/api/tasks';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { groupByDeadline, myTasks } from '../../../lib/tasks/deadline-groups';
@@ -35,11 +36,18 @@ function CountBox({ value, label }: { value: number; label: string }) {
 export default function MyTasksScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { active } = useWorkspace();
+  const { active, workspaces, switchTo } = useWorkspace();
   const queryClient = useQueryClient();
 
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+
+  /*
+    Chỉ cho bấm khi thật sự có cái để đổi, y như tab Trò chuyện. Người dùng chỉ
+    thuộc một workspace mà mở ra danh sách một dòng thì chỉ tổ khó hiểu.
+  */
+  const coTheDoiWorkspace = workspaces.length > 1;
 
   const tasksQuery = useQuery({
     queryKey: ['tasks', active?.id],
@@ -98,6 +106,7 @@ export default function MyTasksScreen() {
       <GradientHeader
         title="Việc của tôi"
         subtitle={active?.name}
+        onPressSubtitle={coTheDoiWorkspace ? () => setSwitcherOpen(true) : undefined}
         right={
           <Pressable
             onPress={() => router.push('/tasks/new')}
@@ -206,6 +215,14 @@ export default function MyTasksScreen() {
           if (rejectingId) rejectMutation.mutate({ taskId: rejectingId, reason });
         }}
         onDismiss={() => setRejectingId(null)}
+      />
+
+      <WorkspaceSwitcher
+        visible={switcherOpen}
+        workspaces={workspaces}
+        activeId={active?.id}
+        onSelect={(id) => void switchTo(id)}
+        onDismiss={() => setSwitcherOpen(false)}
       />
     </View>
   );

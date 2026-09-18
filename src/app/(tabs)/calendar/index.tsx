@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { getCalendar, type MucLich } from '../../../lib/api/calendar';
 import {
   gioTrongNgay,
@@ -55,7 +56,14 @@ function Muc({ item }: { item: MucLich }) {
 }
 
 export default function ManLich() {
-  const { active } = useWorkspace();
+  const { active, workspaces, switchTo } = useWorkspace();
+
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+
+  /*
+    Chỉ cho bấm khi thật sự có cái để đổi, y như tab Trò chuyện.
+  */
+  const coTheDoiWorkspace = workspaces.length > 1;
 
   const khoang = useMemo(() => {
     const bayGio = new Date();
@@ -85,7 +93,11 @@ export default function ManLich() {
 
   return (
     <View style={styles.man}>
-      <GradientHeader title="Lịch" subtitle={active?.name} />
+      <GradientHeader
+        title="Lịch"
+        subtitle={active?.name}
+        onPressSubtitle={coTheDoiWorkspace ? () => setSwitcherOpen(true) : undefined}
+      />
 
       <View style={styles.than}>
         {/*
@@ -146,6 +158,14 @@ export default function ManLich() {
           />
         )}
       </View>
+
+      <WorkspaceSwitcher
+        visible={switcherOpen}
+        workspaces={workspaces}
+        activeId={active?.id}
+        onSelect={(id) => void switchTo(id)}
+        onDismiss={() => setSwitcherOpen(false)}
+      />
     </View>
   );
 }
