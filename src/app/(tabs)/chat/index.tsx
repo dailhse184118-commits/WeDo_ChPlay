@@ -13,14 +13,18 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueries, useQuery } from '@tanstack/react-query';
 
+import { ConversationRow } from '../../../components/chat/ConversationRow';
 import { ProjectRow } from '../../../components/chat/ProjectRow';
+import { SegmentedTabs } from '../../../components/chat/SegmentedTabs';
 import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
 import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
+import { listConversations } from '../../../lib/api/direct-chat';
 import { listProjects } from '../../../lib/api/projects';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { useSocket } from '../../../lib/socket/socket-context';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } from '../../../theme/tokens';
@@ -37,6 +41,20 @@ export default function ChatListScreen() {
   const [query, setQuery] = useState('');
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [taoMoiOpen, setTaoMoiOpen] = useState(false);
+  const [muc, setMuc] = useState<'du-an' | 'tin-nhan'>('du-an');
+
+  const { onlineUserIds } = useSocket();
+
+  const conversationsQuery = useQuery({
+    queryKey: ['direct-conversations'],
+    queryFn: listConversations,
+    /*
+      Chỉ gọi khi người dùng thật sự mở mục đó. "Dự án" là mặc định, và phần lớn
+      lượt mở app không chạm tới tin nhắn riêng — bắn sẵn lượt gọi chỉ tốn pin
+      và dữ liệu di động.
+    */
+    enabled: muc === 'tin-nhan',
+  });
 
   const projectsQuery = useQuery({
     queryKey: ['projects', workspaceId],
@@ -93,6 +111,17 @@ export default function ChatListScreen() {
           </View>
         }
       >
+        <SegmentedTabs
+          options={[
+            { key: 'du-an', label: 'Dự án' },
+            { key: 'tin-nhan', label: 'Tin nhắn' },
+          ]}
+          value={muc}
+          onChange={(key) => setMuc(key as 'du-an' | 'tin-nhan')}
+        />
+
+        {/* Ô này lọc dự án, không lọc hội thoại — mục Tin nhắn không cần tới. */}
+        {muc === 'du-an' ? (
         <View style={styles.search}>
           <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.9)" />
           <TextInput
@@ -109,10 +138,11 @@ export default function ChatListScreen() {
             autoCapitalize="none"
           />
         </View>
+        ) : null}
       </GradientHeader>
 
       <View style={styles.body}>
-        {projectsQuery.isError ? (
+        {muc === 'du-an' && projectsQuery.isError ? (
           <ErrorBanner
             message={
               projectsQuery.error instanceof Error
@@ -122,7 +152,70 @@ export default function ChatListScreen() {
           />
         ) : null}
 
-        {projectsQuery.isLoading ? (
+        {muc === 'tin-nhan' && conversationsQuery.isError ? (
+          <ErrorBanner
+            message={
+              conversationsQuery.error instanceof Error
+                ? conversationsQuery.error.message
+                : 'Không tải được danh sách tin nhắn.'
+            }
+          />
+        ) : null}
+
+        {muc === 'tin-nhan' ? (
+          conversationsQuery.isLoading && !conversationsQuery.data ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={conversationsQuery.data ?? []}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const nguoiKia = item.participants.find(
+                  (participant) => participant.userId !== user?.id,
+                );
+
+                return (
+                  <ConversationRow
+                    conversation={item}
+                    currentUserId={user?.id ?? ''}
+                    online={nguoiKia ? onlineUserIds.has(nguoiKia.userId) : false}
+                    onPress={() =>
+                      router.push(
+                        `/chat/dm/${item.id}?ten=${encodeURIComponent(
+                          nguoiKia?.user.fullName ?? '',
+                        )}`,
+                      )
+                    }
+                  />
+                );
+              }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={conversationsQuery.isRefetching}
+                  onRefresh={() => conversationsQuery.refetch()}
+                  colors={[colors.primary]}
+                />
+              }
+              ListEmptyComponent={
+                conversationsQuery.isError ? null : (
+                  <View style={styles.empty}>
+                    <View style={styles.emptyIcon}>
+                      <Ionicons name="chatbubbles-outline" size={28} color={colors.primary} />
+                    </View>
+                    <Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
+                    <Text style={styles.emptyBody}>
+                      Mở một dự án rồi chạm vào tên thành viên để nhắn riêng cho họ.
+                    </Text>
+                  </View>
+                )
+              }
+            />
+          )
+        ) : projectsQuery.isLoading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
@@ -204,6 +297,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.md },
   search: {
+    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     // Ô có chữ bên trong: `minHeight` để chữ phóng to thì ô cao theo.
