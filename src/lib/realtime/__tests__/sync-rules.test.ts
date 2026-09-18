@@ -11,6 +11,21 @@ describe('keysToInvalidate', () => {
   it('công việc đổi làm hỏng cả danh sách lẫn chi tiết', () => {
     expect(keysToInvalidate('task:project:updated')).toEqual([['tasks'], ['task']]);
   });
+
+  it('tin nhắn riêng mới làm hỏng cả danh sách hội thoại lẫn luồng đang mở', () => {
+    expect(keysToInvalidate('message:direct')).toEqual([
+      ['direct-conversations'],
+      ['direct-messages'],
+    ]);
+  });
+
+  it('tin nhắn riêng bị sửa chỉ làm hỏng luồng', () => {
+    expect(keysToInvalidate('message:direct:updated')).toEqual([['direct-messages']]);
+  });
+
+  it('đã đọc làm hỏng danh sách hội thoại để huy hiệu tắt đi', () => {
+    expect(keysToInvalidate('read:direct')).toEqual([['direct-conversations']]);
+  });
 });
 
 describe('projectRoomsToJoin', () => {

@@ -3,7 +3,12 @@
  *
  * Tách ra thành dữ liệu thuần để test được mà không cần dựng socket thật.
  */
-export type RealtimeEvent = 'notification:new' | 'task:project:updated';
+export type RealtimeEvent =
+  | 'notification:new'
+  | 'task:project:updated'
+  | 'message:direct'
+  | 'message:direct:updated'
+  | 'read:direct';
 
 /** Khoá truy vấn cần báo hỏng khi nhận được sự kiện. */
 export function keysToInvalidate(event: RealtimeEvent): string[][] {
@@ -14,6 +19,15 @@ export function keysToInvalidate(event: RealtimeEvent): string[][] {
       // Không biết việc thuộc không gian làm việc nào nên báo hỏng cả nhánh
       // 'tasks'; react-query khớp theo tiền tố khoá.
       return [['tasks'], ['task']];
+    case 'message:direct':
+      // Cả hai: danh sách để đẩy hội thoại lên đầu và cộng huy hiệu, luồng để
+      // tin hiện ra nếu người dùng đang mở đúng hội thoại đó.
+      return [['direct-conversations'], ['direct-messages']];
+    case 'message:direct:updated':
+      return [['direct-messages']];
+    case 'read:direct':
+      // Người kia đọc xong thì chỉ trạng thái hội thoại đổi, nội dung thì không.
+      return [['direct-conversations']];
   }
 }
 

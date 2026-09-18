@@ -51,12 +51,27 @@ export function useRealtimeSync(): void {
     const onNotification = () => invalidate('notification:new');
     const onTask = () => invalidate('task:project:updated');
 
+    /*
+      Không cần `join:direct` cho hội thoại cũ: gateway tự cho người dùng vào
+      mọi phòng `direct:*` ngay trong `handleConnection`. Chỉ hội thoại vừa tạo
+      trong phiên hiện tại mới phải xin vào phòng.
+    */
+    const onDirectMessage = () => invalidate('message:direct');
+    const onDirectUpdated = () => invalidate('message:direct:updated');
+    const onDirectRead = () => invalidate('read:direct');
+
     socket.on('notification:new', onNotification);
     socket.on('task:project:updated', onTask);
+    socket.on('message:direct', onDirectMessage);
+    socket.on('message:direct:updated', onDirectUpdated);
+    socket.on('read:direct', onDirectRead);
 
     return () => {
       socket.off('notification:new', onNotification);
       socket.off('task:project:updated', onTask);
+      socket.off('message:direct', onDirectMessage);
+      socket.off('message:direct:updated', onDirectUpdated);
+      socket.off('read:direct', onDirectRead);
     };
   }, [socket, queryClient]);
 }
