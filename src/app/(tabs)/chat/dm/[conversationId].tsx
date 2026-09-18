@@ -10,6 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { MessageBubble } from '../../../../components/chat/MessageBubble';
+import { EmptyChat } from '../../../../components/chat/EmptyChat';
 import { MessageComposer } from '../../../../components/chat/MessageComposer';
 import { ErrorBanner } from '../../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../../components/ui/GradientHeader';
@@ -112,6 +113,12 @@ export default function ManTinNhanRieng() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.danhSach}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <EmptyChat
+                title="Chưa có tin nhắn nào"
+                body="Gửi lời chào để bắt đầu cuộc trò chuyện."
+              />
+            }
             renderItem={({ item }) => (
               <MessageBubble
                 message={item}

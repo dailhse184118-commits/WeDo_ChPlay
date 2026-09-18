@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { MessageBubble } from '../../../components/chat/MessageBubble';
+import { EmptyChat } from '../../../components/chat/EmptyChat';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
 import {
   TaskSuggestionSheet,
@@ -451,12 +452,10 @@ export default function ChatThreadScreen() {
             loadingMore ? <ActivityIndicator style={styles.more} color={colors.primary} /> : null
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>Chưa có tin nhắn nào</Text>
-              <Text style={styles.emptyBody}>
-                Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để biến nó thành công việc.
-              </Text>
-            </View>
+            <EmptyChat
+              title="Chưa có tin nhắn nào"
+              body="Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để biến nó thành công việc."
+            />
           }
           renderItem={({ item }) => {
             const pendingItem = pendingById.get(item.id);
@@ -538,14 +537,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   more: { marginVertical: spacing.md },
-  empty: { paddingTop: spacing.xl, alignItems: 'center', transform: [{ scaleY: -1 }] },
-  emptyTitle: {
-    fontSize: fontSize.md,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  emptyBody: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   typing: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
