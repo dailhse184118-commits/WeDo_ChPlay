@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -11,9 +12,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { ConversationRow } from '../../../components/chat/ConversationRow';
+import { NewConversationSheet } from '../../../components/chat/NewConversationSheet';
 import { ProjectRow } from '../../../components/chat/ProjectRow';
 import { SegmentedTabs } from '../../../components/chat/SegmentedTabs';
 import { UpdateBanner } from '../../../components/update/UpdateBanner';
@@ -22,8 +24,9 @@ import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitch
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
-import { listConversations } from '../../../lib/api/direct-chat';
+import { listConversations, startConversation } from '../../../lib/api/direct-chat';
 import { listProjects } from '../../../lib/api/projects';
+import { getWorkspace } from '../../../lib/api/workspaces';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { useSocket } from '../../../lib/socket/socket-context';
 import { usePhienBan } from '../../../lib/version/use-phien-ban';
@@ -53,6 +56,38 @@ export default function ChatListScreen() {
     ra một lỗi im lặng mà TypeScript không bắt được.
   */
   const capNhat = usePhienBan();
+
+  const queryClient = useQueryClient();
+  const [chonNguoiOpen, setChonNguoiOpen] = useState(false);
+
+  /*
+    Danh sách thành viên để chọn người nhắn. Chỉ gọi khi sheet mở — phần lớn
+    lượt mở app không ai bấm tới nút này.
+  */
+  const workspaceQuery = useQuery({
+    queryKey: ['workspace', workspaceId],
+    queryFn: () => getWorkspace(workspaceId as string),
+    enabled: chonNguoiOpen && Boolean(workspaceId),
+  });
+
+  /*
+    Máy chủ tra theo `pairKey` trước khi tạo, nên chọn lại đúng người đã có hội
+    thoại sẽ trả về hội thoại cũ chứ không sinh cái trùng.
+  */
+  const taoHoiThoai = useMutation({
+    /*
+      Nhận cả họ tên chứ không chỉ id, dù máy chủ chỉ cần id. Tiêu đề màn nhắn
+      tin lấy tên từ tham số đường dẫn, mà kết quả trả về không kèm tên người
+      kia ở dạng tiện dùng — react-query đưa lại nguyên biến đầu vào cho
+      `onSuccess`, nên gói tên vào đây là cách gọn nhất.
+    */
+    mutationFn: ({ userId }: { userId: string; hoTen: string }) => startConversation(userId),
+    onSuccess: (hoiThoai, bien) => {
+      setChonNguoiOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['direct-conversations'] });
+      router.push(`/chat/dm/${hoiThoai.id}?ten=${encodeURIComponent(bien.hoTen)}`);
+    },
+  });
 
   const conversationsQuery = useQuery({
     queryKey: ['direct-conversations'],
@@ -183,6 +218,17 @@ export default function ChatListScreen() {
           ) : (
             <FlatList
               data={conversationsQuery.data ?? []}
+              ListHeaderComponent={
+                <Pressable
+                  testID="nut-nhan-tin-moi"
+                  accessibilityRole="button"
+                  onPress={() => setChonNguoiOpen(true)}
+                  style={styles.nutNhanTinMoi}
+                >
+                  <Ionicons name="create-outline" size={18} color={colors.primary} />
+                  <Text style={styles.nutNhanTinMoiChu}>Nhắn tin mới</Text>
+                </Pressable>
+              }
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}
               showsVerticalScrollIndicator={false}
@@ -221,7 +267,7 @@ export default function ChatListScreen() {
                     </View>
                     <Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
                     <Text style={styles.emptyBody}>
-                      Mở một dự án rồi chạm vào tên thành viên để nhắn riêng cho họ.
+                      Chạm "Nhắn tin mới" ở trên để chọn một người trong không gian làm việc.
                     </Text>
                   </View>
                 )
@@ -278,6 +324,15 @@ export default function ChatListScreen() {
         )}
       </View>
 
+      <NewConversationSheet
+        visible={chonNguoiOpen}
+        workspace={workspaceQuery.data}
+        currentUserId={user?.id ?? ''}
+        dangTao={taoHoiThoai.isPending}
+        onChon={(userId, hoTen) => taoHoiThoai.mutate({ userId, hoTen })}
+        onDismiss={() => setChonNguoiOpen(false)}
+      />
+
       <WorkspaceSwitcher
         visible={switcherOpen}
         workspaces={workspaces}
@@ -309,6 +364,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.md },
+  nutNhanTinMoi: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm + 4,
+    marginBottom: spacing.sm + 4,
+  },
+  nutNhanTinMoiChu: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.primary,
+  },
   search: {
     marginTop: spacing.sm,
     flexDirection: 'row',
