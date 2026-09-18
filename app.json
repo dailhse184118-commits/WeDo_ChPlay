@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "vn.wedo.app",
-      "versionCode": 14,
+      "versionCode": 15,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0055c7",
@@ -55,7 +55,8 @@
           "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "./plugins/with-may-anh-tuy-chon"
     ],
     "experiments": {
       "typedRoutes": true
