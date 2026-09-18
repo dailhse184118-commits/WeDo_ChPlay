@@ -175,13 +175,37 @@ hoá; thêm bốn dòng vào đó, test đi kèm.
 sách hội thoại và màn Bạn bè đọc thẳng `Set` đó để chấm xanh — không thêm lượt
 gọi mạng, không thêm trạng thái.
 
+### Tạo thêm không gian làm việc
+
+Phần nhỏ nhất trong ba yêu cầu, và gần như đã xong sẵn: `createWorkspace` có
+trong `src/lib/api/workspaces.ts`, `CreateWorkspaceForm` có trong
+`src/components/workspace/`, `WorkspaceProvider.create()` đã lưu id và chuyển
+sang workspace mới. Thiếu đúng một thứ: **chỗ bấm**.
+
+Hiện `CreateWorkspaceForm` chỉ xuất hiện ở màn onboarding khi người dùng chưa có
+workspace nào. Có rồi thì không còn đường tạo thêm.
+
+Thêm một dòng **"+ Tạo không gian mới"** ở cuối `WorkspaceSwitcher`, ngăn cách
+với danh sách bằng một đường kẻ. Chạm vào thì đóng sheet và mở
+`CreateWorkspaceForm` trong một `Modal`.
+
+Đặt ở đây vì đó đã là chỗ người dùng tìm tới khi muốn đổi không gian — "tạo
+thêm" là ý nghĩ liền kề. Và sau bản vá ngày 18/09, sheet này mở được từ cả ba
+tab Trò chuyện, Việc của tôi và Lịch, nên không phải thêm lối vào ở đâu nữa.
+
+Một thay đổi kèm theo: `coTheDoiWorkspace = workspaces.length > 1` đang chặn
+không cho mở sheet khi người dùng chỉ có một workspace. Nay sheet còn mang chức
+năng tạo mới, nên bỏ chặn — người có đúng một nhóm mới là người cần tạo thêm
+nhất. Ba màn dùng cờ này phải sửa cùng lúc.
+
 ## Phạm vi lần giao này
 
 Gồm cả hai đợt bên dưới. "Đợt 1" và "đợt 2" chỉ là thứ tự phát hành, không phải
 hai mức phạm vi.
 
 **Có:** gửi và nhận văn bản, nhận realtime, chỉ báo đang gõ, đếm chưa đọc, đánh
-dấu đã đọc, chấm online, tạo hội thoại mới, kết bạn đầy đủ.
+dấu đã đọc, chấm online, tạo hội thoại mới, kết bạn đầy đủ, tạo thêm không gian
+làm việc.
 
 **Để sau:** tệp đính kèm, cảm xúc, chuyển tiếp, thu hồi, tìm trong hội thoại,
 phân trang lịch sử. Backend có sẵn cả — cắt ở tầng giao diện, thêm lúc nào cũng
