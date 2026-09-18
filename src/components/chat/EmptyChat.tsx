@@ -1,11 +1,18 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, fontSize, lineHeight, spacing } from '../../theme/tokens';
 
 interface EmptyChatProps {
   title: string;
   body: string;
+  /**
+   * BẮT BUỘC nhận và dán lên khung ngoài cùng — xem khối ghi chú bên dưới.
+   * `FlatList inverted` đưa style khử-lật vào đây; bỏ qua là chữ lộn ngược.
+   */
+  style?: StyleProp<ViewStyle>;
+  /** `VirtualizedList` dùng để đo chiều cao phần trống. */
+  onLayout?: React.ComponentProps<typeof View>['onLayout'];
 }
 
 /**
@@ -26,11 +33,22 @@ interface EmptyChatProps {
  *
  * Để trống phần transform là đúng: React Native đã lo, và nó biết mình đang
  * chạy trên nền tảng nào.
+ *
+ * NHƯNG để trống thôi thì CHƯA ĐỦ, và đây là nửa còn lại của cùng câu chuyện —
+ * lỗi báo lần thứ hai cũng trong ngày 18/09/2026, chữ quay đúng 180 độ.
+ *
+ * `_renderEmptyComponent` đưa style khử-lật vào **prop `style` của component**:
+ *
+ *     style: StyleSheet.compose(inversionStyle, element.props.style)
+ *
+ * Component tự viết mà không nhận `style` thì style ấy rơi vào hư không. Khung
+ * danh sách vẫn lật `scale: -1`, không còn gì khử, và chữ lộn ngược hoàn toàn.
+ * Nên `style` PHẢI được nhận và dán lên khung ngoài cùng.
  * ===========================================================================
  */
-export function EmptyChat({ title, body }: EmptyChatProps) {
+export function EmptyChat({ title, body, style, onLayout }: EmptyChatProps) {
   return (
-    <View testID="empty-chat" style={styles.khung}>
+    <View testID="empty-chat" onLayout={onLayout} style={[styles.khung, style]}>
       <Text style={styles.tieuDe}>{title}</Text>
       <Text style={styles.than}>{body}</Text>
     </View>
