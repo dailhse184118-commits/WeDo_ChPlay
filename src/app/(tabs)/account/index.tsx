@@ -1,15 +1,28 @@
-import React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
+import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
+import { capNhatAnhDaiDien } from '../../../lib/api/account';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
-import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
 /** Số pixel thẻ danh tính chồng lên mép dưới của gradient header. */
 
@@ -56,8 +69,61 @@ function MenuRow({ icon, tone, label, hint, onPress, testID, last }: MenuRowProp
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, capNhatHoSo } = useAuth();
   const { active } = useWorkspace();
+
+  const [dangLuuAnh, setDangLuuAnh] = useState(false);
+  const [loiAnh, setLoiAnh] = useState('');
+
+  async function luuAnh(anhUrl: string | null) {
+    setLoiAnh('');
+    setDangLuuAnh(true);
+    try {
+      capNhatHoSo(await capNhatAnhDaiDien(anhUrl));
+    } catch (loi) {
+      setLoiAnh(loi instanceof Error ? loi.message : 'Không đổi được ảnh đại diện.');
+    } finally {
+      setDangLuuAnh(false);
+    }
+  }
+
+  /*
+    Tách hẳn "chọn ảnh" khỏi "gỡ ảnh", đừng gộp vào một hàm nhận `string | null`.
+
+    `chonAnhDaiDien` trả `null` khi người dùng bấm HUỶ, mà `null` cũng là giá
+    trị để GỠ ảnh. Gộp lại thì mở trình chọn rồi đổi ý là mất luôn ảnh đang có.
+  */
+  async function chonVaLuuAnh() {
+    setLoiAnh('');
+    setDangLuuAnh(true);
+    try {
+      const anh = await chonAnhDaiDien();
+      if (anh === null) return;
+
+      capNhatHoSo(await capNhatAnhDaiDien(anh));
+    } catch (loi) {
+      setLoiAnh(loi instanceof Error ? loi.message : 'Không đổi được ảnh đại diện.');
+    } finally {
+      setDangLuuAnh(false);
+    }
+  }
+
+  function chamVaoAnh() {
+    if (dangLuuAnh) return;
+
+    // Đã có ảnh thì phải cho gỡ, nếu không người dùng kẹt với tấm ảnh họ không
+    // còn muốn dùng mà chỉ đổi được sang tấm khác.
+    if (!user?.avatarUrl) {
+      void chonVaLuuAnh();
+      return;
+    }
+
+    Alert.alert('Ảnh đại diện', undefined, [
+      { text: 'Chọn ảnh khác', onPress: () => void chonVaLuuAnh() },
+      { text: 'Gỡ ảnh', style: 'destructive', onPress: () => void luuAnh(null) },
+      { text: 'Thôi', style: 'cancel' },
+    ]);
+  }
 
   return (
     <View style={styles.screen}>
@@ -93,15 +159,40 @@ export default function AccountScreen() {
             </View>
           </Card>
 
-          {/* Vẽ sau thẻ để nằm đè lên trên. */}
-          <View style={styles.avatarFloat} pointerEvents="none">
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {(user?.fullName ?? '?').charAt(0).toUpperCase()}
-              </Text>
-            </View>
+          {/*
+            Vẽ sau thẻ để nằm đè lên trên.
+
+            KHÔNG còn `pointerEvents="none"` như trước: giờ chạm được để đổi ảnh.
+          */}
+          <View style={styles.avatarFloat}>
+            <Pressable
+              testID="account-avatar"
+              accessibilityRole="button"
+              accessibilityLabel={
+                user?.avatarUrl ? 'Đổi hoặc gỡ ảnh đại diện' : 'Chọn ảnh đại diện'
+              }
+              onPress={chamVaoAnh}
+              style={styles.avatarNut}
+            >
+              <Avatar
+                hoTen={user?.fullName ?? ''}
+                anhUrl={user?.avatarUrl}
+                co={sizes.profileAvatar}
+              />
+
+              {/* Huy hiệu máy ảnh: không có nó thì không ai đoán được là chạm được. */}
+              <View style={styles.huyHieu}>
+                {dangLuuAnh ? (
+                  <ActivityIndicator size="small" color={colors.onPrimary} />
+                ) : (
+                  <Ionicons name="camera" size={14} color={colors.onPrimary} />
+                )}
+              </View>
+            </Pressable>
           </View>
         </View>
+
+        {loiAnh ? <ErrorBanner message={loiAnh} /> : null}
 
         <Card style={styles.menu}>
           <MenuRow
@@ -185,17 +276,26 @@ const styles = StyleSheet.create({
     paddingTop: sizes.profileAvatar / 2 + spacing.md,
   },
   avatarFloat: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
-  avatar: {
-    width: sizes.profileAvatar,
-    height: sizes.profileAvatar,
+  /* Viền trắng để avatar tách khỏi gradient phía sau, giữ nguyên nét cũ. */
+  avatarNut: {
     borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 4,
+    borderWidth: 3,
+    borderColor: colors.background,
+    backgroundColor: colors.background,
+  },
+  huyHieu: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: scale(28),
+    height: scale(28),
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
     borderColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: colors.primary, fontWeight: '700', fontSize: fontSize.xl },
   name: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
   email: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
   workspace: {

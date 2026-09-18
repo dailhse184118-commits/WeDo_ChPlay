@@ -19,6 +19,7 @@ import { NewConversationSheet } from '../../../components/chat/NewConversationSh
 import { ProjectRow } from '../../../components/chat/ProjectRow';
 import { SegmentedTabs } from '../../../components/chat/SegmentedTabs';
 import { UpdateBanner } from '../../../components/update/UpdateBanner';
+import { Avatar } from '../../../components/ui/Avatar';
 import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
 import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
@@ -180,11 +181,7 @@ export default function ChatListScreen() {
               {soLoiMoi > 0 ? <View testID="cham-loi-moi" style={styles.cham} /> : null}
             </Pressable>
 
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {(user?.fullName ?? '?').charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            <Avatar hoTen={user?.fullName ?? ''} anhUrl={user?.avatarUrl} co={scale(40)} />
           </View>
         }
       >
@@ -389,15 +386,6 @@ export default function ChatListScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  avatar: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: colors.onPrimary, fontWeight: '700', fontSize: fontSize.md },
   headerPhai: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   nutBanBe: {
     width: scale(40),

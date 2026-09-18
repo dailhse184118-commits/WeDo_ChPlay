@@ -27,6 +27,20 @@ describe('FriendRow', () => {
     expect(getByText('tuan@wedo.vn')).toBeTruthy();
   });
 
+  /*
+    Chốt chặn cho đường truyền ảnh. `Avatar` đã có test riêng cho cả hai nhánh,
+    nhưng thứ dễ đứt là chỗ QUÊN chuyền `avatarUrl` xuống — lúc đó ai cũng hiện
+    vòng tròn chữ cái và trông như máy chủ chưa lưu ảnh.
+  */
+  it('có ảnh thì dựng ảnh thật, không phải vòng tròn chữ cái', async () => {
+    const { getByTestId, queryByText } = await dung({
+      nguoi: { ...BAN, avatarUrl: 'https://lh3.googleusercontent.com/abc' },
+    });
+
+    expect(getByTestId('avatar-anh')).toBeTruthy();
+    expect(queryByText('T')).toBeNull();
+  });
+
   it('chưa có quan hệ thì hiện nút kết bạn', async () => {
     const { getByTestId } = await dung({ trangThai: 'chua-gi-ca' });
 

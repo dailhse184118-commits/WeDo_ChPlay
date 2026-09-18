@@ -29,6 +29,7 @@ describe('màn hình đăng nhập', () => {
       signInWithGoogle,
       signUp: jest.fn(),
       signOut: jest.fn(),
+    capNhatHoSo: jest.fn(),
     });
   });
 

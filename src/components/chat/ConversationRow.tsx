@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Card } from '../ui/Card';
 import { doiPhuong } from '../../lib/chat/doi-phuong';
 import type { DirectConversation } from '../../lib/types';
+import { Avatar } from '../ui/Avatar';
 import { colors, fontSize, radius, scaleWithFont, sizes, spacing } from '../../theme/tokens';
 
 interface ConversationRowProps {
@@ -36,11 +37,11 @@ export function ConversationRow({
     <Card testID={`conversation-row-${conversation.id}`} onPress={onPress} style={styles.card}>
       <View style={styles.row}>
         <View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {nguoiKia.fullName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <Avatar
+            hoTen={nguoiKia.fullName}
+            anhUrl={nguoiKia.avatarUrl}
+            co={sizes.projectAvatar}
+          />
           {online ? <View testID="cham-online" style={styles.cham} /> : null}
         </View>
 
@@ -66,15 +67,6 @@ export function ConversationRow({
 const styles = StyleSheet.create({
   card: { marginBottom: spacing.sm + 4 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  avatar: {
-    width: sizes.projectAvatar,
-    height: sizes.projectAvatar,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-  },
-  avatarText: { fontWeight: '700', fontSize: fontSize.lg, color: colors.primary },
   /* Viền cùng màu nền thẻ để chấm không dính vào avatar khi hai màu gần nhau. */
   cham: {
     position: 'absolute',

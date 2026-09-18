@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Avatar } from '../ui/Avatar';
 import type { TrangThaiKetBan } from '../../lib/friends/quan-he';
 import type { UserSummary } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
@@ -40,9 +41,7 @@ export function FriendRow({
 
   return (
     <View testID={`friend-row-${nguoi.id}`} style={styles.dong}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarChu}>{nguoi.fullName.charAt(0).toUpperCase()}</Text>
-      </View>
+      <Avatar hoTen={nguoi.fullName} anhUrl={nguoi.avatarUrl} co={sizes.projectAvatar} />
 
       <View style={styles.than}>
         <Text style={styles.ten} numberOfLines={1}>
@@ -110,15 +109,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.sm + 4,
   },
-  avatar: {
-    width: sizes.projectAvatar,
-    height: sizes.projectAvatar,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarChu: { fontSize: fontSize.lg, fontWeight: '700', color: colors.primary },
   than: { flex: 1 },
   ten: { fontSize: fontSize.md, lineHeight: lineHeight.md, fontWeight: '600', color: colors.text },
   email: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },

@@ -33,6 +33,14 @@ export interface AuthState {
   signInWithGoogle: () => Promise<void>;
   signUp: (input: RegisterInput) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Thay hồ sơ đang giữ bằng bản máy chủ vừa trả về.
+   *
+   * Cần vì `user` nằm ở đây nhưng lại được sửa từ màn Tài khoản. Không có
+   * đường này thì đổi ảnh đại diện xong, avatar trên header màn Trò chuyện vẫn
+   * là ảnh cũ cho tới lần mở app sau.
+   */
+  capNhatHoSo: (profile: UserProfile) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -218,9 +226,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [establishSession],
   );
 
+  const capNhatHoSo = useCallback((profile: UserProfile) => {
+    setUser(profile);
+    // Ghi đè bản lưu luôn, để mở app lúc không có mạng cũng thấy ảnh mới.
+    void saveUserProfile(profile);
+  }, []);
+
   const value = useMemo<AuthState>(
-    () => ({ status, user, signIn, signInWithGoogle, signUp, signOut }),
-    [status, user, signIn, signInWithGoogle, signUp, signOut],
+    () => ({ status, user, signIn, signInWithGoogle, signUp, signOut, capNhatHoSo }),
+    [status, user, signIn, signInWithGoogle, signUp, signOut, capNhatHoSo],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

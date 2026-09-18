@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Avatar } from '../ui/Avatar';
 import type { WorkspaceChiTiet } from '../../lib/types';
 import {
   colors,
@@ -70,11 +71,11 @@ export function NewConversationSheet({
                 }}
                 style={({ pressed }) => [styles.dong, pressed ? styles.dongNhan : null]}
               >
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarChu}>
-                    {thanhVien.user.fullName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+                <Avatar
+                  hoTen={thanhVien.user.fullName}
+                  anhUrl={thanhVien.user.avatarUrl}
+                  co={sizes.projectAvatar}
+                />
 
                 <View style={styles.than}>
                   <Text style={styles.ten} numberOfLines={1}>
@@ -132,15 +133,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 4,
   },
   dongNhan: { opacity: 0.6 },
-  avatar: {
-    width: sizes.projectAvatar,
-    height: sizes.projectAvatar,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarChu: { fontSize: fontSize.lg, fontWeight: '700', color: colors.primary },
   than: { flex: 1 },
   ten: { fontSize: fontSize.md, lineHeight: lineHeight.md, fontWeight: '600', color: colors.text },
   email: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },
