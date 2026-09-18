@@ -119,9 +119,10 @@ không phải sửa gì ở tầng giao diện.
 - `doi-phuong.ts` — từ `DirectConversation` và id người đang đăng nhập, rút ra
   người đối thoại. Hội thoại trả về cả hai người tham gia, mọi chỗ hiển thị đều
   cần "người kia là ai"; để logic này rải trong component là lặp ba lần.
-- `gop-hoi-thoai.ts` — chèn tin nhắn tới từ socket vào danh sách hội thoại, đẩy
-  hội thoại đó lên đầu và cộng `unreadCount`. Tách ra để kiểm được mà không cần
-  dựng socket thật.
+Bản thiết kế đầu còn nêu `gop-hoi-thoai.ts` để chèn thủ công tin nhắn từ socket
+vào danh sách. **Đã bỏ khi lập kế hoạch thực thi:** phần realtime làm mới bằng
+cách vô hiệu hoá khoá truy vấn của react-query, nên hàm gộp thủ công không có
+chỗ nào gọi tới. Viết ra là viết mã chết.
 
 `message-list.ts`, `local-id.ts`, `typing-state.ts` đã có sẵn và dùng lại nguyên.
 
@@ -211,7 +212,13 @@ làm việc.
 phân trang lịch sử. Backend có sẵn cả — cắt ở tầng giao diện, thêm lúc nào cũng
 được mà không phải sửa tầng API.
 
-`MessageBubble` và `MessageComposer` dùng lại nguyên, không viết mới.
+`MessageComposer` dùng lại nguyên. `MessageBubble` phải **nới kiểu prop** trước
+khi dùng lại được: nó đang nhận `ChatMessage`, mà tin nhắn riêng gọi người gửi là
+`sender` và không có `projectId` lẫn `workspaceId`.
+
+Component chỉ thật sự đọc sáu trường — `id`, `content`, `createdAt`, `deletedAt`,
+`author.fullName`, `task.title` — nên thay `ChatMessage` bằng một kiểu cấu trúc
+tối thiểu. `ChatMessage` thoả kiểu đó, nên mọi chỗ gọi cũ không phải sửa dòng nào.
 
 ## Hai đợt phát hành
 
