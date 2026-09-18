@@ -186,6 +186,44 @@ export interface ChatHistoryPage {
   nextCursor?: string | null;
 }
 
+/** Một người trong hội thoại riêng. */
+export interface DirectParticipant {
+  id: string;
+  userId: string;
+  /** Mốc người này đọc tới. Chưa đọc lần nào thì vắng. */
+  lastReadAt?: string | null;
+  user: UserSummary;
+}
+
+export interface DirectConversation {
+  id: string;
+  /**
+   * Hai id người dùng đã sắp xếp rồi nối bằng dấu hai chấm.
+   *
+   * Máy chủ tra khoá này trước khi tạo, nên gọi tạo nhiều lần với cùng một người
+   * không sinh hội thoại trùng — chỗ gọi không cần tự kiểm tra trước.
+   */
+  pairKey: string;
+  createdAt: string;
+  updatedAt: string;
+  participants: DirectParticipant[];
+  /** Máy chủ đếm sẵn trong `getDirectConversations`, không phải đếm lại ở máy. */
+  unreadCount: number;
+}
+
+export interface DirectMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  replyToId?: string | null;
+  /** Khác chat dự án: ở đây người gửi tên là `sender`, không phải `author`. */
+  sender?: UserSummary;
+}
+
 export interface NotificationItem {
   id: string;
   type: NotificationType;
