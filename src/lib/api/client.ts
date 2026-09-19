@@ -136,6 +136,71 @@ function giaHanMotLuot(): Promise<string | null> {
   return dangGiaHan;
 }
 
+/** Hình dạng tối thiểu mà `apiRequest` đọc tới, dùng chung cho cả hai đường. */
+interface PhanHoi {
+  ok: boolean;
+  status: number;
+  text: () => Promise<string>;
+}
+
+/**
+ * Tải tệp lên bằng `XMLHttpRequest` thay vì `fetch`.
+ *
+ * ===========================================================================
+ * ĐỪNG đổi chỗ này về `fetch`. Đây là lỗi khiến MỌI lần tải tệp đều hỏng, và
+ * người kiểm thử báo ngày 19/09/2026.
+ *
+ * Expo SDK 57 THAY `fetch` toàn cục bằng bản WinterCG của nó
+ * (`expo/src/winter/runtime.native.ts`: `install('fetch', ...)`). Bản ấy không
+ * hiểu cách React Native đính tệp — chú thích trong
+ * `expo/src/winter/fetch/convertFormData.ts` ghi thẳng:
+ *
+ *     `uri` is not supported for React Native's FormData.
+ *
+ * Phần chuyển đổi của nó chỉ nhận `part.string`, `part.file`, `part.blob`. Mảnh
+ * tệp của React Native chỉ có `uri`, nên rơi ra `undefined` — thân multipart
+ * hỏng và `fetch` ném lỗi tầng mạng. Triệu chứng nhìn y hệt mất sóng, nên rất
+ * khó lần ra.
+ *
+ * `XMLHttpRequest` là đường gốc của React Native và đọc `uri` bằng mã native,
+ * nên nó vẫn đúng.
+ * ===========================================================================
+ */
+function taiTepLen(
+  url: string,
+  method: string,
+  form: FormData,
+  headers: Record<string, string>,
+): Promise<PhanHoi> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+
+    /*
+      KHÔNG đặt Content-Type. Chuỗi `multipart/form-data` thiếu tham số
+      `boundary` mà chỉ tầng dưới mới sinh ra được; đặt tay là máy chủ không
+      tách nổi các phần.
+    */
+    for (const [ten, gia] of Object.entries(headers)) {
+      if (ten.toLowerCase() !== 'content-type') xhr.setRequestHeader(ten, gia);
+    }
+
+    xhr.onload = () =>
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        text: async () => xhr.responseText ?? '',
+      });
+
+    // Giữ chữ "XMLHttpRequest" trong câu lỗi: đó là thứ phân biệt được đường
+    // này với đường fetch khi đọc báo cáo lỗi.
+    xhr.onerror = () => reject(new Error('XMLHttpRequest: không gửi được tệp'));
+    xhr.ontimeout = () => reject(new Error('XMLHttpRequest: quá hạn khi gửi tệp'));
+
+    xhr.send(form);
+  });
+}
+
 export async function apiRequest<T = unknown>(
   path: string,
   options: ApiRequestOptions = {},
@@ -157,13 +222,15 @@ export async function apiRequest<T = unknown>(
   // nuốt mất và báo nhầm thành lỗi mạng.
   const url = `${baseUrl()}${path}`;
 
-  let response: { ok: boolean; status: number; text: () => Promise<string> };
+  let response: PhanHoi;
   try {
-    response = await fetch(url, {
-      method,
-      headers: requestHeaders,
-      body: body === undefined || laFormData(body) ? (body as FormData | undefined) : JSON.stringify(body),
-    });
+    response = laFormData(body)
+      ? await taiTepLen(url, method, body, requestHeaders)
+      : await fetch(url, {
+          method,
+          headers: requestHeaders,
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
   } catch (loi) {
     /*
       PHẢI hứng lấy lỗi. `catch {` trơn vứt sạch câu lỗi của hệ điều hành, và

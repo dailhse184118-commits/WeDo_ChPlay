@@ -83,20 +83,26 @@ describe('apiRequest', () => {
     expect(lastInit().headers['Content-Type']).toBe('application/json');
   });
 
-  it('gửi thẳng FormData và để fetch tự đặt Content-Type', async () => {
-    /*
-      Upload tài liệu đi bằng multipart. JSON.stringify một FormData ra "{}",
-      còn tự đặt Content-Type thì thiếu tham số `boundary` — máy chủ không tách
-      nổi các phần và báo lỗi. Cả hai việc đó đều phải không xảy ra.
-    */
+  /*
+    Test nay TUNG kiem dieu nguoc lai — rang FormData di qua `fetch`. Do chinh
+    la hanh vi HONG.
+
+    Expo SDK 57 thay `fetch` toan cuc bang ban khong ho tro cach React Native
+    dinh tep (`{uri, name, type}`), nen moi lan tai tep deu that bai. Nay
+    FormData di duong `XMLHttpRequest`; chi tiet o `tai-tep-xhr.test.ts`.
+  */
+  it('KHÔNG đẩy FormData qua fetch', async () => {
     const form = new FormData();
     form.append('files', 'noi-dung-gia');
     mockFetchOnce({ ok: true });
 
-    await apiRequest('/tasks/t1/submissions', { method: 'POST', body: form });
+    // Không có XMLHttpRequest trong môi trường test này, nên lượt gọi sẽ hỏng.
+    // Điều cần khẳng định là `fetch` không hề được đụng tới.
+    await apiRequest('/tasks/t1/submissions', { method: 'POST', body: form }).catch(
+      () => undefined,
+    );
 
-    expect(lastInit().body).toBe(form);
-    expect(lastInit().headers['Content-Type']).toBeUndefined();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('trả dữ liệu đã parse khi thành công', async () => {
