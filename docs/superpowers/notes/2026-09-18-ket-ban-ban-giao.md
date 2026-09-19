@@ -180,3 +180,79 @@ bản 14, làm đúng các bước sau trên hai máy khác nhau:
 6. Máy còn lại phải thấy ảnh hiện ra ngay, không cần kéo làm mới.
 7. Từ chối quyền máy ảnh một lần → bấm nút máy ảnh → phải thấy băng đỏ chỉ
    đường vào Cài đặt, không phải nút bấm im lặng.
+
+---
+
+# Ngày 19/09/2026 — nâng cấp hạ tầng
+
+## Đã xác nhận trên máy thật
+
+Chủ dự án thử bằng máy thật, hai thứ treo lâu nhất đều **xong**:
+
+- **Thông báo đẩy tới được máy thật** — điện thoại rung. Chuỗi Firebase → Expo
+  → backend → điện thoại thông suốt. Đây là ẩn số lớn nhất của cả đợt.
+- **Bàn phím hết che ô soạn** — lần vá thứ tư đã ăn.
+
+> Bài học đáng giữ: khi một lỗi đã vá ba lần không ăn, **đừng vá lần bốn theo
+> kiểu đoán**. Hỏi chủ dự án một câu *phân biệt* được hai giả thuyết. Câu "chat
+> dự án có bị không" chỉ thẳng ra chỗ sai trong một phút, sau nhiều giờ đọc mã
+> không ra.
+
+## Sentry — giám sát lỗi
+
+Tổ chức `wedofpt`, hai project `wedo-backend` và `wedo-mobile`.
+
+| Nơi | Biến |
+|---|---|
+| Azure | `SENTRY_DSN` |
+| EAS (production) | `EXPO_PUBLIC_SENTRY_DSN` |
+
+**Đã TẮT Logging của Sentry**, dù nó miễn phí 5GB. Log máy chủ có chứa email
+người dùng (`[MailService] Đã gửi mã đặt lại mật khẩu tới ...`); bật lên là đẩy
+dữ liệu cá nhân sang bên thứ ba, đi ngược hẳn `sendDefaultPii: false`. Muốn bật
+sau này thì phải dọn email khỏi log trước.
+
+**Chưa gắn plugin tải source map** — cần `SENTRY_AUTH_TOKEN`. Vết lỗi phía app
+sẽ bị rút gọn cho tới khi gắn.
+
+## CI chạy migration trước khi deploy
+
+Cần **đủ bốn** GitHub Secret ở repo `FE_WEDO`, thiếu một cái là bỏ qua cả bước:
+
+- `PRODUCTION_MIGRATION_URL` — dùng `DIRECT_URL` của Supabase, **cổng 5432**,
+  không phải pooler 6543
+- `PRODUCTION_DATABASE_HOST`, `PRODUCTION_DATABASE_USER`,
+  `PRODUCTION_DATABASE_NAME` — chốt chặn để không chạy nhầm lên staging
+
+Đặt **trước** bước deploy chứ không lúc app khởi động: migration hỏng thì deploy
+dừng và production vẫn chạy bản cũ đang tốt.
+
+## Cập nhật OTA
+
+`expo-updates`, chính sách runtime version **`fingerprint`** (không phải
+`appVersion` như `eas update:configure` tự chọn — với `appVersion`, một bản OTA
+có thể rơi xuống máy thiếu mô-đun native và làm app sập ngay khi mở).
+
+Từ bản 17 trở đi, lỗi JavaScript thuần đi đường OTA, không tốn lượt build và
+không chờ Google duyệt. Đẩy bằng:
+
+```
+npx eas-cli update --channel production --environment production --message "mo ta"
+```
+
+### BẪY: vân tay lệch làm build ERRORED
+
+Build 17 lần đầu hỏng với *"Runtime version mismatch"*. Nguyên nhân: máy còn
+**rác biên dịch Gradle trong `node_modules`** (15 gói có `android/build`) từ
+những lần build cục bộ trước. Máy EAS cài sạch từ lockfile nên băm ra vân tay
+khác.
+
+Sửa: `rm -rf android && npm ci`
+
+**Trước khi build, KIỂM TRA vân tay thay vì đoán:**
+
+```
+npx expo-updates fingerprint:generate --platform android
+```
+
+So với vân tay EAS báo trong log lỗi — phải khớp từng ký tự.
