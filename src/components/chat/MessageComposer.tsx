@@ -2,6 +2,8 @@ import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useKeyboardState } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { TepChon } from '../../lib/api/tasks';
 import { colors, fontSize, radius, scale, scaleWithFont, spacing } from '../../theme/tokens';
@@ -44,8 +46,27 @@ export function MessageComposer({
   */
   const canSend = (value.trim().length > 0 || anh.length > 0) && !sending;
 
+  /*
+    Chừa chỗ cho thanh điều hướng của Android.
+
+    `edgeToEdgeEnabled` cho app vẽ TRÀN xuống dưới thanh điều hướng. Máy vuốt
+    cử chỉ chỉ chừa ~16dp nên gần như không thấy gì, nhưng máy dùng ba nút chừa
+    tới ~48dp — ô nhập nằm lọt dưới thanh nút và bấm không trúng. Người dùng
+    báo ngày 19/09/2026: không thể chạm vào để gõ chữ.
+
+    Trừ đi chiều cao bàn phím: lúc bàn phím mở thì nó đã phủ kín thanh điều
+    hướng rồi, chừa thêm nữa là hở một khoảng trống ngay trên bàn phím. Hai màn
+    chat chống bàn phím bằng hai cách khác nhau, nên đặt ở ĐÂY thì cả hai cùng
+    đúng mà không phải sửa chỗ nào khác.
+  */
+  const insets = useSafeAreaInsets();
+  const caoBanPhim = useKeyboardState((trangThai) => trangThai.height);
+
   return (
-    <View style={styles.khoi}>
+    <View
+      testID="composer-root"
+      style={[styles.khoi, { paddingBottom: Math.max(insets.bottom - caoBanPhim, 0) }]}
+    >
       {anh.length > 0 ? (
         <ScrollView
           horizontal

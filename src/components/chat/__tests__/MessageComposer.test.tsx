@@ -1,12 +1,15 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { renderScreen } from '../../../test-utils/render';
 
 import { MessageComposer } from '../MessageComposer';
 
 describe('MessageComposer', () => {
   it('báo thay đổi văn bản', async () => {
     const onChangeText = jest.fn();
-    const { getByTestId } = await render(
+    const { getByTestId } = await renderScreen(
       <MessageComposer value="" onChangeText={onChangeText} onSend={() => {}} />,
     );
 
@@ -16,7 +19,7 @@ describe('MessageComposer', () => {
 
   it('gọi onSend khi bấm gửi', async () => {
     const onSend = jest.fn();
-    const { getByTestId } = await render(
+    const { getByTestId } = await renderScreen(
       <MessageComposer value="Xin chào" onChangeText={() => {}} onSend={onSend} />,
     );
 
@@ -26,7 +29,7 @@ describe('MessageComposer', () => {
 
   it('không gửi khi ô trống', async () => {
     const onSend = jest.fn();
-    const { getByTestId } = await render(
+    const { getByTestId } = await renderScreen(
       <MessageComposer value="   " onChangeText={() => {}} onSend={onSend} />,
     );
 
@@ -36,7 +39,7 @@ describe('MessageComposer', () => {
 
   it('không gửi khi đang gửi dở', async () => {
     const onSend = jest.fn();
-    const { getByTestId } = await render(
+    const { getByTestId } = await renderScreen(
       <MessageComposer value="Xin chào" onChangeText={() => {}} onSend={onSend} sending />,
     );
 
@@ -48,7 +51,7 @@ describe('MessageComposer', () => {
     const ANH = { uri: 'file:///tmp/a.jpg', name: 'a.jpg', mimeType: 'image/jpeg' };
 
     it('không có hai nút ảnh khi màn hình chưa nhận ảnh', async () => {
-      const { queryByTestId } = await render(
+      const { queryByTestId } = await renderScreen(
         <MessageComposer value="" onChangeText={() => {}} onSend={() => {}} />,
       );
 
@@ -59,7 +62,7 @@ describe('MessageComposer', () => {
     it('báo ra ngoài khi bấm chụp và khi bấm chọn ảnh', async () => {
       const onChup = jest.fn();
       const onChonAnh = jest.fn();
-      const { getByTestId } = await render(
+      const { getByTestId } = await renderScreen(
         <MessageComposer
           value=""
           onChangeText={() => {}}
@@ -84,7 +87,7 @@ describe('MessageComposer', () => {
     */
     it('gửi được khi chỉ có ảnh, chưa gõ chữ', async () => {
       const onSend = jest.fn();
-      const { getByTestId } = await render(
+      const { getByTestId } = await renderScreen(
         <MessageComposer
           value=""
           onChangeText={() => {}}
@@ -102,7 +105,7 @@ describe('MessageComposer', () => {
 
     it('hiện ảnh xem trước kèm nút bỏ', async () => {
       const onBoAnh = jest.fn();
-      const { getByTestId } = await render(
+      const { getByTestId } = await renderScreen(
         <MessageComposer
           value=""
           onChangeText={() => {}}
@@ -122,7 +125,7 @@ describe('MessageComposer', () => {
 
     it('khoá hai nút ảnh trong lúc đang gửi', async () => {
       const onChup = jest.fn();
-      const { getByTestId } = await render(
+      const { getByTestId } = await renderScreen(
         <MessageComposer
           value=""
           onChangeText={() => {}}
@@ -138,5 +141,44 @@ describe('MessageComposer', () => {
       await fireEvent.press(getByTestId('composer-chup'));
       expect(onChup).not.toHaveBeenCalled();
     });
+  });
+});
+
+/*
+  Tren Android, `edgeToEdgeEnabled` cho app ve TRAN xuong duoi thanh dieu huong.
+  May vuot cu chi chi chua ~16dp nen gan nhu khong thay gi, nhung may dung ba
+  nut chua toi ~48dp — o nhap nam lot duoi thanh nut va bam khong trung.
+  Nguoi dung bao ngay 19/09/2026: khong the cham vao de go chu.
+*/
+describe('chừa chỗ cho thanh điều hướng', () => {
+  function dungMan(bottom: number, con: React.ReactElement) {
+    return render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 390, height: 844 },
+          insets: { top: 24, left: 0, right: 0, bottom },
+        }}
+      >
+        {con}
+      </SafeAreaProvider>,
+    );
+  }
+
+  it('đẩy ô nhập lên khỏi thanh ba nút', async () => {
+    const { getByTestId } = await dungMan(
+      48,
+      <MessageComposer value="" onChangeText={() => {}} onSend={() => {}} />,
+    );
+
+    expect(getByTestId('composer-root')).toHaveStyle({ paddingBottom: 48 });
+  });
+
+  it('không chừa gì trên máy vuốt cử chỉ không có thanh nút', async () => {
+    const { getByTestId } = await dungMan(
+      0,
+      <MessageComposer value="" onChangeText={() => {}} onSend={() => {}} />,
+    );
+
+    expect(getByTestId('composer-root')).toHaveStyle({ paddingBottom: 0 });
   });
 });
