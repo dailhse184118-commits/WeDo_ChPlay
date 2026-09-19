@@ -42,6 +42,7 @@ import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
 import { useHeaderTep } from '../../../lib/chat/use-header-tep';
 import { datManDangMo, quenManDangMo } from '../../../lib/notifications/man-dang-mo';
+import { baoLoi, moTaTep } from '../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
@@ -308,6 +309,16 @@ export default function ChatThreadScreen() {
         setAnhChoGui([]);
         setDraft('');
       } catch (loi) {
+        /*
+          Bao ve Sentry TRUOC khi hien cau tieng Viet cho nguoi dung. Khong co
+          dong nay thi cau loi that bien mat, va do dung la ly do khong ai lan
+          ra duoc vi sao khong gui duoc anh ngay 19/09.
+        */
+        baoLoi(loi, 'gui-anh-chat-du-an', {
+          soTep: files.length,
+          tep: files.map(moTaTep),
+          coChuThich: content.trim().length > 0,
+        });
         setLoadError(loi instanceof Error ? loi.message : 'Không gửi được ảnh.');
       } finally {
         setSending(false);
@@ -324,6 +335,7 @@ export default function ChatThreadScreen() {
 
       setAnhChoGui((hienCo) => [...hienCo, ...them]);
     } catch (loi) {
+      baoLoi(loi, 'chon-anh-chat-du-an');
       setLoadError(loi instanceof Error ? loi.message : 'Không mở được ảnh.');
     }
   }, []);

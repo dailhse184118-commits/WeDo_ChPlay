@@ -28,6 +28,7 @@ import { useAuth } from '../../../../lib/auth/auth-context';
 import { idsHienAvatar, idsHienTen } from '../../../../lib/chat/nhom-tin';
 import { useHeaderTep } from '../../../../lib/chat/use-header-tep';
 import { datManDangMo, quenManDangMo } from '../../../../lib/notifications/man-dang-mo';
+import { baoLoi, moTaTep } from '../../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../../lib/images/pick-images';
 import { colors, spacing } from '../../../../theme/tokens';
 
@@ -94,6 +95,17 @@ export default function ManTinNhanRieng() {
     mutationFn: ({ files, content }: { files: TepChon[]; content: string }) =>
       sendDirectFiles(conversationId, files, content),
     onSuccess: xongMotLuotGui,
+    /*
+      Bao ve Sentry, neu khong cau loi that bien mat sau bang do "Khong the ket
+      noi may chu" ma nguoi dung nhin thay. Nguoi kiem thu bao khong gui duoc
+      anh ngay 19/09 va khong ai biet vi sao — vi dung cho nay nuot loi.
+    */
+    onError: (loi, bien) =>
+      baoLoi(loi, 'gui-anh-tin-nhan-rieng', {
+        soTep: bien.files.length,
+        tep: bien.files.map(moTaTep),
+        coChuThich: bien.content.trim().length > 0,
+      }),
   });
 
   /*

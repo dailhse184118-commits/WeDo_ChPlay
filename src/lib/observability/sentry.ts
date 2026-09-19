@@ -76,12 +76,42 @@ export function khoiDongSentry(): void {
  * Gửi một lỗi kèm ghi chú về nơi nó xảy ra.
  *
  * Dùng cho chỗ đã tự bắt lỗi rồi — `ErrorBoundary` chẳng hạn. Sentry không tự
- * thấy những lỗi đã có người bắt.
+ * thấy những lỗi đã có người bắt, nên chỗ nào bắt lỗi rồi hiện câu tiếng Việt
+ * cho người dùng thì PHẢI gọi hàm này, nếu không câu lỗi thật biến mất.
+ *
+ * `chiTiet` đi vào phần "extra" của báo cáo. Tuyệt đối không đưa nội dung của
+ * người dùng vào đây — tên tệp, kích cỡ, loại tệp thì được; nội dung tin nhắn
+ * hay ảnh thì không.
  */
-export function baoLoi(loi: unknown, o: string): void {
+export function baoLoi(
+  loi: unknown,
+  o: string,
+  chiTiet?: Record<string, unknown>,
+): void {
   try {
-    Sentry.captureException(loi, { tags: { cho: o } });
+    Sentry.captureException(loi, {
+      tags: { cho: o },
+      extra: chiTiet,
+    });
   } catch {
     // Như trên.
   }
+}
+
+/**
+ * Mô tả một tệp đủ để lần ra lỗi, mà không lộ nội dung.
+ *
+ * Gửi ảnh hỏng thì thứ cần biết là đường dẫn thuộc loại nào, tên ra sao, khai
+ * kiểu gì — chứ không phải bản thân tấm ảnh.
+ */
+export function moTaTep(tep: { uri: string; name: string; mimeType?: string | null }) {
+  const uri = tep.uri ?? '';
+
+  return {
+    // Chỉ lấy phần giao thức: `file:`, `content:`, `ph:`… Đây là thứ hay sai.
+    giaoThuc: uri.split(':')[0] || '(rong)',
+    doDaiUri: uri.length,
+    duoiTen: tep.name?.split('.').pop() ?? '(khong co)',
+    kieu: tep.mimeType ?? '(khong khai)',
+  };
 }
