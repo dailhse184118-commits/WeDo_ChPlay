@@ -304,8 +304,9 @@ export default function ChatThreadScreen() {
       setSending(true);
       setLoadError('');
       try {
+        // Mỗi tệp thành một tin nhắn riêng — xem `taiNhieuTepLen`.
         const saved = await sendProjectFiles(projectId, files, content);
-        setMessages((current) => mergeMessages(current, [saved]));
+        setMessages((current) => mergeMessages(current, saved));
         setAnhChoGui([]);
         setDraft('');
       } catch (loi) {

@@ -1,62 +1,92 @@
 import { apiRequest } from '../client';
 import {
   approveReview,
-  phanTepGuiLen,
   rejectReview,
   submitForReview,
   uploadSubmissions,
 } from '../tasks';
+import { taiMotTepLen } from '../tai-tep';
 
 jest.mock('../client', () => ({ apiRequest: jest.fn(async () => ({ id: 't1' })) }));
+jest.mock('../tai-tep', () => ({ taiMotTepLen: jest.fn(async () => ({ id: 't1' })) }));
 
 const mockedRequest = apiRequest as jest.MockedFunction<typeof apiRequest>;
+const taiLen = taiMotTepLen as jest.MockedFunction<typeof taiMotTepLen>;
 
 function lastCall(): [string, { method?: string; body?: unknown }] {
   return mockedRequest.mock.calls[0] as never;
 }
 
-describe('phanTepGuiLen', () => {
-  it('giữ nguyên uri, tên và kiểu của tệp', () => {
-    expect(
-      phanTepGuiLen({
-        uri: 'file:///bao-cao.pdf',
-        name: 'bao-cao.pdf',
-        mimeType: 'application/pdf',
-      }),
-    ).toEqual({ uri: 'file:///bao-cao.pdf', name: 'bao-cao.pdf', type: 'application/pdf' });
-  });
-
-  it('đặt kiểu mặc định khi máy không nhận ra tệp', () => {
-    /*
-      Trình chọn tệp của Android trả `mimeType` rỗng với các đuôi lạ. Thiếu
-      `type` thì React Native gửi phần đó không có Content-Type và multer phía
-      máy chủ từ chối.
-    */
-    expect(
-      phanTepGuiLen({ uri: 'file:///ban-ve.dwg', name: 'ban-ve.dwg' }).type,
-    ).toBe('application/octet-stream');
-  });
-});
-
 describe('uploadSubmissions', () => {
-  beforeEach(() => mockedRequest.mockClear());
+  beforeEach(() => {
+    mockedRequest.mockClear();
+    taiLen.mockClear();
+  });
 
-  it('gửi mọi tệp đã chọn trong cùng một lượt, dưới tên trường "files"', async () => {
+  /*
+    KHONG dung `apiRequest` + `FormData` nua: `FormData` cua React Native hong
+    tren Expo SDK 57 nen khong tep nao len duoc. Xem `tai-tep.ts`.
+  */
+  it('đi qua đường tải tệp native, không qua apiRequest', async () => {
+    await uploadSubmissions('t1', [{ uri: 'file:///a.pdf', name: 'a.pdf', mimeType: 'application/pdf' }]);
+
+    expect(mockedRequest).not.toHaveBeenCalled();
+    expect(taiLen.mock.calls[0][0]).toBe('/tasks/t1/submissions');
+  });
+
+  it('mã hoá id trước khi ghép vào đường dẫn', async () => {
+    await uploadSubmissions('t 1', [{ uri: 'file:///a.pdf', name: 'a.pdf' }]);
+
+    expect(taiLen.mock.calls[0][0]).toBe('/tasks/t%201/submissions');
+  });
+
+  it('mỗi tệp một lượt gọi riêng', async () => {
     await uploadSubmissions('t1', [
       { uri: 'file:///a.pdf', name: 'a.pdf', mimeType: 'application/pdf' },
       { uri: 'file:///b.png', name: 'b.png', mimeType: 'image/png' },
     ]);
 
-    const [path, options] = lastCall();
-    expect(path).toBe('/tasks/t1/submissions');
-    expect(options.method).toBe('POST');
-    expect((options.body as FormData).getAll('files')).toHaveLength(2);
+    expect(taiLen).toHaveBeenCalledTimes(2);
+    expect(taiLen.mock.calls[1][1].name).toBe('b.png');
+  });
+
+  /*
+    May chu tra ve nguyen cong viec sau moi lan nop. Ban cuoi cung moi day du
+    danh sach tep; tra ban dau thi giao dien thieu mat nhung tep nop sau.
+  */
+  it('trả về công việc từ lượt gửi cuối', async () => {
+    taiLen.mockResolvedValueOnce({ id: 't1', submissions: ['a'] } as never);
+    taiLen.mockResolvedValueOnce({ id: 't1', submissions: ['a', 'b'] } as never);
+
+    const task = await uploadSubmissions('t1', [
+      { uri: 'file:///a.pdf', name: 'a.pdf' },
+      { uri: 'file:///b.png', name: 'b.png' },
+    ]);
+
+    expect((task as never as { submissions: string[] }).submissions).toEqual(['a', 'b']);
+  });
+
+  it('gửi tuần tự, chờ tệp trước xong mới tới tệp sau', async () => {
+    const thuTu: string[] = [];
+    taiLen.mockImplementation(async (_d, tep) => {
+      thuTu.push(`bat-dau:${tep.name}`);
+      await new Promise((r) => setTimeout(r, 0));
+      thuTu.push(`xong:${tep.name}`);
+      return { id: 't1' } as never;
+    });
+
+    await uploadSubmissions('t1', [
+      { uri: 'file:///a.pdf', name: 'a.pdf' },
+      { uri: 'file:///b.png', name: 'b.png' },
+    ]);
+
+    expect(thuTu).toEqual(['bat-dau:a.pdf', 'xong:a.pdf', 'bat-dau:b.png', 'xong:b.png']);
   });
 
   it('không gọi máy chủ khi người dùng không chọn tệp nào', async () => {
     // May chu tra 400 cho danh sach rong. Chan o day de bao loi ngay.
     await expect(uploadSubmissions('t1', [])).rejects.toThrow('ít nhất một tệp');
-    expect(mockedRequest).not.toHaveBeenCalled();
+    expect(taiLen).not.toHaveBeenCalled();
   });
 });
 

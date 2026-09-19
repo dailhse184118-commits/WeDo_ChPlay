@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import { goiTepChat } from './chat-files';
+import { taiNhieuTepLen } from './chat-files';
 import type { TepChon } from './tasks';
 import type { DirectConversation, DirectMessage } from '../types';
 
@@ -55,18 +55,15 @@ export function sendDirectMessage(
 /**
  * Gửi ảnh vào một hội thoại riêng, kèm chú thích nếu có.
  *
- * Cả lô đi trong một lượt: máy chủ dựng đúng MỘT tin nhắn mang nhiều ảnh, thay
- * vì mỗi ảnh một bong bóng.
+ * Mỗi ảnh thành một tin nhắn riêng, và chú thích chỉ gắn vào ảnh đầu tiên —
+ * xem `taiNhieuTepLen`.
  */
 export async function sendDirectFiles(
   conversationId: string,
   files: TepChon[],
   content: string,
-): Promise<DirectMessage> {
-  return apiRequest<DirectMessage>(duongDan(conversationId, '/files'), {
-    method: 'POST',
-    body: goiTepChat(files, content),
-  });
+): Promise<DirectMessage[]> {
+  return taiNhieuTepLen<DirectMessage>(duongDan(conversationId, '/files'), files, content);
 }
 
 export function markConversationRead(conversationId: string): Promise<unknown> {

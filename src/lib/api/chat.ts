@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import { goiTepChat } from './chat-files';
+import { taiNhieuTepLen } from './chat-files';
 import type { TepChon } from './tasks';
 import type { ChatHistoryPage, ChatMessage, ChatTaskSuggestion } from '../types';
 
@@ -34,17 +34,18 @@ export function sendProjectMessage(
 /**
  * Gửi ảnh vào chat dự án, kèm chú thích nếu có.
  *
- * Cả lô đi trong một lượt: máy chủ dựng đúng MỘT tin nhắn mang nhiều ảnh, thay
- * vì mỗi ảnh một bong bóng.
+ * Mỗi ảnh thành một tin nhắn riêng, và chú thích chỉ gắn vào ảnh đầu tiên —
+ * xem `taiNhieuTepLen`.
  */
 export async function sendProjectFiles(
   projectId: string,
   files: TepChon[],
   content: string,
-): Promise<ChatMessage> {
-  return apiRequest<ChatMessage>(
+): Promise<ChatMessage[]> {
+  return taiNhieuTepLen<ChatMessage>(
     `/projects/${encodeURIComponent(projectId)}/chat/files`,
-    { method: 'POST', body: goiTepChat(files, content) },
+    files,
+    content,
   );
 }
 

@@ -1,4 +1,5 @@
 import { apiRequest } from './client';
+import { taiNhieuTepLen } from './chat-files';
 import type { Task, TaskStatus } from '../types';
 
 export interface CreateTaskInput {
@@ -66,38 +67,28 @@ export interface TepChon {
 }
 
 /**
- * Chuyển tệp đã chọn thành mảnh mà `FormData` của React Native hiểu.
- *
- * React Native nhận đúng bộ ba `{ uri, name, type }` rồi tự đọc tệp lúc gửi —
- * khác hẳn `FormData` chuẩn của trình duyệt vốn đòi `Blob`.
- */
-export function phanTepGuiLen(tep: TepChon): { uri: string; name: string; type: string } {
-  return {
-    uri: tep.uri,
-    name: tep.name,
-    // Trình chọn tệp Android trả rỗng với đuôi lạ; multer đòi phải có Content-Type.
-    type: tep.mimeType || 'application/octet-stream',
-  };
-}
-
-/**
  * Nộp tài liệu cho công việc.
  *
- * Gửi cả lô trong một lượt: máy chủ chỉ phát một thông báo và cập nhật công
- * việc một lần, thay vì mỗi tệp một lần.
+ * Mỗi tệp đi một lượt gọi riêng. Trước đây gói cả lô vào một `FormData` rồi gửi
+ * một lượt, nhưng `FormData` của React Native hỏng trên Expo SDK 57 nên không
+ * tệp nào lên được — xem khối ghi chú trong `tai-tep.ts`.
  */
-export function uploadSubmissions(id: string, files: TepChon[]): Promise<Task> {
+export async function uploadSubmissions(id: string, files: TepChon[]): Promise<Task> {
   if (files.length === 0) {
-    return Promise.reject(new Error('Hãy chọn ít nhất một tệp để nộp'));
+    throw new Error('Hãy chọn ít nhất một tệp để nộp');
   }
 
-  const form = new FormData();
-  for (const tep of files) {
-    // `as never`: kiểu FormData của TS lấy từ chuẩn web, không biết dạng tệp của RN.
-    form.append('files', phanTepGuiLen(tep) as never);
-  }
+  const ketQua = await taiNhieuTepLen<Task>(
+    `/tasks/${encodeURIComponent(id)}/submissions`,
+    files,
+    '',
+  );
 
-  return apiRequest<Task>(`/tasks/${id}/submissions`, { method: 'POST', body: form });
+  /*
+    Máy chủ trả về nguyên công việc sau mỗi lần nộp. Chỉ bản CUỐI mới đủ danh
+    sách tệp; trả bản đầu thì giao diện thiếu mất những tệp nộp sau.
+  */
+  return ketQua[ketQua.length - 1];
 }
 
 /** Chuyển công việc sang Chờ duyệt. Máy chủ đòi đã có ít nhất một tệp nộp. */
