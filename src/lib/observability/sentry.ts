@@ -89,8 +89,18 @@ export function baoLoi(
   chiTiet?: Record<string, unknown>,
 ): void {
   try {
+    /*
+      `nguyenNhan` là câu lỗi gốc của hệ điều hành mà `ApiError` giữ lại. Đưa
+      hẳn lên `tags` chứ không chỉ `extra`: tag hiện ngay đầu trang lỗi và lọc
+      được, còn extra phải kéo xuống mới thấy.
+    */
+    const nguyenNhan =
+      loi && typeof loi === 'object' && 'nguyenNhan' in loi
+        ? String((loi as { nguyenNhan?: unknown }).nguyenNhan ?? '')
+        : '';
+
     Sentry.captureException(loi, {
-      tags: { cho: o },
+      tags: nguyenNhan ? { cho: o, nguyenNhan } : { cho: o },
       extra: chiTiet,
     });
   } catch {

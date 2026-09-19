@@ -13,13 +13,24 @@ export class ApiError extends Error {
    */
   code?: string;
 
-  constructor(message: string, status: number, code?: string) {
+  /**
+   * Câu lỗi gốc của hệ điều hành, khi `fetch` hỏng ở tầng mạng.
+   *
+   * Người dùng chỉ cần biết "không kết nối được", nhưng người sửa lỗi thì cần
+   * biết CHÍNH XÁC vì sao. Trước đây chỗ bắt lỗi viết `catch {` không hứng gì
+   * cả, nên câu lỗi thật bị vứt sạch — và ngày 19/09 cả đội mất nhiều giờ
+   * không lần ra được vì sao không tải tệp lên được.
+   */
+  nguyenNhan?: string;
+
+  constructor(message: string, status: number, code?: string, nguyenNhan?: string) {
     super(message);
     // Cần thiết để `instanceof ApiError` vẫn đúng sau khi transpile.
     Object.setPrototypeOf(this, ApiError.prototype);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.nguyenNhan = nguyenNhan;
   }
 }
 
@@ -153,8 +164,17 @@ export async function apiRequest<T = unknown>(
       headers: requestHeaders,
       body: body === undefined || laFormData(body) ? (body as FormData | undefined) : JSON.stringify(body),
     });
-  } catch {
-    throw new ApiError('Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.', 0);
+  } catch (loi) {
+    /*
+      PHẢI hứng lấy lỗi. `catch {` trơn vứt sạch câu lỗi của hệ điều hành, và
+      mọi sự cố mạng đều trông y hệt nhau từ phía người sửa.
+    */
+    throw new ApiError(
+      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
+      0,
+      undefined,
+      loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi),
+    );
   }
 
   const raw = await response.text();
