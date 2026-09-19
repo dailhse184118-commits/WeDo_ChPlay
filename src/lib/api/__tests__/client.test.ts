@@ -84,25 +84,35 @@ describe('apiRequest', () => {
   });
 
   /*
-    Test nay TUNG kiem dieu nguoc lai — rang FormData di qua `fetch`. Do chinh
-    la hanh vi HONG.
+    `FormData` PHAI di qua `fetch`. Bo chuyen cua Expo — cho duy nhat hieu phan
+    tep co `bytes()` — nam trong `fetch`, khong co trong XMLHttpRequest.
 
-    Expo SDK 57 thay `fetch` toan cuc bang ban khong ho tro cach React Native
-    dinh tep (`{uri, name, type}`), nen moi lan tai tep deu that bai. Nay
-    FormData di duong `XMLHttpRequest`; chi tiet o `tai-tep-xhr.test.ts`.
+    Da tung thu day qua XMLHttpRequest de tranh `fetch`, va van hong: cai hong
+    nam o HINH DANG phan tep, khong phai o cach gui. Chi tiet o
+    `tai-tep-native.test.ts`.
   */
-  it('KHÔNG đẩy FormData qua fetch', async () => {
+  it('gửi nguyên FormData qua fetch, không bọc thành JSON', async () => {
     const form = new FormData();
     form.append('files', 'noi-dung-gia');
     mockFetchOnce({ ok: true });
 
-    // Không có XMLHttpRequest trong môi trường test này, nên lượt gọi sẽ hỏng.
-    // Điều cần khẳng định là `fetch` không hề được đụng tới.
-    await apiRequest('/tasks/t1/submissions', { method: 'POST', body: form }).catch(
-      () => undefined,
-    );
+    await apiRequest('/tasks/t1/submissions', { method: 'POST', body: form });
 
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockFetch.mock.calls[0][1].body).toBe(form);
+  });
+
+  /*
+    Tu dat `multipart/form-data` la hong: chuoi do thieu tham so `boundary` ma
+    chi tang fetch moi sinh ra duoc, nen may chu khong tach noi cac phan.
+  */
+  it('không tự đặt Content-Type cho FormData', async () => {
+    const form = new FormData();
+    form.append('files', 'noi-dung-gia');
+    mockFetchOnce({ ok: true });
+
+    await apiRequest('/tasks/t1/submissions', { method: 'POST', body: form });
+
+    expect(mockFetch.mock.calls[0][1].headers['Content-Type']).toBeUndefined();
   });
 
   it('trả dữ liệu đã parse khi thành công', async () => {

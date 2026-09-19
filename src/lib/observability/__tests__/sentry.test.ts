@@ -1,4 +1,4 @@
-import { cauHinhSentry } from '../sentry';
+import { dongMotHang, cauHinhSentry } from '../sentry';
 
 describe('cauHinhSentry', () => {
   /*
@@ -54,5 +54,35 @@ describe('cauHinhSentry', () => {
   it('chỉ gửi thật khi không phải bản đang phát triển', () => {
     expect(cauHinhSentry({ dsn: 'x', dangPhatTrien: true })?.enabled).toBe(false);
     expect(cauHinhSentry({ dsn: 'x', dangPhatTrien: false })?.enabled).toBe(true);
+  });
+});
+
+describe('dongMotHang', () => {
+  /*
+    Sentry tu choi tag co xuong dong hoac dai qua 200 ky tu, va hien `<invalid>`
+    thay cho gia tri. Ngay 19/09 loi native cua Expo kem ca khoi "Call stack"
+    nhieu dong nen nguyen nhan bi vut mat dung luc can nhat.
+  */
+  it('gộp mọi khoảng trắng và xuống dòng thành một dấu cách', () => {
+    expect(dongMotHang('Error: hong\n  Call stack:\n   at x')).toBe(
+      'Error: hong Call stack: at x',
+    );
+  });
+
+  it('cắt bớt chuỗi quá dài để Sentry không từ chối', () => {
+    const ket_qua = dongMotHang('x'.repeat(500));
+
+    expect(ket_qua.length).toBeLessThanOrEqual(180);
+    expect(ket_qua.endsWith('…')).toBe(true);
+  });
+
+  it('giữ nguyên chuỗi ngắn, một dòng', () => {
+    expect(dongMotHang('Unsupported FormDataPart implementation')).toBe(
+      'Unsupported FormDataPart implementation',
+    );
+  });
+
+  it('trả về rỗng khi không có gì', () => {
+    expect(dongMotHang('   \n  ')).toBe('');
   });
 });

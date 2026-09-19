@@ -1,71 +1,62 @@
 import { File, UploadType } from 'expo-file-system';
 
-import { ApiError } from './client';
+import { ApiError, apiRequest } from './client';
 import { loadToken } from '../auth/token-storage';
 import type { TepChon } from './tasks';
 
+function moTaLoi(loi: unknown): string {
+  return loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi);
+}
+
 /**
- * Tải MỘT tệp lên, để tầng native tự đọc tệp và dựng multipart.
+ * Dựng phần tệp đúng dạng bộ chuyển `FormData` của Expo chấp nhận.
  *
  * ===========================================================================
- * ĐỪNG đổi chỗ này về `FormData` + `fetch` hay `XMLHttpRequest`. Cả hai đều đã
- * thử và đều hỏng — người kiểm thử báo ngày 19/09/2026 là không tải được tệp
- * nào, cả ảnh lẫn tài liệu nộp bài.
+ * ĐỪNG quay lại dạng `{ uri, name, type }` của React Native. Đó chính là lỗi
+ * người kiểm thử báo ngày 19/09/2026: không ai tải được tệp nào, cả ảnh lẫn
+ * tài liệu nộp bài, mà máy chủ không hề ghi nhận gì.
  *
- * Triệu chứng: trạng thái trả về là **0**, tức yêu cầu chưa bao giờ hoàn tất,
- * và máy chủ không hề ghi nhận lỗi nào. Nhìn y hệt mất sóng, trong khi máy
- * đang dùng wifi.
+ * Trên Expo SDK 57, Expo thay `fetch` toàn cục và tự chuyển `FormData` thành
+ * thân multipart. Bộ chuyển (`expo/src/winter/fetch/convertFormData.ts`) chỉ
+ * nhận ba dạng phần: chuỗi, `Blob`, hoặc object có `bytes()`. Bộ ba
+ * `{ uri, name, type }` không khớp dạng nào nên nó ném thẳng
+ * `Unsupported FormDataPart implementation` — yêu cầu chết trước khi rời máy,
+ * nên trạng thái trả về là 0 và máy chủ im lặng.
  *
- * Gốc rễ nằm ở `FormData` của React Native trên Expo SDK 57. Expo vá đối tượng
- * này và thay luôn `fetch` toàn cục; phần chuyển đổi của nó ghi rõ trong mã
- * nguồn — `expo/src/winter/fetch/convertFormData.ts`:
- *
- *     `uri` is not supported for React Native's FormData.
- *
- * Mảnh tệp của React Native chỉ mang `uri`, nên rơi ra `undefined` và thân
- * multipart hỏng. Đổi cách GỬI không cứu được, vì hỏng nằm ở chính DỮ LIỆU.
- *
- * Đường này không đụng tới `FormData`: đưa thẳng đường dẫn cho mã native, nó
- * tự mở tệp và tự dựng multipart.
+ * Dạng dưới đây khớp nhánh thứ ba. Tự dựng thay vì đưa thẳng `File` của
+ * expo-file-system để giữ ĐÚNG tên tệp người dùng thấy: `File.name` trả tên
+ * tệp tạm trong cache, không phải tên gốc.
  * ===========================================================================
- *
- * Giới hạn đã biết: mỗi lượt gọi chỉ gửi được một tệp. Nhiều ảnh thì gọi nhiều
- * lượt, và mỗi ảnh thành một tin nhắn riêng.
  */
-export async function taiMotTepLen<T = unknown>(
-  duongDan: string,
-  tep: TepChon,
-  chuThich: string,
-): Promise<T> {
+export function phanTepGuiLen(tep: TepChon) {
+  const tepNative = new File(tep.uri);
+
+  return {
+    bytes: () => tepNative.bytes(),
+    name: tep.name,
+    // Trình chọn tệp Android đôi khi trả kiểu rỗng; multer đòi phải có.
+    type: tep.mimeType || 'application/octet-stream',
+  };
+}
+
+/** Đường dự phòng: để tầng native tự đọc tệp và tự dựng multipart. */
+async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string): Promise<T> {
   const goc = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/+$/, '');
   if (!goc) {
     throw new Error('Thiếu EXPO_PUBLIC_API_BASE_URL. Kiểm tra file .env.');
   }
 
   const token = await loadToken();
-  const noiDung = chuThich.trim();
-
-  let ketQua: { status: number; body: string };
-  try {
-    ketQua = await new File(tep.uri).upload(`${goc}${duongDan}`, {
-      httpMethod: 'POST',
-      uploadType: UploadType.MULTIPART,
-      // Máy chủ khai `FilesInterceptor('files', …)`; sai tên trường là mất tệp.
-      fieldName: 'files',
-      // Trình chọn tệp Android đôi khi trả kiểu rỗng; multer đòi phải có.
-      mimeType: tep.mimeType || 'application/octet-stream',
-      // KHÔNG đặt Content-Type: thiếu `boundary` thì máy chủ không tách nổi.
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      parameters: noiDung ? { content: noiDung } : undefined,
-    });
-  } catch (loi) {
-    throw new ApiError(
-      'Không gửi được tệp. Kiểm tra mạng và thử lại.',
-      0,
-      undefined,
-      loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi),
-    );
-  }
+  const ketQua = await new File(tep.uri).upload(`${goc}${duongDan}`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    // Máy chủ khai `FilesInterceptor('files', …)`; sai tên trường là mất tệp.
+    fieldName: 'files',
+    mimeType: tep.mimeType || 'application/octet-stream',
+    // KHÔNG đặt Content-Type: thiếu `boundary` thì máy chủ không tách nổi.
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    parameters: noiDung ? { content: noiDung } : undefined,
+  });
 
   const payload = ketQua.body ? (JSON.parse(ketQua.body) as unknown) : undefined;
 
@@ -83,4 +74,50 @@ export async function taiMotTepLen<T = unknown>(
   }
 
   return payload as T;
+}
+
+/**
+ * Tải MỘT tệp lên, thử lần lượt hai đường.
+ *
+ * Đường chính đi qua `fetch` — cùng tầng mạng với mọi lượt gọi khác đang chạy
+ * tốt. Đường dự phòng đẩy thẳng xuống native, phòng khi tầng `fetch` lại hỏng
+ * ở một bản Expo nào đó.
+ *
+ * Máy chủ TRẢ LỜI rồi mà báo lỗi thì dừng luôn, không thử đường còn lại: yêu
+ * cầu đã tới nơi, gửi lại chỉ tạo ra tin nhắn trùng.
+ *
+ * Giới hạn đã biết: mỗi lượt gọi chỉ gửi được một tệp.
+ */
+export async function taiMotTepLen<T = unknown>(
+  duongDan: string,
+  tep: TepChon,
+  chuThich: string,
+): Promise<T> {
+  const noiDung = chuThich.trim();
+  const daGap: string[] = [];
+
+  try {
+    const form = new FormData();
+    form.append('files', phanTepGuiLen(tep) as never);
+    if (noiDung) form.append('content', noiDung);
+
+    return await apiRequest<T>(duongDan, { method: 'POST', body: form });
+  } catch (loi) {
+    if (loi instanceof ApiError && loi.status > 0) throw loi;
+    daGap.push(`form: ${loi instanceof ApiError ? loi.nguyenNhan : moTaLoi(loi)}`);
+  }
+
+  try {
+    return await guiBangNative<T>(duongDan, tep, noiDung);
+  } catch (loi) {
+    if (loi instanceof ApiError && loi.status > 0) throw loi;
+    daGap.push(`native: ${moTaLoi(loi)}`);
+  }
+
+  throw new ApiError(
+    'Không gửi được tệp. Kiểm tra mạng và thử lại.',
+    0,
+    undefined,
+    daGap.join(' | '),
+  );
 }

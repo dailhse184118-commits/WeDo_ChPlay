@@ -83,6 +83,18 @@ export function khoiDongSentry(): void {
  * người dùng vào đây — tên tệp, kích cỡ, loại tệp thì được; nội dung tin nhắn
  * hay ảnh thì không.
  */
+/**
+ * Ép một câu lỗi về dạng Sentry chịu nhận làm `tag`.
+ *
+ * Sentry từ chối tag có xuống dòng hoặc dài quá 200 ký tự, và hiện `<invalid>`
+ * thay cho giá trị. Lỗi native của Expo thường kèm cả khối "Call stack" nhiều
+ * dòng, nên ngày 19/09 nguyên nhân bị vứt mất đúng lúc cần nhất.
+ */
+export function dongMotHang(cau: string): string {
+  const gon = cau.replace(/\s+/g, ' ').trim();
+  return gon.length > 180 ? `${gon.slice(0, 179)}…` : gon;
+}
+
 export function baoLoi(
   loi: unknown,
   o: string,
@@ -99,9 +111,16 @@ export function baoLoi(
         ? String((loi as { nguyenNhan?: unknown }).nguyenNhan ?? '')
         : '';
 
+    const tag = dongMotHang(nguyenNhan);
+
     Sentry.captureException(loi, {
-      tags: nguyenNhan ? { cho: o, nguyenNhan } : { cho: o },
-      extra: chiTiet,
+      tags: tag ? { cho: o, nguyenNhan: tag } : { cho: o },
+      /*
+        Gửi thêm bản ĐẦY ĐỦ xuống `extra`: tag đã bị cắt còn 180 ký tự, mà phần
+        bị cắt đôi khi mới là phần nói rõ hỏng ở đâu. `extra` không giới hạn
+        như tag nên giữ được nguyên văn.
+      */
+      extra: nguyenNhan ? { ...chiTiet, nguyenNhanDayDu: nguyenNhan } : chiTiet,
     });
   } catch {
     // Như trên.
