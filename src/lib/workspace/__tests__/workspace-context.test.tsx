@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, Pressable } from 'react-native';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
+import { AppState } from 'react-native';
 
 import { WorkspaceProvider, useWorkspace } from '../workspace-context';
 import * as workspacesApi from '../../api/workspaces';
@@ -11,6 +12,26 @@ jest.mock('../../auth/token-storage');
 
 const mockedApi = workspacesApi as jest.Mocked<typeof workspacesApi>;
 const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
+
+/*
+  `AppState` that trong Jest khong ban ra su kien vong doi duoc, nen bat lay ham
+  xu ly ma provider dang ky roi tu goi — dung nhu he dieu hanh van lam.
+*/
+let xuLyAppState: ((trangThai: string) => void) | undefined;
+
+function batDauNgheAppState() {
+  xuLyAppState = undefined;
+  jest.spyOn(AppState, 'addEventListener').mockImplementation(((ten: string, xuLy: never) => {
+    if (ten === 'change') xuLyAppState = xuLy;
+    return { remove: jest.fn() };
+  }) as never);
+}
+
+async function doiTrangThaiApp(trangThai: 'active' | 'background') {
+  await act(async () => {
+    xuLyAppState?.(trangThai);
+  });
+}
 
 function makeWorkspace(id: string) {
   return {
@@ -133,5 +154,63 @@ describe('chuyển không gian làm việc', () => {
     await fireEvent.press(getByTestId('chuyen-sang-khong-co'));
 
     expect(getByTestId('active').props.children).toBe('a');
+  });
+});
+
+/*
+  Nguoi kiem thu bao ngay 19/09/2026: duoc them vao mot du an o KHONG GIAN KHAC,
+  nhan duoc thong bao day va mo duoc chi tiet cong viec, nhung danh sach khong
+  gian trong app khong he co cai moi — "Thong bao thi co nhma ben khong gian ko
+  co update".
+
+  Goc re: danh sach khong gian nam NGOAI react-query nen khong duoc huong
+  `refetchOnWindowFocus` nhu moi du lieu khac; no chi tai dung mot lan luc mo app.
+*/
+describe('nạp lại khi quay lại app', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedStorage.loadActiveWorkspaceId.mockResolvedValue(null);
+    mockedStorage.saveActiveWorkspaceId.mockResolvedValue(undefined);
+    batDauNgheAppState();
+  });
+
+  it('tải lại danh sách khi app trở lại tiền cảnh', async () => {
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('so-luong').props.children).toBe('1'));
+
+    // Nguoi khac vua them minh vao mot khong gian nua.
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a'), makeWorkspace('b')]);
+    await doiTrangThaiApp('active');
+
+    await waitFor(() => expect(getByTestId('so-luong').props.children).toBe('2'));
+  });
+
+  it('không gọi lại khi app chỉ chuyển xuống nền', async () => {
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('so-luong').props.children).toBe('1'));
+    mockedApi.listWorkspaces.mockClear();
+
+    await doiTrangThaiApp('background');
+
+    expect(mockedApi.listWorkspaces).not.toHaveBeenCalled();
+  });
+
+  /*
+    Quay lai app luc song yeu la chuyen thuong. Hong mot luot nap thi giu nguyen
+    danh sach cu, tuyet doi khong duoc da nguoi dung ve man tao khong gian.
+  */
+  it('giữ nguyên danh sách cũ khi nạp lại thất bại', async () => {
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('ready'));
+
+    mockedApi.listWorkspaces.mockRejectedValue(new Error('mat mang'));
+    await doiTrangThaiApp('active');
+
+    await waitFor(() => expect(mockedApi.listWorkspaces).toHaveBeenCalledTimes(2));
+    expect(getByTestId('status').props.children).toBe('ready');
+    expect(getByTestId('so-luong').props.children).toBe('1');
   });
 });
