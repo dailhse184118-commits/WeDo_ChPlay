@@ -74,11 +74,31 @@ export function onUnauthorized(handler: () => void): () => void {
   };
 }
 
-function baseUrl(): string {
+/**
+ * Địa chỉ máy chủ, đã cắt gạch chéo thừa ở cuối.
+ *
+ * Xuất ra ngoài để MỌI đường gọi mạng dùng chung đúng một chỗ — kể cả đường
+ * tải tệp đi thẳng xuống native. Mỗi nơi tự ghép một kiểu là sớm muộn cũng
+ * lệch nhau.
+ */
+export function baseUrl(): string {
   const url = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (!url) {
     throw new Error('Thiếu EXPO_PUBLIC_API_BASE_URL. Kiểm tra file .env.');
   }
+
+  /*
+    Thiếu `https://` thì tầng native ném
+    `IllegalArgumentException: Expected URL scheme 'http' or 'https'` — câu đó
+    không hề chỉ ra rằng CẤU HÌNH mới là thứ sai, và ngày 19/09/2026 nó làm cả
+    đội mất nhiều giờ. Chặn ngay từ đây, bằng câu nói thẳng chỗ phải sửa.
+  */
+  if (!/^https?:\/\//.test(url)) {
+    throw new Error(
+      `EXPO_PUBLIC_API_BASE_URL phải bắt đầu bằng http:// hoặc https://, đang là "${url}".`,
+    );
+  }
+
   return url.replace(/\/+$/, '');
 }
 

@@ -1,6 +1,6 @@
 import { File, UploadType } from 'expo-file-system';
 
-import { ApiError, apiRequest } from './client';
+import { ApiError, apiRequest, baseUrl } from './client';
 import { loadToken } from '../auth/token-storage';
 import type { TepChon } from './tasks';
 
@@ -41,13 +41,15 @@ export function phanTepGuiLen(tep: TepChon) {
 
 /** Đường dự phòng: để tầng native tự đọc tệp và tự dựng multipart. */
 async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string): Promise<T> {
-  const goc = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/+$/, '');
-  if (!goc) {
-    throw new Error('Thiếu EXPO_PUBLIC_API_BASE_URL. Kiểm tra file .env.');
-  }
-
+  /*
+    Dùng CHUNG `baseUrl()` với mọi lượt gọi khác, không tự ghép địa chỉ nữa.
+    Bản trước tự ghép, và tầng native ném
+    `IllegalArgumentException: Expected URL scheme 'http' or 'https'` — tức
+    chuỗi địa chỉ tới nơi đã hỏng, trong khi cùng lúc đó mọi lượt gọi đi qua
+    `apiRequest` vẫn chạy tốt. Một chỗ dựng địa chỉ thì không lệch được nữa.
+  */
   const token = await loadToken();
-  const ketQua = await new File(tep.uri).upload(`${goc}${duongDan}`, {
+  const ketQua = await new File(tep.uri).upload(`${baseUrl()}${duongDan}`, {
     httpMethod: 'POST',
     uploadType: UploadType.MULTIPART,
     // Máy chủ khai `FilesInterceptor('files', …)`; sai tên trường là mất tệp.

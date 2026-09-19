@@ -183,6 +183,21 @@ describe('apiRequest', () => {
     );
   });
 
+  /*
+    Ngay 19/09/2026 duong tai tep nem
+    `IllegalArgumentException: Expected URL scheme 'http' or 'https'`
+    tu tang native — mot cau loi khong he chi ra rang cau hinh moi la thu sai.
+    Chan tu day thi lan sau doc mot cai la biet ngay.
+  */
+  it('báo lỗi rõ ràng khi base URL thiếu https://', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'api-wedo.azurewebsites.net';
+
+    await expect(apiRequest('/users/me')).rejects.toThrow(
+      'EXPO_PUBLIC_API_BASE_URL phải bắt đầu bằng http:// hoặc https://',
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it('báo lỗi rõ ràng khi thiếu biến môi trường', async () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
 

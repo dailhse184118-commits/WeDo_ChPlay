@@ -16,7 +16,7 @@ jest.mock('expo-file-system', () => {
 
 jest.mock('../client', () => {
   const thuc = jest.requireActual('../client');
-  return { ApiError: thuc.ApiError, apiRequest: jest.fn() };
+  return { ApiError: thuc.ApiError, baseUrl: thuc.baseUrl, apiRequest: jest.fn() };
 });
 
 jest.mock('../../auth/token-storage', () => ({
