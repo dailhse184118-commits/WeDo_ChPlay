@@ -189,6 +189,31 @@ describe('apiRequest', () => {
     tu tang native — mot cau loi khong he chi ra rang cau hinh moi la thu sai.
     Chan tu day thi lan sau doc mot cai la biet ngay.
   */
+  /*
+    Ngay 19/09/2026 bien tren EAS mang mot byte 0x16 (ky tu dieu khien SYN) vo
+    hinh chen truoc `https://`. `fetch` lang le bo qua nen moi thu van chay,
+    con OkHttp o tang native thi tu choi — va chot chan `https://` cua chinh
+    ta cung truot, chan luon dang nhap cua moi nguoi. Phai got sach truoc khi
+    kiem.
+  */
+  it('gọt ký tự điều khiển vô hình chen trước địa chỉ', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = '\u0016https://api.test';
+    mockFetchOnce({ ok: true });
+
+    await apiRequest('/health');
+
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test/health', expect.anything());
+  });
+
+  it('gọt BOM và khoảng trắng hai đầu địa chỉ', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = ' \uFEFFhttps://api.test/ \n';
+    mockFetchOnce({ ok: true });
+
+    await apiRequest('/health');
+
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test/health', expect.anything());
+  });
+
   it('báo lỗi rõ ràng khi base URL thiếu https://', async () => {
     process.env.EXPO_PUBLIC_API_BASE_URL = 'api-wedo.azurewebsites.net';
 

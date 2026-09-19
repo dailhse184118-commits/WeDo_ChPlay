@@ -82,7 +82,23 @@ export function onUnauthorized(handler: () => void): () => void {
  * lệch nhau.
  */
 export function baseUrl(): string {
-  const url = process.env.EXPO_PUBLIC_API_BASE_URL;
+  /*
+    GỌT SẠCH hai đầu trước khi làm gì khác, kể cả ký tự điều khiển và BOM.
+
+    Ngày 19/09/2026 biến trên EAS mang một byte 0x16 (ký tự điều khiển SYN)
+    hoàn toàn vô hình, chen ngay trước `https://`. Bộ phân tích URL chuẩn web
+    mà `fetch` dùng lặng lẽ bỏ qua nó, nên mọi lượt gọi thường vẫn chạy và
+    không ai nghi ngờ cấu hình. Nhưng OkHttp ở tầng native đòi ký tự đầu phải
+    là chữ cái, nên đường tải tệp chết với câu "no colon was found" — và chốt
+    chặn `https://` bên dưới cũng trượt, chặn luôn đăng nhập của mọi người.
+
+    Gọt: khoảng trắng, ký tự điều khiển C0/DEL (U+0000–U+001F, U+007F), BOM
+    (U+FEFF) và các ký tự không chiều rộng (U+200B–U+200D).
+  */
+  const url = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(
+    /^[\s\u0000-\u001F\u007F\uFEFF\u200B-\u200D]+|[\s\u0000-\u001F\u007F\uFEFF\u200B-\u200D]+$/g,
+    '',
+  );
   if (!url) {
     throw new Error('Thiếu EXPO_PUBLIC_API_BASE_URL. Kiểm tra file .env.');
   }
