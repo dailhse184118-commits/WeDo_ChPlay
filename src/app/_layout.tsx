@@ -7,12 +7,21 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { UpdateGate } from '../components/update/UpdateGate';
+import { baoLoi, khoiDongSentry } from '../lib/observability/sentry';
 import { AuthProvider } from '../lib/auth/auth-context';
 import { bridgeAppStateToQueryFocus } from '../lib/app-focus';
 import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
 import { HAN_CACHE_BEN_BI_MS, cacheBenBi, queryClient } from '../lib/query';
 import { usePhienBan } from '../lib/version/use-phien-ban';
+
+/*
+  Đặt trên hết: chỉ những lỗi xảy ra SAU lời gọi này mới được ghi nhận, nên nó
+  phải chạy trước mọi thứ còn lại trong tệp.
+
+  Chưa khai `EXPO_PUBLIC_SENTRY_DSN` thì không làm gì cả.
+*/
+khoiDongSentry();
 
 // Phải chạy trước khi có thông báo nào tới, nên đặt ở tầng module chứ không trong
 // một effect nào đó.
@@ -38,6 +47,17 @@ void taoKenhThongBaoAndroid();
  * chỗ khác, và phải thấy chuyện gì đã xảy ra thay vì app biến mất.
  */
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  /*
+    Sentry KHÔNG tự thấy lỗi đã có người bắt. Không có dòng này thì màn hình
+    dưới đây che lỗi đi một cách lịch sự, và đội ngũ không bao giờ biết.
+
+    Đặt trong effect chứ không giữa lúc render: render phải thuần, và React có
+    thể gọi lại nó nhiều lần cho cùng một lỗi.
+  */
+  useEffect(() => {
+    baoLoi(error, 'error-boundary');
+  }, [error]);
+
   return (
     <View style={styles.loi}>
       <Text style={styles.loiTieuDe}>Màn hình này gặp trục trặc</Text>
