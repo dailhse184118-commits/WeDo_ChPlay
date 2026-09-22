@@ -195,6 +195,19 @@ export default function AccountScreen() {
         {loiAnh ? <ErrorBanner message={loiAnh} /> : null}
 
         <Card style={styles.menu}>
+          {/*
+            Đặt trên cùng: đây là màn duy nhất trong nhóm nói về CHÍNH người
+            dùng, mấy mục dưới là cài đặt và lối thoát. Ảnh đại diện không nằm
+            trong đó — nó đổi bằng một cú chạm vào thẻ danh tính ngay phía trên.
+          */}
+          <MenuRow
+            testID="account-profile"
+            icon="person-outline"
+            tone="info"
+            label="Thông tin cá nhân"
+            hint="Họ tên, số điện thoại, ngày sinh"
+            onPress={() => router.push('/account/profile')}
+          />
           <MenuRow
             testID="account-notification-settings"
             icon="notifications-outline"

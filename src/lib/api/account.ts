@@ -43,3 +43,39 @@ export function capNhatAnhDaiDien(avatarUrl: string | null): Promise<UserProfile
     body: { avatarUrl },
   });
 }
+
+export interface ThongTinCaNhan {
+  fullName: string;
+  /** Chuỗi rỗng nghĩa là gỡ số điện thoại đã lưu. */
+  phone: string;
+  /** `yyyy-mm-dd`, hoặc `null` để gỡ ngày sinh. Xem `../ngay-sinh`. */
+  dob: string | null;
+}
+
+/**
+ * Sửa họ tên, số điện thoại và ngày sinh.
+ *
+ * Tách riêng khỏi `capNhatAnhDaiDien` dù cùng gọi `PATCH /users/me`: hai việc
+ * này xuất phát từ hai thao tác khác hẳn nhau — đổi ảnh là chạm một cái ở thẻ
+ * danh tính, sửa thông tin là mở màn hình rồi bấm Lưu. Gộp làm một hàm thì mỗi
+ * lần đổi ảnh lại phải kèm theo cả ba trường kia, và chỉ cần quên một trường
+ * là máy chủ xoá mất giá trị cũ.
+ *
+ * Máy chủ trả hồ sơ mới, nên chỗ gọi đẩy thẳng nó vào `capNhatHoSo` của
+ * AuthContext thay vì tự ghép lại bằng tay.
+ */
+export function capNhatThongTinCaNhan(thongTin: ThongTinCaNhan): Promise<UserProfile> {
+  return apiRequest<UserProfile>('/users/me', {
+    method: 'PATCH',
+    body: {
+      fullName: thongTin.fullName,
+      phone: thongTin.phone,
+      /*
+        Bỏ hẳn khoá khi không có ngày sinh, thay vì gửi `null`. DTO máy chủ khai
+        `dob` là `@IsDateString()` — `null` sẽ bị bộ kiểm tra chặn lại, còn
+        thiếu khoá thì `@IsOptional()` cho qua.
+      */
+      ...(thongTin.dob ? { dob: thongTin.dob } : {}),
+    },
+  });
+}
