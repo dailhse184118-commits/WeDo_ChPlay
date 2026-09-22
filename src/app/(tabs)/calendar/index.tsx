@@ -2,12 +2,14 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Pressable,
   RefreshControl,
   SectionList,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
@@ -40,8 +42,14 @@ const MAU_THEO_LOAI: Record<MucLich['kind'], string> = {
   EVENT: colors.success,
 };
 
-function Muc({ item }: { item: MucLich }) {
-  return (
+/*
+  Cuộc họp mở được màn chi tiết; hạn chót công việc và sự kiện thì không — nên
+  chỉ mục họp mới là nút bấm. Bọc mọi mục vào `Pressable` cho gọn code là dạy
+  người dùng rằng chạm vào mục nào cũng có chuyện xảy ra, rồi hai phần ba số
+  lần chạm không có gì.
+*/
+function Muc({ item, onPress }: { item: MucLich; onPress?: () => void }) {
+  const than = (
     <View style={styles.muc}>
       <View style={[styles.vach, { backgroundColor: MAU_THEO_LOAI[item.kind] }]} />
       <View style={styles.mucThan}>
@@ -62,9 +70,24 @@ function Muc({ item }: { item: MucLich }) {
       </View>
     </View>
   );
+
+  if (!onPress) return than;
+
+  return (
+    <Pressable
+      testID={`calendar-meeting-${item.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={`Mở cuộc họp ${item.title}`}
+      onPress={onPress}
+      style={({ pressed }) => (pressed ? styles.mucNhan : null)}
+    >
+      {than}
+    </Pressable>
+  );
 }
 
 export default function ManLich() {
+  const router = useRouter();
   const { active, workspaces, switchTo } = useWorkspace();
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -104,6 +127,22 @@ export default function ManLich() {
         onPressSubtitle={() => setSwitcherOpen(true)}
       />
 
+      {/*
+        Lối vào danh sách cuộc họp. Không làm thành tab thứ sáu: thanh tab đã
+        năm mục, thêm nữa là nhãn bị xén ở cỡ chữ lớn. Cuộc họp vốn là thứ xem
+        theo thời gian nên nằm cạnh Lịch là đúng chỗ.
+      */}
+      <Pressable
+        testID="calendar-open-meetings"
+        accessibilityRole="button"
+        onPress={() => router.push('/meetings')}
+        style={({ pressed }) => [styles.loiVaoHop, pressed ? styles.mucNhan : null]}
+      >
+        <Ionicons name="videocam-outline" size={18} color={colors.primary} />
+        <Text style={styles.loiVaoHopChu}>Cuộc họp</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
+
       <View style={styles.than}>
         {/*
           Chỉ báo lỗi to khi KHÔNG có gì để xem. Còn dữ liệu cũ trong cache thì
@@ -138,7 +177,16 @@ export default function ManLich() {
             renderSectionHeader={({ section }) => (
               <Text style={styles.tieuDeNgay}>{section.title}</Text>
             )}
-            renderItem={({ item }) => <Muc item={item} />}
+            renderItem={({ item }) => (
+              <Muc
+                item={item}
+                onPress={
+                  item.kind === 'MEETING'
+                    ? () => router.push(`/meetings/${item.id}`)
+                    : undefined
+                }
+              />
+            )}
             refreshControl={
               <RefreshControl
                 refreshing={lich.isRefetching}
@@ -185,6 +233,19 @@ export default function ManLich() {
 }
 
 const styles = StyleSheet.create({
+  mucNhan: { opacity: 0.6 },
+  loiVaoHop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+  },
+  loiVaoHopChu: { flex: 1, fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
   man: { flex: 1, backgroundColor: colors.page },
   than: { flex: 1, paddingHorizontal: spacing.lg },
   giua: { flex: 1, alignItems: 'center', justifyContent: 'center' },
