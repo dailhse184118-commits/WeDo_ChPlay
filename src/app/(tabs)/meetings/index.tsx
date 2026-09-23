@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,18 +12,22 @@ import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { GradientHeader } from '../../components/ui/GradientHeader';
-import { TheCuocHop } from '../../components/meetings/TheCuocHop';
-import { danhSachCuocHop, type CuocHop } from '../../lib/api/meetings';
-import { chiaHaiNhom } from '../../lib/meetings/sap-xep';
-import { useRefetchOnScreenFocus } from '../../lib/use-refetch-on-focus';
-import { useWorkspace } from '../../lib/workspace/workspace-context';
-import { colors, fontSize, lineHeight, radius, spacing } from '../../theme/tokens';
+import { ErrorBanner } from '../../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { TheCuocHop } from '../../../components/meetings/TheCuocHop';
+import { danhSachCuocHop, type CuocHop } from '../../../lib/api/meetings';
+import { chiaHaiNhom } from '../../../lib/meetings/sap-xep';
+import { useQuayLai } from '../../../lib/use-quay-lai';
+import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
+import { useWorkspace } from '../../../lib/workspace/workspace-context';
+import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
 
 export default function ManDanhSachHop() {
   const router = useRouter();
   const { active } = useWorkspace();
+
+  /* Lối vào danh sách nằm ở tab Lịch, nên quay lại là về Lịch — xem `useQuayLai`. */
+  const quayLai = useQuayLai(useCallback(() => router.navigate('/calendar'), [router]));
 
   const hopQuery = useQuery({
     queryKey: ['meetings', active?.id],
@@ -48,7 +52,7 @@ export default function ManDanhSachHop() {
       <GradientHeader
         title="Cuộc họp"
         subtitle={active?.name}
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/calendar'))}
+        onBack={quayLai}
       />
 
       {/*

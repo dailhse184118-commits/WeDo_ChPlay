@@ -4,15 +4,27 @@ import { fireEvent, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { renderScreen } from '../../../test-utils/render';
-import ManChiTietHop from '../[id]';
+import ManChiTietHop from '../../../app/(tabs)/meetings/[id]';
 import { chiTietCuocHop, moPhongHop, type CuocHop } from '../../../lib/api/meetings';
 
 jest.mock('../../../lib/api/meetings');
 
-const mockedRouter = { replace: jest.fn(), push: jest.fn(), back: jest.fn(), canGoBack: () => true };
+const mockedRouter = {
+  replace: jest.fn(),
+  push: jest.fn(),
+  back: jest.fn(),
+  navigate: jest.fn(),
+  canGoBack: () => true,
+};
+let mockParams: Record<string, string> = { id: 'm-1' };
 jest.mock('expo-router', () => ({
   useRouter: () => mockedRouter,
-  useLocalSearchParams: () => ({ id: 'm-1' }),
+  useLocalSearchParams: () => mockParams,
+  // Chạy hiệu ứng ngay, như lúc màn đang được focus.
+  useFocusEffect: (hieuUng: () => void | (() => void)) => {
+    const { useEffect } = jest.requireActual('react');
+    useEffect(hieuUng, [hieuUng]);
+  },
 }));
 
 const mockedChiTiet = chiTietCuocHop as jest.MockedFunction<typeof chiTietCuocHop>;
@@ -44,6 +56,7 @@ async function moMan(hop: Partial<CuocHop> = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams = { id: 'm-1' };
   jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
   jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
 });
@@ -139,5 +152,26 @@ describe('màn chi tiết cuộc họp', () => {
     );
 
     await waitFor(() => expect(man.getByText(/không có quyền xem/)).toBeTruthy());
+  });
+
+  /*
+    Màn này nằm trong nhóm (tabs). Bộ điều hướng tab mặc định quay lại TAB ĐẦU
+    TIÊN — ở app này là Trò chuyện. `router.back()` ở đây là văng người dùng
+    sang màn chat. Phải điều hướng thẳng tới đúng chỗ họ vừa rời.
+  */
+  it('quay lại danh sách cuộc họp, không dùng lịch sử tab', async () => {
+    const man = await moMan();
+    await fireEvent.press(man.getByLabelText('Quay lại'));
+
+    expect(mockedRouter.navigate).toHaveBeenCalledWith('/meetings');
+    expect(mockedRouter.back).not.toHaveBeenCalled();
+  });
+
+  it('mở từ tab Lịch thì quay về Lịch', async () => {
+    mockParams = { id: 'm-1', tu: 'lich' };
+    const man = await moMan();
+    await fireEvent.press(man.getByLabelText('Quay lại'));
+
+    expect(mockedRouter.navigate).toHaveBeenCalledWith('/calendar');
   });
 });

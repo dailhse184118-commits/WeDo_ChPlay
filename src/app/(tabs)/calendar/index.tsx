@@ -182,7 +182,12 @@ export default function ManLich() {
                 item={item}
                 onPress={
                   item.kind === 'MEETING'
-                    ? () => router.push(`/meetings/${item.id}`)
+                    ? () =>
+                        router.push({
+                          pathname: '/meetings/[id]',
+                          /* `tu` cho màn chi tiết biết quay lại Lịch, không phải danh sách. */
+                          params: { id: item.id, tu: 'lich' },
+                        })
                     : undefined
                 }
               />

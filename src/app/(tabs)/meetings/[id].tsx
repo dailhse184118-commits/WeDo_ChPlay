@@ -1,22 +1,23 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Avatar } from '../../components/ui/Avatar';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { GradientHeader } from '../../components/ui/GradientHeader';
+import { Avatar } from '../../../components/ui/Avatar';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { ErrorBanner } from '../../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
 import {
   chiTietCuocHop,
   moPhongHop,
   type CuocHop,
   type HangMucHanhDong,
-} from '../../lib/api/meetings';
-import { choVaoPhong, khoangGio, tenTrangThai } from '../../lib/meetings/sap-xep';
-import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
+} from '../../../lib/api/meetings';
+import { choVaoPhong, khoangGio, tenTrangThai } from '../../../lib/meetings/sap-xep';
+import { useQuayLai } from '../../../lib/use-quay-lai';
+import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../../theme/tokens';
 
 /** `21/09/2026` — ngày đầy đủ, vì thẻ ở danh sách chỉ hiện giờ. */
 function ngayDayDu(iso: string): string {
@@ -67,7 +68,17 @@ function HangMuc({ muc }: { muc: HangMucHanhDong }) {
 
 export default function ManChiTietHop() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tu } = useLocalSearchParams<{ id: string; tu?: string }>();
+
+  /*
+    Mở từ tab Lịch thì quay về Lịch; mở từ danh sách cuộc họp thì về danh sách.
+    Không dựa vào lịch sử tab — xem `useQuayLai`.
+  */
+  const quayLai = useQuayLai(
+    useCallback(() => {
+      router.navigate(tu === 'lich' ? '/calendar' : '/meetings');
+    }, [router, tu]),
+  );
   const queryClient = useQueryClient();
   const [loiMoPhong, setLoiMoPhong] = useState<string | null>(null);
 
@@ -111,7 +122,7 @@ export default function ManChiTietHop() {
   if (hopQuery.isLoading) {
     return (
       <View style={styles.man}>
-        <GradientHeader title="Cuộc họp" onBack={() => router.back()} dense />
+        <GradientHeader title="Cuộc họp" onBack={quayLai} dense />
         <View style={styles.giua}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -124,7 +135,7 @@ export default function ManChiTietHop() {
   if (!hop) {
     return (
       <View style={styles.man}>
-        <GradientHeader title="Cuộc họp" onBack={() => router.back()} dense />
+        <GradientHeader title="Cuộc họp" onBack={quayLai} dense />
         <View style={styles.giua}>
           <ErrorBanner message="Không tìm thấy cuộc họp này, hoặc bạn không có quyền xem." />
         </View>
@@ -138,7 +149,7 @@ export default function ManChiTietHop() {
     <View style={styles.man}>
       <GradientHeader
         title="Cuộc họp"
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/meetings'))}
+        onBack={quayLai}
         dense
       />
 

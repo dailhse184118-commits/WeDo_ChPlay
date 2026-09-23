@@ -159,6 +159,19 @@ function TabsWithWorkspace() {
         nhóm, không nằm trong URL.
       */}
       <Tabs.Screen name="account/contributions" options={{ href: null }} />
+      {/*
+        Cuộc họp cũng PHẢI nằm trong nhóm này, cùng lý do với Bảng đóng góp ở
+        trên: màn danh sách và màn tạo mới gọi `useWorkspace()`. Ngày 23/09/2026
+        ba màn này được đặt ở src/app/meetings/ và đã lên máy người thử nghiệm
+        trong tình trạng mở ra là vỡ. `src/lib/__tests__/pham-vi-workspace.test.ts`
+        giờ canh luật này — đừng xoá nó.
+
+        `href: null` là bắt buộc: thiếu nó thì Expo Router tự biến mỗi tệp
+        trong thư mục thành một tab hiện trên thanh điều hướng.
+      */}
+      <Tabs.Screen name="meetings/index" options={{ href: null }} />
+      <Tabs.Screen name="meetings/[id]" options={{ href: null }} />
+      <Tabs.Screen name="meetings/new" options={{ href: null }} />
 
       <Tabs.Screen
         name="tasks/index"

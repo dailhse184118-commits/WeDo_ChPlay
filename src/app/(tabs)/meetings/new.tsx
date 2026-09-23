@@ -1,25 +1,28 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { GradientHeader } from '../../components/ui/GradientHeader';
-import { TextField } from '../../components/ui/TextField';
-import { listProjects } from '../../lib/api/projects';
-import { taoCuocHop } from '../../lib/api/meetings';
-import { ghepNgayGio, tuThemDauGachGio } from '../../lib/meetings/thoi-diem';
-import { DINH_DANG_NGAY, tuThemDauGach } from '../../lib/ngay-sinh';
-import { useWorkspace } from '../../lib/workspace/workspace-context';
-import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { ErrorBanner } from '../../../components/ui/ErrorBanner';
+import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { TextField } from '../../../components/ui/TextField';
+import { listProjects } from '../../../lib/api/projects';
+import { taoCuocHop } from '../../../lib/api/meetings';
+import { ghepNgayGio, tuThemDauGachGio } from '../../../lib/meetings/thoi-diem';
+import { DINH_DANG_NGAY, tuThemDauGach } from '../../../lib/ngay-sinh';
+import { useQuayLai } from '../../../lib/use-quay-lai';
+import { useWorkspace } from '../../../lib/workspace/workspace-context';
+import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../../theme/tokens';
 
 export default function ManTaoCuocHop() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { active } = useWorkspace();
+
+  const quayLai = useQuayLai(useCallback(() => router.navigate('/meetings'), [router]));
 
   const [duAnId, setDuAnId] = useState<string | null>(null);
   const [tieuDe, setTieuDe] = useState('');
@@ -92,7 +95,7 @@ export default function ManTaoCuocHop() {
     <View style={styles.man}>
       <GradientHeader
         title="Tạo cuộc họp"
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/meetings'))}
+        onBack={quayLai}
         dense
       />
 
