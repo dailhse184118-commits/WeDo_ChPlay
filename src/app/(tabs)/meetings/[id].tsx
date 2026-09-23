@@ -71,12 +71,14 @@ export default function ManChiTietHop() {
   const { id, tu } = useLocalSearchParams<{ id: string; tu?: string }>();
 
   /*
-    Mở từ tab Lịch thì quay về Lịch; mở từ danh sách cuộc họp thì về danh sách.
+    Mở từ Lịch thì về Lịch, từ Thông báo thì về Thông báo, còn lại về danh sách.
     Không dựa vào lịch sử tab — xem `useQuayLai`.
   */
   const quayLai = useQuayLai(
     useCallback(() => {
-      router.navigate(tu === 'lich' ? '/calendar' : '/meetings');
+      if (tu === 'lich') router.navigate('/calendar');
+      else if (tu === 'thong-bao') router.navigate('/notifications');
+      else router.navigate('/meetings');
     }, [router, tu]),
   );
   const queryClient = useQueryClient();

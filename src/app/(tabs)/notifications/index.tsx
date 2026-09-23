@@ -23,6 +23,8 @@ import {
 } from '../../../lib/api/notifications';
 import { listTasks } from '../../../lib/api/tasks';
 import { useAuth } from '../../../lib/auth/auth-context';
+import type { NotificationItem } from '../../../lib/types';
+import { laThongBaoCuocHop, meetingIdTuActionUrl } from '../../../lib/notifications/cuoc-hop';
 import { syncScheduledReminders } from '../../../lib/notifications/local';
 import {
   checkNotificationPermission,
@@ -91,15 +93,35 @@ export default function NotificationsScreen() {
   }, [queryClient]);
 
   const handlePress = useCallback(
-    async (id: string, taskId?: string | null) => {
+    async (item: NotificationItem) => {
       try {
-        await markNotificationRead(id);
+        await markNotificationRead(item.id);
         refreshBadge();
       } catch {
         // Đánh dấu đã đọc hỏng thì vẫn cho điều hướng.
       }
-      /* `tu` cho màn công việc biết quay lại Thông báo, không phải danh sách việc. */
-      if (taskId) router.push({ pathname: '/tasks/[taskId]', params: { taskId, tu: 'thong-bao' } });
+
+      /*
+        `tu` cho màn đích biết quay lại Thông báo — không phải danh sách việc hay
+        danh sách cuộc họp.
+      */
+      if (item.taskId) {
+        router.push({ pathname: '/tasks/[taskId]', params: { taskId: item.taskId, tu: 'thong-bao' } });
+        return;
+      }
+
+      /*
+        Trước 23/09/2026 chạm vào thông báo cuộc họp không có gì xảy ra: nhánh
+        trên chỉ biết `taskId`. Thông báo cũ không kèm id thì mở danh sách.
+      */
+      if (laThongBaoCuocHop(item.actionUrl)) {
+        const meetingId = meetingIdTuActionUrl(item.actionUrl);
+        if (meetingId) {
+          router.push({ pathname: '/meetings/[id]', params: { id: meetingId, tu: 'thong-bao' } });
+        } else {
+          router.navigate('/meetings');
+        }
+      }
     },
     [refreshBadge, router],
   );
@@ -154,7 +176,7 @@ export default function NotificationsScreen() {
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
-              <NotificationRow item={item} onPress={() => void handlePress(item.id, item.taskId)} />
+              <NotificationRow item={item} onPress={() => void handlePress(item)} />
             )}
             refreshControl={
               <RefreshControl

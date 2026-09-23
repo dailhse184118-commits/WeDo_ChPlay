@@ -62,6 +62,24 @@ describe('taskIdFromResponse', () => {
 });
 
 describe('duongDanTuThongBao', () => {
+  /*
+    Trước 23/09/2026 chạm vào thông báo "Cuộc họp dự án mới" không mở ra đâu
+    cả — người dùng vừa được báo có cuộc họp, giờ phải tự đi tìm.
+  */
+  it('thông báo cuộc họp mở thẳng đúng cuộc họp', () => {
+    expect(
+      duongDanTuThongBao(
+        makeResponse({ type: 'MEETING_SCHEDULED', actionUrl: '#/meeting?meetingId=m-1' }),
+      ),
+    ).toBe('/meetings/m-1');
+  });
+
+  it('thông báo cuộc họp cũ không kèm id thì mở danh sách cuộc họp', () => {
+    expect(
+      duongDanTuThongBao(makeResponse({ type: 'MEETING_SCHEDULED', actionUrl: '#/meeting' })),
+    ).toBe('/meetings');
+  });
+
   it('tin nhắn riêng mở thẳng đúng hội thoại, kèm tên trên tiêu đề', () => {
     expect(
       duongDanTuThongBao(

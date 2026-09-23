@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
+import { meetingIdTuActionUrl } from './cuoc-hop';
 import { nenHienThongBao } from './man-dang-mo';
 
 /**
@@ -84,6 +85,15 @@ export function duongDanTuThongBao(
     case 'FRIEND_REQUEST':
     case 'FRIEND_ACCEPTED':
       return '/chat/friends';
+
+    case 'MEETING_SCHEDULED': {
+      /*
+        Mở thẳng cuộc họp. Thông báo tạo trước 23/09/2026 không kèm id — lúc đó
+        mở danh sách cuộc họp, vẫn hơn là chạm vào không có gì xảy ra.
+      */
+      const meetingId = meetingIdTuActionUrl(chuoi(kho, 'actionUrl'));
+      return meetingId ? `/meetings/${meetingId}` : '/meetings';
+    }
 
     default:
       return null;
