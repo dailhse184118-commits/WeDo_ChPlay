@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   SectionList,
@@ -15,19 +16,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { TheCuocHop } from '../../../components/meetings/TheCuocHop';
+import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
+import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { danhSachCuocHop, type CuocHop } from '../../../lib/api/meetings';
 import { chiaHaiNhom } from '../../../lib/meetings/sap-xep';
-import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
 
 export default function ManDanhSachHop() {
   const router = useRouter();
-  const { active } = useWorkspace();
+  const { active, workspaces, switchTo } = useWorkspace();
 
-  /* Lối vào danh sách nằm ở tab Lịch, nên quay lại là về Lịch — xem `useQuayLai`. */
-  const quayLai = useQuayLai(useCallback(() => router.navigate('/calendar'), [router]));
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [taoMoiOpen, setTaoMoiOpen] = useState(false);
 
   const hopQuery = useQuery({
     queryKey: ['meetings', active?.id],
@@ -49,11 +51,31 @@ export default function ManDanhSachHop() {
 
   return (
     <View style={styles.man}>
+      {/*
+        Màn này là TAB GỐC từ 23/09/2026 (thay chỗ Lịch), nên không có mũi tên
+        quay lại, và phải đổi được không gian làm việc ngay tại đây như mọi tab.
+      */}
       <GradientHeader
         title="Cuộc họp"
         subtitle={active?.name}
-        onBack={quayLai}
+        onPressSubtitle={() => setSwitcherOpen(true)}
       />
+
+      {/*
+        Lịch không còn là tab, nhưng vẫn là chỗ duy nhất gom hạn chót công việc
+        theo ngày — giấu hẳn đi là mất một tính năng đang có.
+      */}
+      <Pressable
+        testID="meetings-open-calendar"
+        accessibilityRole="button"
+        onPress={() => router.push('/calendar')}
+        style={({ pressed }) => [styles.loiVaoLich, pressed ? styles.nhan : null]}
+      >
+        <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+        <Text style={styles.loiVaoLichChu}>Lịch</Text>
+        <Text style={styles.loiVaoLichGoiY}>Hạn chót và sự kiện</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
 
       {/*
         Hiện nút cho MỌI người, không tự đoán ai là Leader. Danh sách dự án trả
@@ -122,12 +144,42 @@ export default function ManDanhSachHop() {
           />
         )}
       </View>
+
+      <WorkspaceSwitcher
+        visible={switcherOpen}
+        workspaces={workspaces}
+        activeId={active?.id}
+        onSelect={(id) => void switchTo(id)}
+        onCreate={() => setTaoMoiOpen(true)}
+        onDismiss={() => setSwitcherOpen(false)}
+      />
+
+      <Modal
+        visible={taoMoiOpen}
+        animationType="slide"
+        onRequestClose={() => setTaoMoiOpen(false)}
+      >
+        <CreateWorkspaceForm onDone={() => setTaoMoiOpen(false)} />
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   nhan: { opacity: 0.6 },
+  loiVaoLich: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+  },
+  loiVaoLichChu: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
+  loiVaoLichGoiY: { flex: 1, fontSize: fontSize.xs, color: colors.textMuted },
   taoMoi: {
     flexDirection: 'row',
     alignItems: 'center',

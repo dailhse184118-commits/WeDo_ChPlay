@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -23,6 +23,7 @@ import {
   nhanLoai,
   nhomTheoNgay,
 } from '../../../lib/calendar/nhom-theo-ngay';
+import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
@@ -90,6 +91,12 @@ export default function ManLich() {
   const router = useRouter();
   const { active, workspaces, switchTo } = useWorkspace();
 
+  /*
+    Từ 23/09/2026 Lịch không còn là tab — vào từ màn Cuộc họp, nên quay lại là về
+    Cuộc họp. Không dùng `router.back()`: xem `useQuayLai`.
+  */
+  const quayLai = useQuayLai(useCallback(() => router.navigate('/meetings'), [router]));
+
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [taoMoiOpen, setTaoMoiOpen] = useState(false);
 
@@ -125,23 +132,9 @@ export default function ManLich() {
         title="Lịch"
         subtitle={active?.name}
         onPressSubtitle={() => setSwitcherOpen(true)}
+        onBack={quayLai}
       />
 
-      {/*
-        Lối vào danh sách cuộc họp. Không làm thành tab thứ sáu: thanh tab đã
-        năm mục, thêm nữa là nhãn bị xén ở cỡ chữ lớn. Cuộc họp vốn là thứ xem
-        theo thời gian nên nằm cạnh Lịch là đúng chỗ.
-      */}
-      <Pressable
-        testID="calendar-open-meetings"
-        accessibilityRole="button"
-        onPress={() => router.push('/meetings')}
-        style={({ pressed }) => [styles.loiVaoHop, pressed ? styles.mucNhan : null]}
-      >
-        <Ionicons name="videocam-outline" size={18} color={colors.primary} />
-        <Text style={styles.loiVaoHopChu}>Cuộc họp</Text>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-      </Pressable>
 
       <View style={styles.than}>
         {/*
@@ -239,18 +232,6 @@ export default function ManLich() {
 
 const styles = StyleSheet.create({
   mucNhan: { opacity: 0.6 },
-  loiVaoHop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-  },
-  loiVaoHopChu: { flex: 1, fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
   man: { flex: 1, backgroundColor: colors.page },
   than: { flex: 1, paddingHorizontal: spacing.lg },
   giua: { flex: 1, alignItems: 'center', justifyContent: 'center' },

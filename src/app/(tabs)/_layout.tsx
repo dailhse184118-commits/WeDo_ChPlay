@@ -169,7 +169,7 @@ function TabsWithWorkspace() {
         `href: null` là bắt buộc: thiếu nó thì Expo Router tự biến mỗi tệp
         trong thư mục thành một tab hiện trên thanh điều hướng.
       */}
-      <Tabs.Screen name="meetings/index" options={{ href: null }} />
+      <Tabs.Screen name="calendar/index" options={{ href: null }} />
       <Tabs.Screen name="meetings/[id]" options={{ href: null }} />
       <Tabs.Screen name="meetings/new" options={{ href: null }} />
 
@@ -187,16 +187,18 @@ function TabsWithWorkspace() {
         }}
       />
       {/*
-        Đặt giữa Việc của tôi và Thông báo: lịch là thứ người dùng xem cùng nhịp
-        với danh sách việc, không phải thứ tra cứu thỉnh thoảng như Tài khoản.
+        Cuộc họp chiếm chỗ của Lịch — chủ dự án chốt ngày 23/09/2026 rằng họp là
+        thứ sinh viên cần tới thường hơn. Lịch KHÔNG bị bỏ: nó là chỗ duy nhất gom
+        hạn chót công việc theo ngày, nên vẫn vào được từ một dòng trong màn Cuộc
+        họp (xem `calendar/index` ở nhóm màn ẩn phía trên).
       */}
       <Tabs.Screen
-        name="calendar/index"
+        name="meetings/index"
         options={{
-          title: 'Lịch',
+          title: 'Cuộc họp',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'calendar' : 'calendar-outline'}
+              name={focused ? 'videocam' : 'videocam-outline'}
               color={color}
               size={sizes.icon}
             />

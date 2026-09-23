@@ -64,3 +64,41 @@ describe('quay lại trong nhóm tab', () => {
     expect(viPham).toEqual([]);
   });
 });
+
+/**
+ * Thanh tab người dùng nhìn thấy — thứ tự và thành phần.
+ *
+ * 23/09/2026: chủ dự án chốt Cuộc họp thay chỗ Lịch trên thanh tab. Lịch thành
+ * màn ẩn, vào từ một dòng trong màn Cuộc họp.
+ *
+ * Thứ tự cũng là một luật an toàn, không chỉ là giao diện: Trò chuyện PHẢI đứng
+ * đầu. Bộ điều hướng tab quay lại theo `firstRoute`, và các màn con của Trò
+ * chuyện (`chat/[projectId]`, `chat/dm/…`, `chat/friends`) vẫn dùng
+ * `router.back()` — chúng chỉ về đúng chỗ vì tab đầu chính là danh sách chat.
+ */
+describe('thanh tab', () => {
+  const layout = tatCa.find((t) => t.ten === '(tabs)/_layout.tsx');
+
+  function tabHienRa(): string[] {
+    return layout!.ma
+      .split('<Tabs.Screen')
+      .slice(1)
+      .map((khoi) => khoi.slice(0, khoi.indexOf('/>')))
+      .filter((khoi) => !/href:\s*null/.test(khoi))
+      .map((khoi) => /name="([^"]+)"/.exec(khoi)![1]);
+  }
+
+  it('đúng năm tab, theo đúng thứ tự', () => {
+    expect(tabHienRa()).toEqual([
+      'chat/index',
+      'tasks/index',
+      'meetings/index',
+      'notifications/index',
+      'account/index',
+    ]);
+  });
+
+  it('Lịch vẫn được khai — là màn ẩn, không bị xoá', () => {
+    expect(layout!.ma).toMatch(/name="calendar\/index"\s+options=\{\{\s*href:\s*null\s*\}\}/);
+  });
+});
