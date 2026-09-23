@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import { coWeb, duongDanWeb } from '../../../lib/web-link';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getContributions, type DongGopThanhVien } from '../../../lib/api/tasks';
+import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
@@ -75,6 +76,8 @@ const SO_NGUOI_HIEN_SAN = 3;
 
 export default function ManDongGop() {
   const router = useRouter();
+  /* Lối vào duy nhất là màn Tài khoản — không dùng `router.back()`, xem `useQuayLai`. */
+  const quayLai = useQuayLai(useCallback(() => router.navigate('/account'), [router]));
   const { active } = useWorkspace();
   const [xemHet, setXemHet] = useState(false);
 
@@ -89,7 +92,7 @@ export default function ManDongGop() {
       <GradientHeader
         title="Bảng đóng góp"
         subtitle={active?.name}
-        onBack={() => router.back()}
+        onBack={quayLai}
         dense
       />
 

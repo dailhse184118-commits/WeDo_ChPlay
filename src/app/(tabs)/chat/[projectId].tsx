@@ -437,7 +437,15 @@ export default function ChatThreadScreen() {
 
         Alert.alert('Đã tạo công việc', result.task.title ?? values.title, [
           { text: 'Đóng', style: 'cancel' },
-          { text: 'Xem công việc', onPress: () => router.push(`/tasks/${result.task.id}`) },
+          {
+            text: 'Xem công việc',
+            /* Mang theo khung chat này để Quay lại ở màn công việc về đúng đây. */
+            onPress: () =>
+              router.push({
+                pathname: '/tasks/[taskId]',
+                params: { taskId: result.task.id, tu: 'chat', chatId: projectId },
+              }),
+          },
         ]);
         return;
       }

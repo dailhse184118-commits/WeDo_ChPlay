@@ -28,6 +28,7 @@ import { useAuth } from '../../../lib/auth/auth-context';
 import { chonTaiLieu } from '../../../lib/files/pick-documents';
 import { quyenTrenTask } from '../../../lib/tasks/task-permissions';
 import type { Task } from '../../../lib/types';
+import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
@@ -84,18 +85,32 @@ function Row({
 }
 
 export default function TaskDetailScreen() {
-  const { taskId } = useLocalSearchParams<{ taskId: string }>();
+  const { taskId, tu, chatId } = useLocalSearchParams<{
+    taskId: string;
+    tu?: string;
+    chatId?: string;
+  }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   /*
-    Vào màn này từ thông báo thì ngăn xếp có thể rỗng, lúc đó `back()` không đi
-    đâu cả. Rơi về danh sách việc cho chắc.
+    Màn này là một route của bộ điều hướng TAB, không phải một màn chồng lên
+    ngăn xếp. `router.back()` ở đây nhảy về tab ĐẦU TIÊN — Trò chuyện — nên người
+    xem xong một công việc bấm Quay lại là văng sang màn chat. Quay về đúng chỗ
+    đã mở màn này, bằng cả mũi tên lẫn phím Back: xem `useQuayLai`.
+
+    Ba nơi mở màn này: danh sách Công việc (mặc định), tab Thông báo
+    (`tu=thong-bao`), và khung chat dự án sau khi trợ lý tạo việc
+    (`tu=chat`, `chatId`).
   */
-  const goBack = useCallback(() => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/tasks');
-  }, [router]);
+  const goBack = useQuayLai(
+    useCallback(() => {
+      if (tu === 'thong-bao') router.navigate('/notifications');
+      else if (tu === 'chat' && chatId) {
+        router.navigate({ pathname: '/chat/[projectId]', params: { projectId: chatId } });
+      } else router.navigate('/tasks');
+    }, [router, tu, chatId]),
+  );
 
   const [rejecting, setRejecting] = useState(false);
   const [rejectingReview, setRejectingReview] = useState(false);

@@ -98,7 +98,8 @@ export default function NotificationsScreen() {
       } catch {
         // Đánh dấu đã đọc hỏng thì vẫn cho điều hướng.
       }
-      if (taskId) router.push(`/tasks/${taskId}`);
+      /* `tu` cho màn công việc biết quay lại Thông báo, không phải danh sách việc. */
+      if (taskId) router.push({ pathname: '/tasks/[taskId]', params: { taskId, tu: 'thong-bao' } });
     },
     [refreshBadge, router],
   );

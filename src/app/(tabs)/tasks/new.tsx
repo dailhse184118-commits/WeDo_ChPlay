@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import {
   dungInputTaoTask,
   type FormTaoTask,
 } from '../../../lib/tasks/tao-task';
+import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
 
@@ -78,6 +79,8 @@ function HangChon<T extends { id: string }>({
 
 export default function ManTaoCongViec() {
   const router = useRouter();
+  /* Tạo xong hay bỏ ngang đều về danh sách việc — không dùng `router.back()`, xem `useQuayLai`. */
+  const quayLai = useQuayLai(useCallback(() => router.navigate('/tasks'), [router]));
   const queryClient = useQueryClient();
   const { active } = useWorkspace();
   const workspaceId = active?.id ?? null;
@@ -108,7 +111,8 @@ export default function ManTaoCongViec() {
         làm thì người dùng quay về màn cũ và không thấy gì, tưởng tạo hỏng.
       */
       void queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      router.back();
+      /* KHÔNG `router.back()`: trong nhóm tab nó nhảy về Trò chuyện — xem `useQuayLai`. */
+      quayLai();
     },
     onError: (e) =>
       setLoi(e instanceof Error ? e.message : 'Không tạo được công việc.'),
@@ -129,7 +133,7 @@ export default function ManTaoCongViec() {
       <GradientHeader
         title="Công việc mới"
         subtitle={active?.name}
-        onBack={() => router.back()}
+        onBack={quayLai}
         dense
       />
 
