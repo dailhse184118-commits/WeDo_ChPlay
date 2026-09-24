@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { listProjects } from '../api/projects';
+import { useAuth } from '../auth/auth-context';
 import { useSocket } from '../socket/socket-context';
 import { useWorkspace } from '../workspace/workspace-context';
-import { keysToInvalidate, projectRoomsToJoin } from './sync-rules';
+import { keysToInvalidate, khoaChuaDocDuAn, projectRoomsToJoin } from './sync-rules';
 
 /**
  * Giữ dữ liệu tươi bằng socket có sẵn, thay cho việc hỏi vòng theo nhịp.
@@ -19,6 +20,8 @@ import { keysToInvalidate, projectRoomsToJoin } from './sync-rules';
 export function useRealtimeSync(): void {
   const { socket, connected } = useSocket();
   const { active } = useWorkspace();
+  const { user } = useAuth();
+  const userId = user?.id;
   const queryClient = useQueryClient();
 
   const projectsQuery = useQuery({
@@ -56,12 +59,25 @@ export function useRealtimeSync(): void {
       mọi phòng `direct:*` ngay trong `handleConnection`. Chỉ hội thoại vừa tạo
       trong phiên hiện tại mới phải xin vào phòng.
     */
+    /*
+      Huy hiệu chưa đọc ở danh sách dự án. Trước đây không ai nghe tin dự án ở
+      đây, nên huy hiệu chỉ đổi khi app vào nền rồi mở lại. Nếu người dùng đang
+      xem đúng khung chat đó, màn chat tự báo đã đọc rồi đưa huy hiệu về 0.
+    */
+    const onProjectMessage = (tin: { projectId?: unknown; authorId?: unknown }) => {
+      const khoa = khoaChuaDocDuAn(tin, userId);
+      if (khoa) void queryClient.invalidateQueries({ queryKey: khoa });
+    };
+
     const onDirectMessage = () => invalidate('message:direct');
     const onDirectUpdated = () => invalidate('message:direct:updated');
     const onDirectRead = () => invalidate('read:direct');
 
     socket.on('notification:new', onNotification);
     socket.on('task:project:updated', onTask);
+    socket.on('message:project', onProjectMessage);
+    // Tin chưa đọc bị thu hồi thì không còn tính là chưa đọc nữa.
+    socket.on('message:project:recalled', onProjectMessage);
     socket.on('message:direct', onDirectMessage);
     socket.on('message:direct:updated', onDirectUpdated);
     socket.on('read:direct', onDirectRead);
@@ -69,9 +85,11 @@ export function useRealtimeSync(): void {
     return () => {
       socket.off('notification:new', onNotification);
       socket.off('task:project:updated', onTask);
+      socket.off('message:project', onProjectMessage);
+      socket.off('message:project:recalled', onProjectMessage);
       socket.off('message:direct', onDirectMessage);
       socket.off('message:direct:updated', onDirectUpdated);
       socket.off('read:direct', onDirectRead);
     };
-  }, [socket, queryClient]);
+  }, [socket, queryClient, userId]);
 }

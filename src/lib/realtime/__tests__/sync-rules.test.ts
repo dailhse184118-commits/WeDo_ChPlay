@@ -1,4 +1,9 @@
-import { keysToInvalidate, projectRoomsToJoin, MAX_JOINED_PROJECTS } from '../sync-rules';
+import {
+  keysToInvalidate,
+  khoaChuaDocDuAn,
+  projectRoomsToJoin,
+  MAX_JOINED_PROJECTS,
+} from '../sync-rules';
 
 describe('keysToInvalidate', () => {
   it('thông báo mới làm hỏng cả danh sách lẫn số chưa đọc', () => {
@@ -54,5 +59,29 @@ describe('projectRoomsToJoin', () => {
 
   it('danh sách rỗng thì không vào phòng nào', () => {
     expect(projectRoomsToJoin([])).toEqual([]);
+  });
+});
+
+/*
+  Huy hiệu chưa đọc ở danh sách dự án trước đây không bao giờ được làm mới khi
+  có tin — chỉ đổi khi app vào nền rồi mở lại. Người thử nghiệm 23/09/2026: tin
+  mới tới mà huy hiệu đứng yên, đọc xong rồi huy hiệu vẫn còn.
+*/
+describe('khoaChuaDocDuAn', () => {
+  it('tin người khác gửi làm hỏng số chưa đọc của ĐÚNG dự án đó', () => {
+    expect(khoaChuaDocDuAn({ projectId: 'p1', authorId: 'u2' }, 'u1')).toEqual([
+      'chat-unread',
+      'p1',
+    ]);
+  });
+
+  /* Tin mình gửi không bao giờ là "chưa đọc" với chính mình — gọi lại là thừa. */
+  it('tin của chính mình thì bỏ qua', () => {
+    expect(khoaChuaDocDuAn({ projectId: 'p1', authorId: 'u1' }, 'u1')).toBeNull();
+  });
+
+  it('bỏ qua gói tin thiếu dự án thay vì làm hỏng mọi huy hiệu', () => {
+    expect(khoaChuaDocDuAn({ authorId: 'u2' }, 'u1')).toBeNull();
+    expect(khoaChuaDocDuAn(null, 'u1')).toBeNull();
   });
 });

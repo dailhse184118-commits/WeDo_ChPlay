@@ -16,7 +16,16 @@ export function datManDangMo(khoa: string): void {
   manDangMo = khoa;
 }
 
-export function quenManDangMo(): void {
+/**
+ * Quên khung chat đang mở.
+ *
+ * Truyền `khoa` thì chỉ xoá khi khoá hiện tại đúng là của mình. Khi chuyển từ
+ * khung chat này sang khung chat khác, React chạy hiệu ứng của màn MỚI trước
+ * khi bộ điều hướng báo "rời" cho màn cũ — xoá vô điều kiện là màn cũ xoá luôn
+ * khoá màn mới vừa đặt, và banner của đúng cuộc trò chuyện đang đọc lại hiện.
+ */
+export function quenManDangMo(khoa?: string): void {
+  if (khoa !== undefined && manDangMo !== khoa) return;
   manDangMo = null;
 }
 

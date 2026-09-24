@@ -138,17 +138,67 @@ function extractMessage(payload: unknown, status: number): string {
  */
 let dangGiaHan: Promise<string | null> | null = null;
 
+/**
+ * Phiên đang được đăng xuất — từ lúc `ketThucPhien` tới lần đăng nhập sau.
+ *
+ * Đăng xuất gửi /auth/logout với refresh token hiện tại. Một lượt gia hạn chạy
+ * cùng lúc (socket bị ngắt đúng lúc đó chẳng hạn) cầm CÙNG token đó: máy chủ huỷ
+ * trước rồi mới xoay thì coi là đánh cắp và đăng xuất MỌI thiết bị; xoay trước
+ * thì phiên mới còn sống và token mới bị ghi lại xuống máy sau khi đã xoá — người
+ * vừa đăng xuất mở app lại vào thẳng tài khoản.
+ */
+let dangDangXuat = false;
+
+/**
+ * Gọi ĐẦU TIÊN khi đăng xuất, trước khi đọc refresh token để gửi /auth/logout.
+ *
+ * Chặn mọi lượt gia hạn MỚI, và đợi lượt đang bay (nếu có) ghi xong token của nó.
+ * Để nó ghi là cố ý: /auth/logout sau đó mang đúng refresh token mới nhất nên máy
+ * chủ huỷ sạch phiên. Bỏ không ghi thì token cũ đã bị xoay mất — logout thành vô
+ * hiệu, phiên mới nằm lại trên máy chủ. Và vì đăng xuất đợi ở đây TRƯỚC khi xoá
+ * token, không lượt ghi nào rơi vào sau lúc đã xoá.
+ */
+export async function ketThucPhien(): Promise<void> {
+  dangDangXuat = true;
+  await dangGiaHan?.catch(() => null);
+}
+
+/** Gọi khi vừa đăng nhập xong — cho phép gia hạn trở lại. */
+export function batDauPhien(): void {
+  dangDangXuat = false;
+}
+
 async function giaHanPhien(): Promise<string | null> {
   const refreshToken = await loadRefreshToken();
   if (!refreshToken) return null;
 
-  const response = await fetch(`${baseUrl()}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl()}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch (loi) {
+    // Mất mạng giữa chừng là "mất mạng" (trạng thái 0) như mọi lượt gọi khác — không phải hết phiên.
+    throw new ApiError(
+      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
+      0,
+      undefined,
+      loi instanceof Error ? loi.message : String(loi),
+    );
+  }
 
-  if (!response.ok) return null;
+  /*
+    Chỉ 400/401/403 mới nghĩa là phiên đã hết. Lỗi khác — máy chủ quá tải, đang
+    khởi động lại (5xx), chặn tần suất (429) — là tạm thời: ném lỗi để người gọi
+    thử lại sau. Trước đây mọi lỗi đều thành "hết phiên", nên máy chủ trục trặc
+    vài giây là người dùng bị đá ra màn đăng nhập.
+  */
+  if (response.status === 400 || response.status === 401 || response.status === 403) return null;
+  if (!response.ok) {
+    throw new ApiError(`Gia hạn phiên đăng nhập lỗi ${response.status}.`, response.status);
+  }
 
   // Đọc bằng `text()` rồi tự parse, giống hệt phần còn lại của tệp này.
   const raw = await response.text();
@@ -165,7 +215,13 @@ async function giaHanPhien(): Promise<string | null> {
   return payload.accessToken;
 }
 
-function giaHanMotLuot(): Promise<string | null> {
+/**
+ * Gia hạn phiên, dùng CHUNG một lượt cho cả app. Socket cũng gọi qua đây khi bị
+ * máy chủ ngắt: tự gọi `/auth/refresh` riêng là hai lượt gia hạn đua nhau, và vì
+ * máy chủ xoay refresh token nên lượt thua bị coi là đánh cắp, cắt cả phiên.
+ */
+export function giaHanMotLuot(): Promise<string | null> {
+  if (dangDangXuat) return Promise.resolve(null);
   dangGiaHan ??= giaHanPhien().finally(() => {
     dangGiaHan = null;
   });

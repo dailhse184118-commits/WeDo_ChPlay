@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
@@ -111,13 +111,21 @@ export default function ManTinNhanRieng() {
   /*
     Báo cho bộ xử lý thông báo biết đang mở hội thoại nào, để tin của chính hội
     thoại này không nhảy banner đè lên thứ người dùng đang đọc.
-  */
-  useEffect(() => {
-    if (!conversationId) return;
 
-    datManDangMo(`dm:${conversationId}`);
-    return () => quenManDangMo();
-  }, [conversationId]);
+    Theo FOCUS, không theo lần gắn màn: màn này là tab ẩn, sống suốt phiên. Theo
+    lần gắn thì rời đi rồi banner của hội thoại này vẫn bị chặn, còn quay lại thì
+    khoá đã bị màn khác xoá mà không được đặt lại.
+  */
+  useFocusEffect(
+    useCallback(() => {
+      if (!conversationId) return;
+
+      const khoa = `dm:${conversationId}`;
+      datManDangMo(khoa);
+      // Chỉ xoá khoá của chính mình — khung chat khác có thể đã kịp đặt khoá của nó.
+      return () => quenManDangMo(khoa);
+    }, [conversationId]),
+  );
 
   /*
     Đánh dấu đã đọc khi mở, và mỗi lần có tin mới về trong lúc màn đang mở.

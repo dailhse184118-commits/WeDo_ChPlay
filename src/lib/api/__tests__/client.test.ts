@@ -1,4 +1,11 @@
-import { apiRequest, ApiError, onUnauthorized } from '../client';
+import {
+  apiRequest,
+  ApiError,
+  batDauPhien,
+  giaHanMotLuot,
+  ketThucPhien,
+  onUnauthorized,
+} from '../client';
 import { loadRefreshToken, loadToken, saveRefreshToken, saveToken } from '../../auth/token-storage';
 
 jest.mock('../../auth/token-storage', () => ({
@@ -234,6 +241,7 @@ describe('apiRequest', () => {
 
 describe('tự gia hạn phiên khi gặp 401', () => {
   beforeEach(() => {
+    batDauPhien();
     process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
     mockFetch.mockReset();
     globalThis.fetch = mockFetch as unknown as typeof fetch;
@@ -304,5 +312,100 @@ describe('tự gia hạn phiên khi gặp 401', () => {
       apiRequest('/auth/login', { method: 'POST', body: {}, skipAuth: true }),
     ).rejects.toThrow(ApiError);
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Máy chủ quá tải hay đang khởi động lại (5xx) lúc gia hạn KHÔNG có nghĩa phiên
+    đã hết. Trước đây mọi lỗi đều thành "hết phiên": người dùng bị đá ra màn đăng
+    nhập chỉ vì máy chủ trục trặc vài giây, và socket thôi hẳn không nối lại.
+  */
+  it('máy chủ trục trặc (5xx) lúc gia hạn thì không đá người dùng ra', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ message: 'Service Unavailable' }, { status: 503 });
+
+    await expect(apiRequest('/users/me')).rejects.toMatchObject({ status: 503 });
+    expect(handler).not.toHaveBeenCalled();
+    huy();
+  });
+
+  it('gia hạn gặp 5xx thì ném lỗi (để thử lại sau), không trả null như phiên đã hết', async () => {
+    mockFetchOnce({ message: 'Bad Gateway' }, { status: 502 });
+
+    await expect(giaHanMotLuot()).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+/*
+  Đăng xuất gửi /auth/logout với refresh token hiện tại. Nếu cùng lúc có một lượt
+  gia hạn (socket bị ngắt đúng lúc đó chẳng hạn) cầm CÙNG refresh token đó:
+  - máy chủ huỷ trước rồi mới xoay → coi là đánh cắp, đăng xuất MỌI thiết bị;
+  - máy chủ xoay trước → phiên mới còn sống và token mới được ghi lại xuống máy
+    SAU khi đã xoá — người vừa đăng xuất mở app lại vào thẳng tài khoản.
+*/
+describe('gia hạn trong lúc đăng xuất', () => {
+  beforeEach(() => {
+    batDauPhien();
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
+    mockFetch.mockReset();
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+    mockedLoadToken.mockResolvedValue('tok-cu');
+    mockedLoadRefresh.mockResolvedValue('rt-cu');
+    mockedSaveToken.mockClear();
+    mockedSaveRefresh.mockClear();
+  });
+
+  it('đã bắt đầu đăng xuất thì không gia hạn nữa', async () => {
+    await ketThucPhien();
+
+    await expect(giaHanMotLuot()).resolves.toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  /*
+    Lượt đang bay thì ĐỢI nó ghi xong rồi mới cho đăng xuất đi tiếp: /auth/logout
+    phải mang refresh token mới nhất, không thì máy chủ không huỷ được phiên. Đợi
+    ở đây cũng bảo đảm không lượt ghi nào rơi vào SAU lúc đã xoá token.
+  */
+  it('lượt gia hạn đang bay lúc đăng xuất: đợi nó ghi xong rồi mới đi tiếp', async () => {
+    let traVe: (giaTri: unknown) => void = () => undefined;
+    mockFetch.mockReturnValueOnce(new Promise((xong) => (traVe = xong)));
+    const dangGiaHan = giaHanMotLuot();
+
+    let daXongDangXuat = false;
+    const dangXuat = ketThucPhien().then(() => {
+      daXongDangXuat = true;
+    });
+    await Promise.resolve();
+    expect(daXongDangXuat).toBe(false);
+
+    traVe({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ accessToken: 'tok-moi', refreshToken: 'rt-moi' }),
+    });
+    await dangXuat;
+
+    await expect(dangGiaHan).resolves.toBe('tok-moi');
+    expect(mockedSaveRefresh).toHaveBeenCalledWith('rt-moi');
+    // Sau đó thì không lượt nào được bắt đầu nữa.
+    await expect(giaHanMotLuot()).resolves.toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('đăng nhập lại thì gia hạn chạy bình thường', async () => {
+    await ketThucPhien();
+    batDauPhien();
+    mockFetchOnce({ accessToken: 'tok-moi', refreshToken: 'rt-moi' });
+
+    await expect(giaHanMotLuot()).resolves.toBe('tok-moi');
+  });
+
+  /* Mất mạng giữa chừng lúc gia hạn là "mất mạng", không phải một lỗi lạ. */
+  it('mất mạng lúc gia hạn thì ném ApiError trạng thái 0', async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    await expect(giaHanMotLuot()).rejects.toMatchObject({ status: 0 });
   });
 });

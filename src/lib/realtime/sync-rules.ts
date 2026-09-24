@@ -32,6 +32,24 @@ export function keysToInvalidate(event: RealtimeEvent): string[][] {
 }
 
 /**
+ * Khoá số chưa đọc cần làm mới khi có tin mới (hoặc tin bị thu hồi) trong dự án.
+ *
+ * Khác các sự kiện ở trên: khoá phụ thuộc NỘI DUNG gói tin, và chỉ làm hỏng đúng
+ * một dự án — làm hỏng cả nhánh `chat-unread` là mỗi tin nhắn bắn ra một lượt
+ * gọi cho mọi dự án đang theo dõi.
+ *
+ * Tin của chính mình thì bỏ qua: nó không bao giờ là "chưa đọc" với mình.
+ */
+export function khoaChuaDocDuAn(
+  tin: { projectId?: unknown; authorId?: unknown } | null | undefined,
+  userId: string | undefined,
+): string[] | null {
+  if (!tin || typeof tin.projectId !== 'string' || !tin.projectId) return null;
+  if (userId && tin.authorId === userId) return null;
+  return ['chat-unread', tin.projectId];
+}
+
+/**
  * Danh sách phòng dự án cần tham gia.
  *
  * Máy chủ tự cho vào phòng `user:<id>` lúc kết nối, nên thông báo cá nhân tới nơi

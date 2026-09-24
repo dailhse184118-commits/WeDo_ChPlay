@@ -3,7 +3,8 @@ import { Text, Pressable } from 'react-native';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import { AuthProvider, useAuth } from '../auth-context';
-import { ApiError } from '../../api/client';
+import { ApiError, apiRequest, giaHanMotLuot } from '../../api/client';
+import * as pushToken from '../../notifications/push-token';
 import * as authApi from '../../api/auth';
 import * as googleSignIn from '../google-signin';
 import * as query from '../../query';
@@ -13,11 +14,16 @@ jest.mock('../../api/auth');
 jest.mock('../token-storage');
 jest.mock('../google-signin');
 jest.mock('../../query', () => ({ xoaCacheBenBi: jest.fn() }));
+jest.mock('../../notifications/push-token', () => ({
+  huyDangKyPushToken: jest.fn(async () => undefined),
+  dongBoPushToken: jest.fn(async () => undefined),
+}));
 
 const mockedAuthApi = authApi as jest.Mocked<typeof authApi>;
 const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
 const mockedGoogle = googleSignIn as jest.Mocked<typeof googleSignIn>;
 const mockedQuery = query as jest.Mocked<typeof query>;
+const mockedPush = pushToken as jest.Mocked<typeof pushToken>;
 
 const profile = { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' };
 
@@ -79,7 +85,8 @@ describe('AuthProvider', () => {
 
   it('xoá token khi token đã hết hạn', async () => {
     mockedStorage.loadToken.mockResolvedValue('het-han');
-    mockedAuthApi.getMe.mockRejectedValue(new Error('401'));
+    // Đúng thứ tầng API ném khi cả refresh token cũng hết hạn: ApiError 401.
+    mockedAuthApi.getMe.mockRejectedValue(new ApiError('Unauthorized', 401));
 
     const { getByTestId } = await renderProbe();
 
@@ -300,5 +307,108 @@ describe('AuthProvider', () => {
     await fireEvent.press(getByTestId('signout'));
 
     await waitFor(() => expect(mockedQuery.xoaCacheBenBi).toHaveBeenCalled());
+  });
+
+  /*
+    Đăng xuất phải chặn gia hạn phiên NGAY từ đầu: một lượt gia hạn chạy song song
+    với /auth/logout cầm cùng refresh token thì hoặc máy chủ coi là đánh cắp và
+    đăng xuất mọi thiết bị, hoặc phiên mới bị ghi lại xuống máy sau khi đã xoá.
+  */
+  it('đăng xuất chặn mọi lượt gia hạn mới; đăng nhập lại thì mở ra', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadRefreshToken.mockResolvedValue('rt-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+    mockedAuthApi.login.mockResolvedValue({
+      message: 'ok',
+      accessToken: 'tok-2',
+      refreshToken: 'rt-2',
+      user: profile,
+    } as never);
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
+    const fetchGia = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ accessToken: 'tok-3', refreshToken: 'rt-3' }),
+    }));
+    globalThis.fetch = fetchGia as unknown as typeof fetch;
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await fireEvent.press(getByTestId('signout'));
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await expect(giaHanMotLuot()).resolves.toBeNull();
+    expect(fetchGia).not.toHaveBeenCalled();
+
+    await fireEvent.press(getByTestId('signin'));
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    await expect(giaHanMotLuot()).resolves.toBe('tok-3');
+  });
+
+  /** Một lượt gọi API bị 401 — đúng thứ kích hoạt bộ xử lý "hết phiên" của tầng API. */
+  async function bi401() {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
+    globalThis.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ message: 'Unauthorized' }),
+    })) as unknown as typeof fetch;
+    await apiRequest('/bat-ky', { skipAuth: true }).catch(() => undefined);
+  }
+
+  /*
+    Gõ sai mật khẩu ở màn đăng nhập cũng là một lỗi 401. Trước đây nó kích hoạt
+    đăng xuất; bước đầu của đăng xuất (gỡ thiết bị nhận thông báo) lại bị 401 vì
+    chưa đăng nhập, lại kích hoạt đăng xuất tiếp — một chuỗi không dứt. Đăng nhập
+    đúng ngay sau đó thì lượt đăng xuất đang chạy dở huỷ luôn phiên vừa có.
+  */
+  it('gõ sai mật khẩu (401) lúc chưa đăng nhập không kích hoạt đăng xuất', async () => {
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await bi401();
+    await new Promise((xong) => setTimeout(xong, 20));
+
+    expect(mockedPush.huyDangKyPushToken).not.toHaveBeenCalled();
+    expect(mockedAuthApi.logout).not.toHaveBeenCalled();
+  });
+
+  it('nhiều lỗi 401 dồn lúc đang đăng xuất chỉ chạy MỘT lượt đăng xuất', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadRefreshToken.mockResolvedValue('rt-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+    let goXong: () => void = () => undefined;
+    mockedPush.huyDangKyPushToken.mockReturnValueOnce(new Promise<void>((xong) => (goXong = xong)));
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+
+    // 401 đầu tiên mở lượt đăng xuất; lượt đó kẹt ở bước gỡ thiết bị.
+    await bi401();
+    // Trong lúc đó các lượt gọi khác lần lượt bị 401.
+    await bi401();
+    await bi401();
+    goXong();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+    expect(mockedPush.huyDangKyPushToken).toHaveBeenCalledTimes(1);
+    expect(mockedAuthApi.logout).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Mở app đúng lúc máy chủ đang khởi động lại (5xx) KHÔNG phải hết phiên. Xoá
+    token là bắt người dùng nhập mật khẩu lại chỉ vì máy chủ trục trặc vài giây.
+  */
+  it('máy chủ trục trặc (5xx) lúc mở app thì giữ phiên, dùng hồ sơ đã lưu', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.getMe.mockRejectedValue(new ApiError('Service Unavailable', 503));
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedStorage.clearToken).not.toHaveBeenCalled();
   });
 });

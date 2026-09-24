@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   getMe,
@@ -8,7 +8,7 @@ import {
   register as registerRequest,
 } from '../api/auth';
 import type { RegisterInput } from '../api/auth';
-import { ApiError, onUnauthorized } from '../api/client';
+import { ApiError, batDauPhien, ketThucPhien, onUnauthorized } from '../api/client';
 import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
 import { xoaCacheBenBi } from '../query';
 import type { UserProfile } from '../types';
@@ -49,7 +49,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<UserProfile | null>(null);
 
-  const signOut = useCallback(async () => {
+  /*
+    Đăng xuất chạy ĐÚNG MỘT lượt tại một thời điểm. Bước đầu (gỡ thiết bị nhận
+    thông báo) có thể bị 401, và 401 lại gọi đăng xuất — không gom thì mỗi lượt đẻ
+    ra lượt sau, thành chuỗi không dứt; người dùng đăng nhập lại giữa chừng thì
+    lượt đang chạy dở huỷ luôn phiên vừa có. Gọi lại lúc đang chạy thì trả về đúng
+    lượt đó.
+  */
+  const dangXuatDangChay = useRef<Promise<void> | null>(null);
+
+  const thucHienDangXuat = useCallback(async () => {
     /*
       Bảo máy chủ cắt phiên TRƯỚC khi xoá token khỏi máy — xoá trước thì không
       còn gì để gửi lên. Bọc lại vì mất mạng không được phép giữ người dùng ở
@@ -61,6 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       trên chiếc máy họ vừa trả lại.
     */
     await huyDangKyPushToken();
+
+    /*
+      Chặn gia hạn phiên từ đây, và đợi lượt đang bay (nếu có) ghi xong — để
+      /auth/logout bên dưới mang đúng refresh token mới nhất. Đặt SAU bước gỡ
+      thiết bị: bước đó có thể còn cần gia hạn. Xem `ketThucPhien`.
+    */
+    await ketThucPhien();
 
     try {
       const refreshToken = await loadRefreshToken();
@@ -100,6 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signOut = useCallback((): Promise<void> => {
+    dangXuatDangChay.current ??= thucHienDangXuat().finally(() => {
+      dangXuatDangChay.current = null;
+    });
+    return dangXuatDangChay.current;
+  }, [thucHienDangXuat]);
+
   // Khôi phục phiên lúc khởi động.
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +161,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           token và khôi phục hồ sơ đã lưu, để người dùng vào được app và đọc dữ
           liệu ngoại tuyến.
         */
-        const matMang = err instanceof ApiError && err.status === 0;
+        /*
+          Lỗi TẠM THỜI thì giữ phiên: mất mạng (0), máy chủ trục trặc hay đang khởi
+          động lại (5xx), bị chặn tần suất (429), hoặc lỗi lạ không phải ApiError
+          (trang lỗi HTML của cổng Azure chẳng hạn). Chỉ lỗi 4xx còn lại mới nghĩa
+          là phiên đã hết. Trước đây máy chủ trục trặc lúc mở app là bị xoá token.
+        */
+        const matMang =
+          !(err instanceof ApiError) ||
+          err.status === 0 ||
+          err.status === 429 ||
+          err.status >= 500;
 
         if (matMang) {
           const luuSan = await loadUserProfile();
@@ -173,10 +206,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Bất kỳ 401 nào từ tầng API cũng đá người dùng về màn đăng nhập.
-  useEffect(() => onUnauthorized(() => void signOut()), [signOut]);
+  /*
+    401 từ tầng API đá người dùng về màn đăng nhập — nhưng CHỈ khi đang đăng nhập.
+    Gõ sai mật khẩu ở màn đăng nhập cũng là 401; trước đây nó kích hoạt cả một
+    lượt đăng xuất cho người chưa hề đăng nhập.
+  */
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+  useEffect(
+    () =>
+      onUnauthorized(() => {
+        if (statusRef.current === 'signedIn') void signOut();
+      }),
+    [signOut],
+  );
 
   const establishSession = useCallback(async (accessToken: string, refreshToken?: string) => {
+    // Phiên mới: cho phép gia hạn trở lại (đăng xuất trước đó đã chặn — xem `ketThucPhien`).
+    batDauPhien();
     // Lưu token TRƯỚC khi gọi getMe, nếu không request sẽ thiếu header Authorization.
     await saveToken(accessToken);
 

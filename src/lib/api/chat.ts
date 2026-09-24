@@ -6,6 +6,13 @@ import type { ChatHistoryPage, ChatMessage, ChatTaskSuggestion } from '../types'
 /** Số tin nhắn tải mỗi lần cuộn lên. */
 export const HISTORY_PAGE_SIZE = 30;
 
+/**
+ * Số tin GET /projects/:id/chat trả về — khớp `take: 40` của `findProjectMessages`
+ * ở máy chủ. Trang về đủ số này mà không nối vào phần đang giữ nghĩa là đã lỡ tin
+ * ở giữa (xem màn chat dự án).
+ */
+export const SO_TIN_MOI_NHAT = 40;
+
 export function getProjectMessages(projectId: string): Promise<ChatMessage[]> {
   return apiRequest<ChatMessage[]>(`/projects/${projectId}/chat`);
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,7 @@ import {
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import {
+  SO_TIN_MOI_NHAT,
   getProjectHistory,
   getProjectMessages,
   markProjectRead,
@@ -40,8 +41,8 @@ import { createTaskFromMessage } from '../../../lib/chat/create-task-from-messag
 import { createLocalId } from '../../../lib/chat/local-id';
 import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
+import { useDongBoKhungChat } from '../../../lib/chat/use-dong-bo-khung-chat';
 import { useHeaderTep } from '../../../lib/chat/use-header-tep';
-import { datManDangMo, quenManDangMo } from '../../../lib/notifications/man-dang-mo';
 import { baoLoi, moTaTep } from '../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
@@ -85,15 +86,30 @@ export default function ChatThreadScreen() {
 
   const headerTep = useHeaderTep();
 
-  const [cursor, setCursor] = useState<string | null>(null);
+  /*
+    Mốc phân trang là MÃ của tin cũ nhất đã tải — máy chủ tìm theo id. Bản cũ gửi
+    thời điểm tạo, không khớp tin nào, nên cuộn lên không bao giờ ra tin cũ hơn.
+    `undefined` = chưa nạp lần nào; `null` = đã hết lịch sử.
+  */
+  const [cursor, setCursor] = useState<string | null | undefined>(undefined);
   const [loadingMore, setLoadingMore] = useState(false);
-
-  const [members, setMembers] = useState<UserSummary[]>([]);
-  const [projectName, setProjectName] = useState('Trò chuyện');
 
   const [typingBy, setTypingBy] = useState<Record<string, number>>({});
   const [typingTick, setTypingTick] = useState(0);
   const typingSentAt = useRef(0);
+
+  // Tên và thành viên dùng chung bộ nhớ đệm với danh sách dự án — mở khung chat không tốn thêm lượt gọi.
+  const projectsQuery = useQuery({
+    queryKey: ['projects', active?.id],
+    queryFn: () => listProjects(active?.id),
+    enabled: Boolean(active?.id),
+  });
+  const project = projectsQuery.data?.find((item) => item.id === projectId);
+  const projectName = project?.name ?? 'Trò chuyện';
+  const members = useMemo<UserSummary[]>(
+    () => (project?.members ?? []).map((member) => member.user),
+    [project],
+  );
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetLoading, setSheetLoading] = useState(false);
@@ -101,6 +117,55 @@ export default function ChatThreadScreen() {
   const [sheetSubmitting, setSheetSubmitting] = useState(false);
   const [suggestion, setSuggestion] = useState<ChatTaskSuggestion | undefined>(undefined);
   const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
+
+  /*
+    Màn này là một tab ẩn, sống suốt phiên: mở dự án khác vẫn là CÙNG một màn,
+    chỉ đổi tham số. Xoá sạch trạng thái của dự án cũ ngay trong lượt dựng —
+    không đợi hiệu ứng — để không có khung hình nào hiện tin dự án cũ dưới tên
+    dự án mới. Gồm cả ô soạn tin: bản nháp hay ảnh chọn cho nhóm này mà nằm sẵn
+    ở nhóm kia là bấm Gửi nhầm nhóm.
+  */
+  const [duAnCuaTin, setDuAnCuaTin] = useState(projectId);
+  if (duAnCuaTin !== projectId) {
+    setDuAnCuaTin(projectId);
+    setMessages([]);
+    setPending([]);
+    setCursor(undefined);
+    setTypingBy({});
+    setLoading(true);
+    setLoadError('');
+    setDraft('');
+    setAnhChoGui([]);
+    setAnhDangXem(null);
+    setSheetOpen(false);
+    setSending(false);
+  }
+
+  /*
+    Dự án đang hiện, đọc được trong lời gọi bất đồng bộ để bỏ kết quả đã lỗi thời.
+    Cập nhật ở hiệu ứng bố cục — chạy liền sau lượt dựng, trước mọi lời gọi bất
+    đồng bộ kịp trả về — để không có khe nào kết quả cũ lọt qua.
+  */
+  const duAnDangHien = useRef(projectId);
+  /*
+    Thế hệ của màn: tăng mỗi lần đổi dự án. So dự án thôi là chưa đủ — đi A→B→A
+    thì dự án khớp lại nhưng trạng thái của A đã bị dọn sạch hai lần.
+  */
+  const theHe = useRef(0);
+  /* Thế hệ của mốc phân trang: tăng khi phân trang lại, để trang cũ về muộn bị bỏ. */
+  const theHeMoc = useRef(0);
+  useLayoutEffect(() => {
+    duAnDangHien.current = projectId;
+    theHe.current += 1;
+    theHeMoc.current += 1;
+    typingSentAt.current = 0;
+  }, [projectId]);
+
+  /* Danh sách tin đang giữ, để lượt nạp lại biết trang mới có nối liền vào không. */
+  const tinDangGiu = useRef<ChatMessage[]>([]);
+  useLayoutEffect(() => {
+    tinDangGiu.current = messages;
+  }, [messages]);
 
   /*
     Hạn mức AI của tháng. Đây là thứ người dùng trả tiền để có, và cũng là thứ
@@ -142,70 +207,182 @@ export default function ChatThreadScreen() {
   }, []);
 
   /*
-    Báo cho bộ xử lý thông báo biết đang mở dự án nào, để tin của chính phòng
-    này không nhảy banner đè lên thứ người dùng đang đọc.
+    Đưa huy hiệu chưa đọc ở danh sách về 0 — CHỈ sau khi máy chủ đã ghi nhận
+    đọc. Huỷ lượt đếm đang bay trước: nó có thể đã rời máy chủ trước lúc ghi
+    nhận và về sau, kéo huy hiệu lên lại 1.
   */
-  useEffect(() => {
-    if (!projectId) return;
+  const dangXemRef = useRef<() => boolean>(() => false);
+  const datChuaDocVe0 = useCallback(
+    async (duAn: string) => {
+      await queryClient.cancelQueries({ queryKey: ['chat-unread', duAn] });
+      queryClient.setQueryData(['chat-unread', duAn], { count: 0 });
+      /*
+        Không còn đang xem: từ lúc máy chủ ghi nhận đọc tới giờ có thể đã có tin
+        mới tới mà người dùng chưa thấy. Số 0 vừa đặt chỉ là tạm — hỏi lại máy chủ.
+      */
+      if (!dangXemRef.current()) void queryClient.invalidateQueries({ queryKey: ['chat-unread', duAn] });
+    },
+    [queryClient],
+  );
 
-    datManDangMo(`du-an:${projectId}`);
-    return () => quenManDangMo();
-  }, [projectId]);
+  const baoDaDoc = useCallback(
+    (duAn: string) =>
+      markProjectRead(duAn)
+        .then(() => datChuaDocVe0(duAn))
+        .catch(() => {
+          // Không báo được thì huy hiệu còn 1 — đúng với máy chủ, lần mở sau tự khớp.
+        }),
+    [datChuaDocVe0],
+  );
 
-  // Tải tin nhắn ban đầu, tên dự án và danh sách thành viên.
-  useEffect(() => {
-    if (!projectId) return;
-    let cancelled = false;
+  /* Dự án đang có tin chờ báo đã đọc (xem `danhDauDaDocSau`), và hẹn giờ của nó. */
+  const henDanhDau = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const duAnChoBaoDoc = useRef<string | null>(null);
 
-    (async () => {
-      setLoading(true);
-      setLoadError('');
-      try {
-        const [list, projects] = await Promise.all([
-          getProjectMessages(projectId),
-          listProjects(active?.id),
-        ]);
-        if (cancelled) return;
+  /*
+    Rời màn khi còn tin chờ báo: báo ngay, không bỏ. Tin đó đã hiện trước mắt lúc
+    người dùng đang xem — bấm Quay lại trong nhịp gom không làm nó thành "chưa đọc".
+  */
+  const chotKhiRoi = useCallback(() => {
+    const duAn = duAnChoBaoDoc.current;
+    if (henDanhDau.current) clearTimeout(henDanhDau.current);
+    henDanhDau.current = null;
+    duAnChoBaoDoc.current = null;
+    if (duAn) void baoDaDoc(duAn);
+  }, [baoDaDoc]);
 
-        const sorted = mergeMessages([], list);
-        setMessages(sorted);
-        setCursor(sorted.length ? sorted[0].createdAt : null);
+  /* Chỉ lượt nạp mới nhất được ghi kết quả — lượt cũ về sau không đè lượt mới. */
+  const luotNap = useRef(0);
 
-        const project = projects.find((item) => item.id === projectId);
-        if (project) {
-          setProjectName(project.name);
-          setMembers((project.members ?? []).map((member) => member.user));
-        }
+  /*
+    Nạp 40 tin mới nhất rồi GỘP vào danh sách đang có, không thay thế: thay thế là
+    xoá mất tin socket vừa tới giữa chừng và các trang cũ đã cuộn lên tải.
+    Máy chủ tính lượt GET này là "đã đọc", nên xong là huy hiệu về 0.
 
-        await markProjectRead(projectId);
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'Không tải được tin nhắn.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+    Trừ khi trang mới KHÔNG nối vào phần đang giữ: lỡ hơn 40 tin lúc mất kết nối
+    thì tin cũ nhất của trang mới không có trong tay. Gộp thẳng là để một khoảng
+    trống không nhìn thấy — tin cũ nhảy thẳng sang tin thứ 41 — mà cuộn lên cũng
+    không lấp được vì mốc phân trang nằm dưới đáy khoảng trống. Khi đó bỏ phần cũ
+    hơn trang mới và phân trang lại từ đây; cuộn lên sẽ tải đúng khoảng đã lỡ.
+  */
+  const napLai = useCallback(async () => {
+    const duAn = projectId;
+    if (!duAn) return;
+
+    const luot = ++luotNap.current;
+    try {
+      const list = await getProjectMessages(duAn);
+      if (luot !== luotNap.current || duAnDangHien.current !== duAn) return;
+
+      const cuNhat = list[0];
+      const lienMach =
+        !cuNhat ||
+        list.length < SO_TIN_MOI_NHAT ||
+        tinDangGiu.current.length === 0 ||
+        tinDangGiu.current.some((tin) => tin.id === cuNhat.id);
+
+      if (lienMach) {
+        setMessages((current) => mergeMessages(current, list));
+        // Chỉ đặt mốc ở lần nạp đầu; nạp lại không được kéo mốc về làm mất trang cũ.
+        setCursor((current) => (current === undefined ? (cuNhat?.id ?? null) : current));
+      } else {
+        const moc = new Date(cuNhat.createdAt).getTime();
+        // Giữ tin socket mới hơn trang (tới giữa lúc nạp), bỏ khối cũ trước khoảng trống.
+        setMessages((current) =>
+          mergeMessages(
+            current.filter((tin) => new Date(tin.createdAt).getTime() > moc),
+            list,
+          ),
+        );
+        setCursor(cuNhat.id);
+        // Trang cũ nào đang tải dở thuộc mốc cũ — bỏ khi nó về (xem `loadMore`).
+        theHeMoc.current += 1;
       }
-    })();
+      setLoadError('');
+      void datChuaDocVe0(duAn);
+    } catch (err) {
+      if (luot === luotNap.current && duAnDangHien.current === duAn) {
+        setLoadError(err instanceof Error ? err.message : 'Không tải được tin nhắn.');
+      }
+    } finally {
+      if (luot === luotNap.current && duAnDangHien.current === duAn) setLoading(false);
+    }
+  }, [projectId, datChuaDocVe0]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, active?.id]);
+  /*
+    Nạp mỗi lần màn được đưa lên, khi app trở lại tiền cảnh và khi socket nối lại
+    — xem `useDongBoKhungChat`. Kèm chặn banner của đúng dự án đang xem.
+  */
+  const { dangXem, dangMo } = useDongBoKhungChat({
+    khoaManDangMo: projectId ? `du-an:${projectId}` : null,
+    socket,
+    napLai,
+    onRoi: chotKhiRoi,
+  });
+  useLayoutEffect(() => {
+    dangXemRef.current = dangXem;
+  }, [dangXem]);
+
+  /*
+    Tin tới qua socket lúc đang xem thì báo máy chủ đã đọc — bản web vẫn làm vậy,
+    mobile thì không, nên huy hiệu hiện lại ngay khi quay ra. Gom lại một nhịp:
+    mười tin liền nhau chỉ tốn một lượt gọi. Người dùng rời màn trước khi tới
+    nhịp thì `chotKhiRoi` báo ngay.
+  */
+  const danhDauDaDocSau = useCallback(
+    (duAn: string) => {
+      if (henDanhDau.current) clearTimeout(henDanhDau.current);
+      duAnChoBaoDoc.current = duAn;
+      henDanhDau.current = setTimeout(() => {
+        henDanhDau.current = null;
+        duAnChoBaoDoc.current = null;
+        if (!dangXem() || duAnDangHien.current !== duAn) return;
+        void baoDaDoc(duAn);
+      }, 800);
+    },
+    [dangXem, baoDaDoc],
+  );
+
+  useEffect(
+    () => () => {
+      if (henDanhDau.current) clearTimeout(henDanhDau.current);
+    },
+    [],
+  );
 
   // Vào phòng và lắng nghe sự kiện. Huỷ listener khi rời, nếu không mở lại
   // sẽ đăng ký chồng và mỗi tin hiện nhiều lần.
   useEffect(() => {
     if (!socket || !projectId) return;
 
-    socket.emit('join:project', { projectId });
+    /*
+      Xin vào phòng mỗi lần socket nối (lại): máy chủ quên sạch phòng của socket
+      cũ. Trước đây chỉ xin một lần lúc mở màn, nên dự án ngoài workspace đang
+      chọn mất realtime từ lần rớt mạng đầu tiên.
+    */
+    const vaoPhong = () => socket.emit('join:project', { projectId });
+    vaoPhong();
 
+    /*
+      Màn đã rời (vẫn sống vì là tab) thì KHÔNG gộp tin mới — lần focus sau nạp lại
+      đủ. Gộp vào là làm hỏng phép kiểm liền mạch của `napLai`: lỡ một khoảng lúc
+      app nằm nền, rồi tin mới dồn vào màn ẩn, lúc mở lại trang 40 tin mới nhất
+      toàn là những tin đó — tin cũ nhất của trang "có trong tay", khoảng đã lỡ bị
+      coi là liền mạch và mất luôn.
+    */
     const onMessage = (incoming: ChatMessage) => {
-      if (incoming.projectId !== projectId) return;
+      if (incoming.projectId !== projectId || !dangMo()) return;
       setMessages((current) => mergeMessages(current, [incoming]));
+      if (incoming.authorId !== user?.id && dangXem()) danhDauDaDocSau(projectId);
     };
+    /* Sửa tin: lúc màn đã rời chỉ cập nhật tin đang có, không thêm tin mới vào. */
     const onUpdated = (incoming: ChatMessage) => {
       if (incoming.projectId !== projectId) return;
-      setMessages((current) => mergeMessages(current, [incoming]));
+      setMessages((current) =>
+        dangMo() || current.some((tin) => tin.id === incoming.id)
+          ? mergeMessages(current, [incoming])
+          : current,
+      );
     };
     const onRecalled = (incoming: ChatMessage) => {
       if (incoming.projectId !== projectId) return;
@@ -217,18 +394,20 @@ export default function ChatThreadScreen() {
       setTypingBy((current) => applyTyping(current, payload.userId, payload.typing, Date.now()));
     };
 
+    socket.on('connect', vaoPhong);
     socket.on('message:project', onMessage);
     socket.on('message:project:updated', onUpdated);
     socket.on('message:project:recalled', onRecalled);
     socket.on('typing:project', onTyping);
 
     return () => {
+      socket.off('connect', vaoPhong);
       socket.off('message:project', onMessage);
       socket.off('message:project:updated', onUpdated);
       socket.off('message:project:recalled', onRecalled);
       socket.off('typing:project', onTyping);
     };
-  }, [socket, projectId, user?.id]);
+  }, [socket, projectId, user?.id, dangXem, dangMo, danhDauDaDocSau]);
 
   // Nhịp đếm để chữ "đang nhập" tự biến mất khi quá hạn, kể cả khi không có sự kiện mới.
   useEffect(() => {
@@ -240,9 +419,15 @@ export default function ChatThreadScreen() {
   const loadMore = useCallback(async () => {
     if (!projectId || !cursor || loadingMore) return;
 
+    const moc = theHeMoc.current;
     setLoadingMore(true);
     try {
       const page = await getProjectHistory(projectId, cursor);
+      /*
+        Trong lúc chờ đã đổi dự án, hoặc đã phân trang lại vì phát hiện khoảng trống:
+        trang này thuộc mốc cũ. Gộp vào là kéo mốc về dưới khoảng trống, mất nó lần nữa.
+      */
+      if (duAnDangHien.current !== projectId || theHeMoc.current !== moc) return;
       if (page.items.length) {
         setMessages((current) => mergeMessages(current, page.items));
         setCursor(page.nextCursor ?? null);
@@ -257,20 +442,36 @@ export default function ChatThreadScreen() {
     }
   }, [projectId, cursor, loadingMore]);
 
+  /*
+    Gửi xong mà người dùng đã sang dự án khác thì KHÔNG ghi vào màn: màn giờ là
+    khung chat của nhóm kia, ghi vào là tin nhóm này hiện nhầm sang nhóm kia. Tin
+    đã tới máy chủ, mở lại dự án cũ là thấy. Gửi hỏng thì báo bằng hộp thoại — ô
+    tin "gửi lỗi, bấm để gửi lại" đã bị dọn cùng dự án cũ.
+  */
   const doSend = useCallback(
     async (content: string, localId: string) => {
-      if (!projectId) return;
+      const duAn = projectId;
+      if (!duAn) return;
+      const theHeLucGui = theHe.current;
       setSending(true);
       try {
-        const saved = await sendProjectMessage(projectId, content);
+        const saved = await sendProjectMessage(duAn, content);
+        // Quay lại đúng dự án này (A→B→A) thì gộp vẫn đúng: tin thuộc về A.
+        if (duAnDangHien.current !== duAn) return;
         setMessages((current) => mergeMessages(current, [saved]));
         setPending((current) => current.filter((item) => item.localId !== localId));
       } catch {
+        // Đã đổi dự án (kể cả A→B→A): bong bóng "gửi lỗi" đã bị dọn — phải báo bằng hộp thoại.
+        if (theHe.current !== theHeLucGui) {
+          Alert.alert('Chưa gửi được tin nhắn', `"${content}" chưa tới nhóm. Mở lại dự án đó để gửi lại.`);
+          return;
+        }
         setPending((current) =>
           current.map((item) => (item.localId === localId ? { ...item, failed: true } : item)),
         );
       } finally {
-        setSending(false);
+        // Không động vào cờ "đang gửi" của dự án khác — nó có lượt gửi riêng của nó.
+        if (theHe.current === theHeLucGui) setSending(false);
       }
     },
     [projectId],
@@ -300,12 +501,16 @@ export default function ChatThreadScreen() {
   */
   const doSendAnh = useCallback(
     async (files: TepChon[], content: string) => {
-      if (!projectId) return;
+      const duAn = projectId;
+      if (!duAn) return;
+      const theHeLucGui = theHe.current;
       setSending(true);
       setLoadError('');
       try {
         // Mỗi tệp thành một tin nhắn riêng — xem `taiNhieuTepLen`.
-        const saved = await sendProjectFiles(projectId, files, content);
+        const saved = await sendProjectFiles(duAn, files, content);
+        // Đã sang dự án khác: không ghi ảnh vào màn, cũng không xoá ô soạn tin của nhóm kia.
+        if (duAnDangHien.current !== duAn) return;
         setMessages((current) => mergeMessages(current, saved));
         setAnhChoGui([]);
         setDraft('');
@@ -320,9 +525,14 @@ export default function ChatThreadScreen() {
           tep: files.map(moTaTep),
           coChuThich: content.trim().length > 0,
         });
-        setLoadError(loi instanceof Error ? loi.message : 'Không gửi được ảnh.');
+        const cauLoi = loi instanceof Error ? loi.message : 'Không gửi được ảnh.';
+        if (theHe.current !== theHeLucGui) {
+          Alert.alert('Chưa gửi được ảnh', `${cauLoi} Ảnh chưa tới nhóm trước — mở lại dự án đó để gửi lại.`);
+          return;
+        }
+        setLoadError(cauLoi);
       } finally {
-        setSending(false);
+        if (theHe.current === theHeLucGui) setSending(false);
       }
     },
     [projectId],
@@ -476,7 +686,8 @@ export default function ChatThreadScreen() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }));
-    return [...messages, ...pendingAsMessages].reverse();
+    // Lọc theo dự án cho chắc: tin lạc dự án khác không bao giờ được hiện ở đây.
+    return [...messages.filter((tin) => tin.projectId === projectId), ...pendingAsMessages].reverse();
   }, [messages, pending, active?.id, projectId, user?.id]);
 
   /*
@@ -503,7 +714,8 @@ export default function ChatThreadScreen() {
     return typingLabel(names);
   }, [typingBy, typingTick, members]);
 
-  if (loading) {
+  // Vòng quay chỉ khi CHƯA có gì để xem. Nạp lại lúc quay về màn thì chạy ngầm.
+  if (loading && messages.length === 0) {
     return (
       <View style={styles.screen}>
         <GradientHeader title={projectName} onBack={goBack} dense />
@@ -549,6 +761,7 @@ export default function ChatThreadScreen() {
         ) : null}
 
         <FlatList
+          testID="khung-tin"
           inverted
           data={display}
           keyExtractor={(item) => item.id}

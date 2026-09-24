@@ -138,6 +138,19 @@ export default function ChatListScreen() {
     })),
   });
 
+  /*
+    Huy hiệu chưa đọc phải được đọc lại mỗi lần quay về màn này. Màn nằm trong
+    thanh tab nên không bao giờ gắn lại — trước đây huy hiệu chỉ đổi khi app vào
+    nền rồi mở lại, nên đọc xong quay ra vẫn thấy số cũ (người thử nghiệm báo
+    23/09/2026). `cancelRefetch: false`: lượt đếm đang bay thì dùng luôn, không
+    bắn thêm lượt thứ hai cho mỗi dự án.
+  */
+  const lamMoiChuaDoc = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['chat-unread'] }, { cancelRefetch: false }),
+    [queryClient],
+  );
+  useRefetchOnScreenFocus(lamMoiChuaDoc);
+
   const unreadById = new Map<string, number>();
   tracked.forEach((project, index) => {
     unreadById.set(project.id, unreadQueries[index]?.data?.count ?? 0);
@@ -326,7 +339,10 @@ export default function ChatListScreen() {
             refreshControl={
               <RefreshControl
                 refreshing={projectsQuery.isRefetching}
-                onRefresh={() => projectsQuery.refetch()}
+                onRefresh={() => {
+                  void lamMoiChuaDoc();
+                  void projectsQuery.refetch();
+                }}
                 colors={[colors.primary]}
               />
             }

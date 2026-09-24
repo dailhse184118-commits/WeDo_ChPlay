@@ -20,7 +20,13 @@ export interface ServerEvents {
   'presence:offline': (payload: { userId: string }) => void;
 }
 
-export function createChatSocket(token: string): Socket {
+/**
+ * `layToken` là HÀM, không phải chuỗi: socket.io gọi nó ở MỖI lần bắt tay, kể cả
+ * khi tự nối lại. Trước đây truyền chuỗi token lúc đăng nhập, nên sau khi token
+ * truy cập hết hạn — phần gọi API đã tự gia hạn và lưu token mới — lần nối lại
+ * đầu tiên vẫn mang token cũ và bị máy chủ từ chối.
+ */
+export function createChatSocket(layToken: () => Promise<string | null>): Socket {
   const base = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (!base) {
     throw new Error('Thiếu EXPO_PUBLIC_API_BASE_URL. Kiểm tra file .env.');
@@ -28,7 +34,12 @@ export function createChatSocket(token: string): Socket {
 
   return io(buildSocketUrl(base), {
     // Server đọc `handshake.auth.token`. Truyền qua query sẽ bị từ chối.
-    auth: { token },
+    auth: (cb) => {
+      layToken().then(
+        (token) => cb({ token: token ?? '' }),
+        () => cb({ token: '' }),
+      );
+    },
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 1000,
