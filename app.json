@@ -7,8 +7,26 @@
     "icon": "./assets/images/icon.png",
     "scheme": "wedo",
     "userInterfaceStyle": "light",
+    "locales": {
+      "vi": "./locales/vi.json"
+    },
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "vn.wedo.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "icon": "./assets/images/icon.png",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "vi",
+        "CFBundleLocalizations": ["vi"],
+        "CFBundleAllowMixedLocalizations": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        }
+      }
     },
     "android": {
       "package": "vn.wedo.app",
@@ -41,7 +59,12 @@
           "imageWidth": 220
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -53,7 +76,7 @@
         "expo-image-picker",
         {
           "cameraPermission": "WeDo cần máy ảnh để bạn chụp và gửi ảnh ngay trong khung chat.",
-          "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat.",
+          "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat và chọn ảnh đại diện.",
           "microphonePermission": false
         }
       ],
