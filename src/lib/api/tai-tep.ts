@@ -1,6 +1,6 @@
 import { File, UploadType } from 'expo-file-system';
 
-import { ApiError, apiRequest, baseUrl } from './client';
+import { ApiError, apiRequest, baseUrl, docThanPhanHoi } from './client';
 import { loadToken } from '../auth/token-storage';
 import type { TepChon } from './tasks';
 
@@ -60,7 +60,8 @@ async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string)
     parameters: noiDung ? { content: noiDung } : undefined,
   });
 
-  const payload = ketQua.body ? (JSON.parse(ketQua.body) as unknown) : undefined;
+  // Trang lỗi HTML của gateway không phải JSON; parse trần sẽ ném lỗi khó hiểu.
+  const payload = docThanPhanHoi(ketQua.body ?? '');
 
   /*
     `upload` KHÔNG ném lỗi với mã 4xx/5xx — nó trả về nguyên phản hồi. Không tự

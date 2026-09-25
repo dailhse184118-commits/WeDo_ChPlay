@@ -154,7 +154,8 @@ describe('apiRequest', () => {
     expect(new ApiError('x', 404)).toBeInstanceOf(ApiError);
   });
 
-  it('gọi handler đã đăng ký khi gặp 401', async () => {
+  it('gọi handler đã đăng ký khi yêu cầu mang token gặp 401', async () => {
+    mockedLoadToken.mockResolvedValue('tok-1');
     const handler = jest.fn();
     const unsubscribe = onUnauthorized(handler);
 
@@ -166,6 +167,7 @@ describe('apiRequest', () => {
   });
 
   it('không gọi handler nữa sau khi huỷ đăng ký', async () => {
+    mockedLoadToken.mockResolvedValue('tok-1');
     const handler = jest.fn();
     onUnauthorized(handler)();
 
@@ -173,6 +175,57 @@ describe('apiRequest', () => {
     await expect(apiRequest('/users/me')).rejects.toThrow();
 
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  /*
+    Handler là `signOut`, và `signOut` gọi API gỡ push token. Nếu 401 của một
+    yêu cầu KHÔNG token cũng gọi handler thì lượt gỡ đó (không token, 401) lại
+    gọi handler — vòng lặp không dừng, bắt đầu chỉ từ một lần sai mật khẩu.
+  */
+  it('không báo hết phiên khi yêu cầu không mang token', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    await expect(apiRequest('/notifications/push-token', { method: 'DELETE', body: {} })).rejects.toThrow(ApiError);
+
+    expect(handler).not.toHaveBeenCalled();
+    huy();
+  });
+
+  it('không báo hết phiên khi đăng nhập sai mật khẩu', async () => {
+    mockedLoadToken.mockResolvedValue('tok-con-sot');
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+
+    mockFetchOnce({ message: 'Email hoặc mật khẩu không đúng' }, { status: 401 });
+    await expect(
+      apiRequest('/auth/login', { method: 'POST', body: {}, skipAuth: true }),
+    ).rejects.toThrow('Email hoặc mật khẩu không đúng');
+
+    expect(handler).not.toHaveBeenCalled();
+    huy();
+  });
+
+  it('báo lỗi tiếng Việt khi máy chủ trả trang lỗi HTML thay vì JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: async () => '<!DOCTYPE html><html><body>Service Unavailable</body></html>',
+    });
+
+    await expect(apiRequest('/users/me')).rejects.toMatchObject({
+      status: 503,
+      message: 'Máy chủ đang gặp sự cố (mã 503). Thử lại sau ít phút.',
+    });
+  });
+
+  it('báo lỗi khi phản hồi thành công mà thân không phải JSON', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200, text: async () => '<html></html>' });
+
+    await expect(apiRequest('/users/me')).rejects.toThrow(
+      'Máy chủ trả về dữ liệu không đọc được. Thử lại sau.',
+    );
   });
 
   it('báo lỗi tiếng Việt khi mất mạng', async () => {
@@ -285,6 +338,41 @@ describe('tự gia hạn phiên khi gặp 401', () => {
 
     await expect(apiRequest('/users/me')).rejects.toThrow(ApiError);
     expect(handler).toHaveBeenCalled();
+    huy();
+  });
+
+  it('mất mạng lúc gia hạn là lỗi mạng, không đá người dùng ra', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    await expect(apiRequest('/users/me')).rejects.toMatchObject({ status: 0 });
+    expect(handler).not.toHaveBeenCalled();
+    huy();
+  });
+
+  it('máy chủ lỗi 5xx lúc gia hạn không đá người dùng ra', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ message: 'Internal server error' }, { status: 503 });
+
+    await expect(apiRequest('/users/me')).rejects.toMatchObject({ status: 503 });
+    expect(handler).not.toHaveBeenCalled();
+    huy();
+  });
+
+  it('token vừa gia hạn cũng bị từ chối thì đá ra, không gia hạn lần hai', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ accessToken: 'tok-moi', refreshToken: 'rt-moi' });
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+
+    await expect(apiRequest('/users/me')).rejects.toThrow(ApiError);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(handler).toHaveBeenCalledTimes(1);
     huy();
   });
 

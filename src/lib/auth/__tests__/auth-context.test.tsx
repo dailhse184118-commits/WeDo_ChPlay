@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, Pressable } from 'react-native';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { act, render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import { AuthProvider, useAuth } from '../auth-context';
 import { ApiError } from '../../api/client';
@@ -104,6 +104,44 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
     expect(mockedStorage.clearToken).not.toHaveBeenCalled();
+  });
+
+  it('KHÔNG đăng xuất khi máy chủ lỗi 5xx lúc mở app', async () => {
+    // App Service khởi động lại hay đang deploy thì trả 503. Đó là lỗi máy chủ,
+    // không phải phiên hết hạn — xoá token là đăng xuất mọi người mở app lúc đó.
+    mockedStorage.loadToken.mockResolvedValue('con-tot');
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.getMe.mockRejectedValue(
+      new ApiError('Máy chủ đang gặp sự cố (mã 503). Thử lại sau ít phút.', 503),
+    );
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedStorage.clearToken).not.toHaveBeenCalled();
+  });
+
+  it('chỉ chạy một lượt đăng xuất dù được gọi dồn dập', async () => {
+    // Phiên hết hạn thì mọi màn đang tải cùng nhận 401 và cùng gọi signOut.
+    mockedStorage.loadRefreshToken.mockResolvedValue('rt-1');
+    mockedAuthApi.logout.mockResolvedValue({ message: 'Đã đăng xuất' });
+    let goi: (() => Promise<void>) | null = null;
+    function LayHam() {
+      goi = useAuth().signOut;
+      return null;
+    }
+    await render(
+      <AuthProvider>
+        <LayHam />
+      </AuthProvider>,
+    );
+
+    await act(async () => {
+      await Promise.all([goi!(), goi!(), goi!()]);
+    });
+
+    expect(mockedAuthApi.logout).toHaveBeenCalledTimes(1);
+    expect(mockedStorage.clearToken).toHaveBeenCalledTimes(1);
   });
 
   it('về màn đăng nhập khi mất mạng mà chưa từng lưu hồ sơ, nhưng GIỮ token', async () => {
