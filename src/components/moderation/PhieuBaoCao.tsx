@@ -18,6 +18,7 @@ import { ErrorBanner } from '../ui/ErrorBanner';
 import { ApiError } from '../../lib/api/client';
 import {
   DO_DAI_GHI_CHU_TOI_DA,
+  MA_QUA_NHIEU_BAO_CAO,
   reportContent,
   type LoaiDoiTuongBaoCao,
   type LyDoBaoCao,
@@ -93,7 +94,12 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
       });
       setDaGui(true);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 429) {
+      /*
+        Chỉ mã `REPORT_LIMIT` mới là hạn mức 30 báo cáo mỗi ngày. 429 không mã là
+        bộ chặn tần suất chung của máy chủ ("thao tác quá nhanh") — bảo người
+        dùng đợi tới mai trong khi chỉ cần bấm lại sau vài giây là nói sai.
+      */
+      if (err instanceof ApiError && err.code === MA_QUA_NHIEU_BAO_CAO) {
         setLoi(CAU_QUA_NHIEU_BAO_CAO);
       } else {
         setLoi(err instanceof Error ? err.message : 'Chưa gửi được báo cáo. Thử lại sau.');

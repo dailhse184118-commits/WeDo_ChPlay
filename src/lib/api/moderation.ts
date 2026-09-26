@@ -32,6 +32,9 @@ export interface NguoiDaChan {
   blockedAt: string;
 }
 
+/** Mã máy chủ gắn vào 429 khi một người gửi quá 30 báo cáo trong 24 giờ. */
+export const MA_QUA_NHIEU_BAO_CAO = 'REPORT_LIMIT';
+
 /** Khớp `MaxLength(500)` của DTO phía máy chủ. */
 export const DO_DAI_GHI_CHU_TOI_DA = 500;
 

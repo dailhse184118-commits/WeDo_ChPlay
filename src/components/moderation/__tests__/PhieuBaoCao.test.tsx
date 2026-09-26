@@ -105,9 +105,11 @@ describe('phiếu báo cáo', () => {
     expect(onDong).toHaveBeenCalledTimes(1);
   });
 
-  /* 429 là giới hạn 30 báo cáo mỗi ngày, không phải lỗi hỏng — nói thẳng là phải đợi. */
-  it('bị giới hạn tần suất thì nói lịch sự là thử lại sau, phiếu vẫn mở', async () => {
-    mockedBaoCao.mockRejectedValue(new ApiError('Too Many Requests', 429));
+  /* 429 mã REPORT_LIMIT là giới hạn 30 báo cáo mỗi ngày, không phải lỗi hỏng — nói thẳng là phải đợi. */
+  it('hết hạn mức báo cáo trong ngày thì nói lịch sự là thử lại sau, phiếu vẫn mở', async () => {
+    mockedBaoCao.mockRejectedValue(
+      new ApiError('Bạn đã gửi quá nhiều báo cáo trong 24 giờ qua.', 429, 'REPORT_LIMIT'),
+    );
     const man = await render(dung());
 
     await fireEvent.press(man.getByTestId('ly-do-SPAM'));
@@ -120,6 +122,26 @@ describe('phiếu báo cáo', () => {
     );
     expect(man.queryByTestId('bao-cao-da-gui')).toBeNull();
     expect(man.getByTestId('bao-cao-gui')).toBeTruthy();
+  });
+
+  /*
+    429 không mã là bộ chặn tần suất chung ("bấm quá nhanh"), chờ vài giây là
+    xong. Nói "đã gửi nhiều báo cáo trong 24 giờ" ở đây là doạ người dùng đợi
+    tới mai vô cớ.
+  */
+  it('429 của bộ chặn tần suất chung thì hiện câu máy chủ, không nói hết hạn mức ngày', async () => {
+    mockedBaoCao.mockRejectedValue(new ApiError('Bạn thao tác quá nhanh. Vui lòng thử lại sau.', 429));
+    const man = await render(dung());
+
+    await fireEvent.press(man.getByTestId('ly-do-SPAM'));
+    await fireEvent.press(man.getByTestId('bao-cao-gui'));
+
+    await waitFor(() =>
+      expect(man.getByText('Bạn thao tác quá nhanh. Vui lòng thử lại sau.')).toBeTruthy(),
+    );
+    expect(
+      man.queryByText('Bạn đã gửi nhiều báo cáo trong 24 giờ qua. Vui lòng thử lại sau.'),
+    ).toBeNull();
   });
 
   it('lỗi khác thì hiện nguyên câu của máy chủ', async () => {
