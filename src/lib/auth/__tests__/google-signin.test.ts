@@ -1,6 +1,12 @@
+import { Platform } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-import { GOOGLE_WEB_CLIENT_ID, getGoogleIdToken, signOutFromGoogle } from '../google-signin';
+import {
+  GOOGLE_WEB_CLIENT_ID,
+  coDangNhapGoogle,
+  getGoogleIdToken,
+  signOutFromGoogle,
+} from '../google-signin';
 
 // Lớp native là ranh giới duy nhất được giả lập, qua `__mocks__` ở gốc dự án.
 const mockedSignIn = GoogleSignin.signIn as jest.MockedFunction<typeof GoogleSignin.signIn>;
@@ -32,9 +38,20 @@ function nativeError(code: string, message = 'native error') {
   return Object.assign(new Error(message), { code });
 }
 
+/*
+  Preset `jest-expo` chạy như iOS, mà iPhone không có đăng nhập Google. Mọi ca
+  về Google là hành vi của Android — đặt hẳn hệ điều hành cho từng ca.
+*/
+let heDieuHanh: { restore: () => void } | null = null;
+afterEach(() => {
+  heDieuHanh?.restore();
+  heDieuHanh = null;
+});
+
 describe('lấy ID token của Google', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
     mockedPlayServices.mockResolvedValue(true);
   });
 
@@ -127,6 +144,7 @@ describe('đăng xuất khỏi Google', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
   });
 
   it('bảo Google quên phiên, để lần sau còn chọn được tài khoản khác', async () => {
@@ -146,5 +164,38 @@ describe('đăng xuất khỏi Google', () => {
     mockedGoogleSignOut.mockRejectedValue(new Error('SIGN_IN_REQUIRED'));
 
     await expect(signOutFromGoogle()).resolves.toBeUndefined();
+  });
+});
+
+describe('trên iPhone không đụng tới SDK Google', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
+  });
+
+  it('báo không có đăng nhập Google', () => {
+    expect(coDangNhapGoogle()).toBe(false);
+  });
+
+  it('không configure, không mở hộp thoại, báo rõ phải dùng email', async () => {
+    await expect(getGoogleIdToken()).rejects.toThrow('email và mật khẩu');
+
+    expect(mockedConfigure).not.toHaveBeenCalled();
+    expect(mockedPlayServices).not.toHaveBeenCalled();
+    expect(mockedSignIn).not.toHaveBeenCalled();
+  });
+
+  it('đăng xuất không gọi Google', async () => {
+    await expect(signOutFromGoogle()).resolves.toBeUndefined();
+
+    expect(GoogleSignin.signOut).not.toHaveBeenCalled();
+  });
+});
+
+describe('trên Android vẫn có đăng nhập Google', () => {
+  it('báo có', () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
+
+    expect(coDangNhapGoogle()).toBe(true);
   });
 });

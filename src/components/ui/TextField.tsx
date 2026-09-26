@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { KeyboardTypeOptions } from 'react-native';
+import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
 
 import { colors, fontSize, radius, sizes, spacing } from '../../theme/tokens';
 
@@ -16,6 +16,13 @@ interface TextFieldProps {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   /** Cho xuống dòng. Dùng cho ô mô tả, nơi nội dung thường dài hơn một dòng. */
   multiline?: boolean;
+  /**
+   * Gợi ý tự điền cho iOS (Password AutoFill, mã một lần) và Android (Autofill).
+   * Thiếu nó thì iPhone không đề nghị lưu hay điền mật khẩu, không gợi ý mật
+   * khẩu mạnh lúc đăng ký — người dùng phải gõ tay từng lần.
+   */
+  textContentType?: TextInputProps['textContentType'];
+  autoComplete?: TextInputProps['autoComplete'];
   testID?: string;
 }
 
@@ -29,6 +36,8 @@ export function TextField({
   keyboardType,
   autoCapitalize = 'none',
   multiline,
+  textContentType,
+  autoComplete,
   testID,
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
@@ -56,6 +65,8 @@ export function TextField({
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         multiline={multiline}
+        textContentType={textContentType}
+        autoComplete={autoComplete}
         /*
           Bộ kiểm tra chính tả của Android dùng từ điển tiếng Anh, nên nó gạch đỏ
           gần như mọi từ tiếng Việt — người dùng nhìn tưởng app báo lỗi. Tự sửa

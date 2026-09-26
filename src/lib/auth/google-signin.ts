@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 /**
@@ -41,6 +42,20 @@ export const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || CLIENT_ID_DU_PHONG;
 
 /**
+ * Máy này có đăng nhập bằng Google hay không.
+ *
+ * Bản iPhone đầu tiên chỉ có email và mật khẩu: plugin Google chưa khai
+ * `iosUrlScheme`, nên bấm nút là hiện băng lỗi đỏ — reviewer của Apple bấm vào
+ * là từ chối (Guideline 2.1). Không có đăng nhập bên thứ ba thì cũng không phải
+ * làm Sign in with Apple (4.8). Android giữ nguyên.
+ *
+ * Đọc lúc gọi chứ không chốt ở tầng module, để kiểm thử đổi được hệ điều hành.
+ */
+export function coDangNhapGoogle(): boolean {
+  return Platform.OS !== 'ios';
+}
+
+/**
  * Bảo Google quên phiên đã chọn trên máy này.
  *
  * Không gọi hàm này thì đăng xuất khỏi WeDo chỉ xoá token của WeDo, còn Google
@@ -51,6 +66,9 @@ export const GOOGLE_WEB_CLIENT_ID =
  * đăng xuất khỏi WeDo không được phụ thuộc vào việc Google có hợp tác hay không.
  */
 export async function signOutFromGoogle(): Promise<void> {
+  // iPhone không có đường đăng nhập Google nào — xem `coDangNhapGoogle`.
+  if (!coDangNhapGoogle()) return;
+
   try {
     await GoogleSignin.signOut();
   } catch {
@@ -75,6 +93,14 @@ function maNativeCuaLoi(error: unknown): string | null {
  * Ném lỗi kèm thông báo tiếng Việt cho những trường hợp người dùng cần biết.
  */
 export async function getGoogleIdToken(): Promise<string | null> {
+  /*
+    Nút đã bị giấu trên iPhone. Chốt thêm ở đây để không đường nào khác chạm
+    được tới SDK Google trên iPhone — `configure` bên dưới cũng không chạy.
+  */
+  if (!coDangNhapGoogle()) {
+    throw new Error('Bản iPhone chưa hỗ trợ đăng nhập Google. Vui lòng dùng email và mật khẩu.');
+  }
+
   // `configure` là thao tác nhẹ và `signIn` luôn chờ nó xong, nên gọi ngay trước
   // mỗi lần đăng nhập là đủ — khỏi cần một bước khởi tạo riêng lúc mở app.
   GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });

@@ -132,6 +132,8 @@ export default function ForgotPasswordScreen() {
                     onChangeText={setEmail}
                     placeholder="ban@example.com"
                     keyboardType="email-address"
+                    textContentType="username"
+                    autoComplete="email"
                   />
 
                   <Button
@@ -155,6 +157,8 @@ export default function ForgotPasswordScreen() {
                     onChangeText={setCode}
                     placeholder="123456"
                     keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    autoComplete="one-time-code"
                   />
                   <TextField
                     testID="new-password"
@@ -163,6 +167,8 @@ export default function ForgotPasswordScreen() {
                     onChangeText={setNewPassword}
                     placeholder="Ít nhất 6 ký tự"
                     secureTextEntry
+                    textContentType="newPassword"
+                    autoComplete="new-password"
                   />
 
                   <Button

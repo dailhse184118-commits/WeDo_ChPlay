@@ -115,4 +115,14 @@ describe('màn hình quên mật khẩu', () => {
 
     await waitFor(() => expect(getByTestId('email')).toBeTruthy());
   });
+
+  it('gợi ý tự điền: mã một lần và mật khẩu mới', async () => {
+    const { getByTestId } = await guiMaCho('sinhvien@fpt.edu.vn');
+    await waitFor(() => getByTestId('code'));
+
+    expect(getByTestId('code').props.textContentType).toBe('oneTimeCode');
+    expect(getByTestId('code').props.autoComplete).toBe('one-time-code');
+    expect(getByTestId('new-password').props.textContentType).toBe('newPassword');
+    expect(getByTestId('new-password').props.autoComplete).toBe('new-password');
+  });
 });
