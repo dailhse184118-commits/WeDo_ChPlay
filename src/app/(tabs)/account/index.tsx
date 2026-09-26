@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -18,20 +19,21 @@ import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
-import { capNhatAnhDaiDien } from '../../../lib/api/account';
+import { useDongYAI } from '../../../lib/ai/dong-y-ai';
+import { capNhatAnhDaiDien, datDongYAI } from '../../../lib/api/account';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
+import {
+  PRIVACY_URL,
+  SUPPORT_EMAIL,
+  SUPPORT_URL,
+  TERMS_URL,
+  openLegalLink,
+} from '../../../lib/legal-links';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
 /** Số pixel thẻ danh tính chồng lên mép dưới của gradient header. */
-
-/*
-  Đặt qua biến môi trường chứ không nhúng cứng: trang chính sách còn chưa dựng
-  xong, mà đưa một liên kết hỏng vào bản nộp Play thì bị từ chối ngay. Chưa cấu
-  hình thì giấu hẳn dòng đó đi.
-*/
-const PRIVACY_POLICY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? '';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 
@@ -74,6 +76,36 @@ export default function AccountScreen() {
 
   const [dangLuuAnh, setDangLuuAnh] = useState(false);
   const [loiAnh, setLoiAnh] = useState('');
+
+  const { daDongY: choPhepAI, xinDongYRoiChay } = useDongYAI();
+  const [dangLuuAI, setDangLuuAI] = useState(false);
+  const [loiAI, setLoiAI] = useState('');
+
+  /*
+    Bật: đi qua ĐÚNG hộp thoại xin đồng ý như lúc dùng AI lần đầu, để người dùng
+    đọc được sẽ gửi gì đi trước khi cho phép (Guideline 5.1.2(i)). Không có việc
+    gì để chạy tiếp — đồng ý xong là công tắc tự bật theo hồ sơ.
+
+    Tắt: rút lại ngay, không hỏi (5.1.1(ii) — rút lại phải dễ như cho phép).
+  */
+  async function doiChoPhepAI(bat: boolean) {
+    if (bat) {
+      xinDongYRoiChay(() => undefined);
+      return;
+    }
+    if (!user) return;
+
+    setLoiAI('');
+    setDangLuuAI(true);
+    try {
+      const { aiConsentAt } = await datDongYAI(false);
+      capNhatHoSo({ ...user, aiConsentAt });
+    } catch (loi) {
+      setLoiAI(loi instanceof Error ? loi.message : 'Không lưu được lựa chọn.');
+    } finally {
+      setDangLuuAI(false);
+    }
+  }
 
   async function luuAnh(anhUrl: string | null) {
     setLoiAnh('');
@@ -193,6 +225,7 @@ export default function AccountScreen() {
         </View>
 
         {loiAnh ? <ErrorBanner message={loiAnh} /> : null}
+        {loiAI ? <ErrorBanner message={loiAI} /> : null}
 
         <Card style={styles.menu}>
           {/*
@@ -250,19 +283,65 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/blocked')}
           />
           {/*
+            Hộp thoại xin đồng ý AI hứa "có thể tắt trong Tài khoản" — đây là chỗ
+            đó. Đổi tên hay dời đi thì sửa cả câu trong `lib/ai/dong-y-ai.ts`.
+          */}
+          <View style={[styles.menuRow, styles.menuDivider]}>
+            <IconTile name="sparkles-outline" tone="info" />
+            <View style={styles.menuBody}>
+              <Text style={styles.menuLabel}>Cho phép dùng AI</Text>
+              <Text style={styles.menuHint}>
+                Gợi ý công việc từ tin nhắn. Tắt thì WeDo không gửi tin nhắn cho AI nữa.
+              </Text>
+            </View>
+            <Switch
+              testID="account-ai-consent"
+              accessibilityLabel="Cho phép dùng AI"
+              value={choPhepAI}
+              disabled={dangLuuAI}
+              onValueChange={(bat) => void doiChoPhepAI(bat)}
+              trackColor={{ true: colors.primary }}
+            />
+          </View>
+          <MenuRow
+            testID="account-terms"
+            icon="document-text-outline"
+            tone="done"
+            label="Điều khoản sử dụng"
+            hint="Mở trong trình duyệt"
+            onPress={() => void openLegalLink(TERMS_URL)}
+          />
+          {/*
+            Luôn hiện: `PRIVACY_URL` có trang dự phòng, và Apple bắt buộc có đường
+            tới chính sách ngay trong app (5.1.1).
+          */}
+          <MenuRow
+            testID="account-privacy"
+            icon="shield-checkmark-outline"
+            tone="done"
+            label="Chính sách bảo mật"
+            hint="Mở trong trình duyệt"
+            onPress={() => void openLegalLink(PRIVACY_URL)}
+          />
+          {/*
+            App có nội dung người dùng tự đăng phải công bố cách liên hệ ngay
+            trong app (Guideline 1.2, 1.5). Mở thư trước; máy không có ứng dụng
+            thư thì mở trang hỗ trợ.
+          */}
+          <MenuRow
+            testID="account-support"
+            icon="help-buoy-outline"
+            tone="info"
+            label="Liên hệ hỗ trợ"
+            hint={SUPPORT_EMAIL}
+            onPress={() =>
+              void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openLegalLink(SUPPORT_URL))
+            }
+          />
+          {/*
             Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
             chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.
           */}
-          {PRIVACY_POLICY_URL ? (
-            <MenuRow
-              testID="account-privacy"
-              icon="shield-checkmark-outline"
-              tone="done"
-              label="Chính sách bảo mật"
-              hint="Mở trong trình duyệt"
-              onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
-            />
-          ) : null}
           <MenuRow
             testID="account-delete"
             icon="trash-outline"
