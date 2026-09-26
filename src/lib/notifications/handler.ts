@@ -2,6 +2,15 @@ import * as Notifications from 'expo-notifications';
 
 import { meetingIdTuActionUrl } from './cuoc-hop';
 import { nenHienThongBao } from './man-dang-mo';
+import { anTrenMayNay } from './thanh-toan';
+
+/** Phần `data` của một thông báo đẩy, hoặc `null` khi không đọc được. */
+function duLieu(
+  response: Notifications.NotificationResponse | null,
+): Record<string, unknown> | null {
+  const data = response?.notification?.request?.content?.data;
+  return data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+}
 
 /**
  * Cho thông báo hiện cả khi app đang mở.
@@ -18,7 +27,9 @@ export function configureNotificationHandler(): void {
   try {
     Notifications.setNotificationHandler({
       handleNotification: async (thongBao) => {
-        const hien = nenHienThongBao(thongBao?.request?.content?.data);
+        const data = thongBao?.request?.content?.data;
+        // iPhone không hiện thông báo gói/thanh toán — xem `thanh-toan.ts`.
+        const hien = nenHienThongBao(data) && !anTrenMayNay(data?.type);
 
         return {
           shouldShowBanner: hien,
@@ -35,10 +46,10 @@ export function configureNotificationHandler(): void {
 
 /** Lấy `taskId` mà `syncScheduledReminders` nhét vào phần `data` của lịch nhắc. */
 export function taskIdFromResponse(response: Notifications.NotificationResponse | null): string | null {
-  const data = response?.notification?.request?.content?.data;
-  if (!data || typeof data !== 'object') return null;
+  const data = duLieu(response);
+  if (!data || anTrenMayNay(data.type)) return null;
 
-  const taskId = (data as Record<string, unknown>).taskId;
+  const taskId = data.taskId;
   return typeof taskId === 'string' && taskId.length > 0 ? taskId : null;
 }
 
@@ -57,14 +68,15 @@ function chuoi(data: Record<string, unknown>, ten: string): string | null {
  * Trả `null` cho thông báo công việc — chúng đi đường riêng qua
  * `taskIdFromResponse` đã có từ trước. Trả đường dẫn cho cả hai thì màn hình
  * nhảy hai lần.
+ *
+ * Thông báo gói/thanh toán trên iPhone không mở đâu cả: app iPhone là bản đồng
+ * hành miễn phí, không được có lối nào sang chỗ mua (Guideline 3.1.3(f)).
  */
 export function duongDanTuThongBao(
   response: Notifications.NotificationResponse | null,
 ): string | null {
-  const data = response?.notification?.request?.content?.data;
-  if (!data || typeof data !== 'object') return null;
-
-  const kho = data as Record<string, unknown>;
+  const kho = duLieu(response);
+  if (!kho || anTrenMayNay(kho.type)) return null;
 
   switch (kho.type) {
     case 'DIRECT_MESSAGE': {

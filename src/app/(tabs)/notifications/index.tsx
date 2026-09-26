@@ -32,6 +32,7 @@ import {
   type NotificationPermissionState,
 } from '../../../lib/notifications/permission';
 import { planReminders } from '../../../lib/notifications/scheduler';
+import { locThongBaoHienThi } from '../../../lib/notifications/thanh-toan';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../../theme/tokens';
@@ -135,7 +136,8 @@ export default function NotificationsScreen() {
     }
   }, [refreshBadge]);
 
-  const items = notificationsQuery.data ?? [];
+  // iPhone giấu thông báo gói/thanh toán (Guideline 3.1.3(f)); Android giữ nguyên.
+  const items = locThongBaoHienThi(notificationsQuery.data ?? []);
   const unreadCount = items.filter((item) => !item.readAt).length;
   const showPrompt = permission === 'undetermined' && !dismissedPrompt;
 

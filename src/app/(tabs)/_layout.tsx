@@ -8,9 +8,10 @@ import * as Notifications from 'expo-notifications';
 
 import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
-import { getUnreadCount } from '../../lib/api/notifications';
+import { getUnreadCount, listNotifications } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
 import { duongDanTuThongBao, taskIdFromResponse } from '../../lib/notifications/handler';
+import { demChuaDocHienThi } from '../../lib/notifications/thanh-toan';
 import { useRealtimeSync } from '../../lib/realtime/use-realtime-sync';
 import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
@@ -70,10 +71,13 @@ function TabsWithWorkspace() {
   useOpenTaskFromNotification();
   useRealtimeSync();
 
-  // Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
+  /*
+    Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
+    iPhone trừ đi thông báo gói/thanh toán đang bị giấu — xem `thanh-toan.ts`.
+  */
   const unreadQuery = useQuery({
     queryKey: ['notifications-unread'],
-    queryFn: getUnreadCount,
+    queryFn: () => demChuaDocHienThi(getUnreadCount, listNotifications),
     refetchInterval: 60_000,
     staleTime: 30_000,
     enabled: status === 'ready',
