@@ -28,6 +28,17 @@ export interface UserProfile extends UserSummary {
   dob?: string | null;
   platformRole?: PlatformRole;
   createdAt?: string;
+  /*
+    Ba mốc đồng ý, chuỗi ISO. Tuỳ chọn vì máy chủ bản cũ và hồ sơ lưu từ bản app
+    cũ không có chúng: THIẾU khoá (`undefined`) nghĩa là "không biết", còn `null`
+    mới nghĩa là "chưa đồng ý". Xem `CongDieuKhoan`.
+  */
+  /** Lúc cho phép gửi tin nhắn tới AI; `null` là chưa cho phép hoặc đã rút lại. */
+  aiConsentAt?: string | null;
+  /** Lúc đồng ý Điều khoản sử dụng. */
+  termsAcceptedAt?: string | null;
+  /** Lúc xác nhận đủ 18 tuổi. */
+  adultConfirmedAt?: string | null;
 }
 
 /** Hình dạng phản hồi của POST /auth/login và POST /auth/register. */

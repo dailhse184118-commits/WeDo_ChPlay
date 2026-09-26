@@ -45,6 +45,27 @@ describe('auth API', () => {
     });
   });
 
+  it('POST /auth/register kèm dấu đồng ý điều khoản và đủ 18 tuổi khi đã đánh dấu', async () => {
+    await register({
+      email: 'a@b.c',
+      password: 'matkhau',
+      fullName: 'Đại',
+      acceptTerms: true,
+      confirmAdult: true,
+    });
+    expect(mockedRequest).toHaveBeenCalledWith('/auth/register', {
+      method: 'POST',
+      body: {
+        email: 'a@b.c',
+        password: 'matkhau',
+        fullName: 'Đại',
+        acceptTerms: true,
+        confirmAdult: true,
+      },
+      skipAuth: true,
+    });
+  });
+
   it('POST /auth/google với ID token và bỏ qua header auth', async () => {
     await loginWithGoogle('id-token-cua-google');
     expect(mockedRequest).toHaveBeenCalledWith('/auth/google', {

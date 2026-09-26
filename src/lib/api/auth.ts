@@ -6,6 +6,9 @@ export interface RegisterInput {
   password: string;
   fullName: string;
   phone?: string;
+  /** Đã đánh dấu ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản…". */
+  acceptTerms?: boolean;
+  confirmAdult?: boolean;
 }
 
 export function login(email: string, password: string): Promise<AuthResponse> {
@@ -17,7 +20,7 @@ export function login(email: string, password: string): Promise<AuthResponse> {
 }
 
 export function register(input: RegisterInput): Promise<AuthResponse> {
-  const body: Record<string, string> = {
+  const body: Record<string, string | boolean> = {
     email: input.email,
     password: input.password,
     fullName: input.fullName,
@@ -25,6 +28,13 @@ export function register(input: RegisterInput): Promise<AuthResponse> {
   if (input.phone) {
     body.phone = input.phone;
   }
+  /*
+    Chỉ gửi khi đã đánh dấu. Máy chủ ghi mốc đồng ý khi CẢ HAI cùng `true`;
+    máy chủ bản cũ chưa khai hai trường này và bật `forbidNonWhitelisted`, nên
+    không đánh dấu thì không gửi khoá nào cả.
+  */
+  if (input.acceptTerms) body.acceptTerms = true;
+  if (input.confirmAdult) body.confirmAdult = true;
 
   return apiRequest<AuthResponse>('/auth/register', {
     method: 'POST',
