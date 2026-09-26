@@ -118,7 +118,8 @@ export function TaskSuggestionSheet({
             <View style={styles.spinnerRing}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
-            <Text style={styles.loadingTitle}>Đang phân tích tin nhắn…</Text>
+            {/* Nói rõ là AI: người dùng phải biết tin nhắn đang được gửi đi đâu. */}
+            <Text style={styles.loadingTitle}>AI đang đọc tin nhắn…</Text>
             <Text style={styles.loadingBody}>
               Thường mất vài giây. Bạn có thể đóng lại và làm việc khác.
             </Text>

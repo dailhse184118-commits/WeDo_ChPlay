@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import ManChatDuAn from '../../../app/(tabs)/chat/[projectId]';
 import { getProjectMessages, markProjectRead, requestTaskSuggestion } from '../../../lib/api/chat';
+import { datDongYAI } from '../../../lib/api/account';
 import { getEntitlements } from '../../../lib/api/entitlements';
 import { blockUser, listBlocks, reportContent } from '../../../lib/api/moderation';
 import { listProjects } from '../../../lib/api/projects';
@@ -47,6 +48,7 @@ jest.mock('../../../lib/api/moderation', () => ({
   reportContent: jest.fn(),
 }));
 jest.mock('../../../lib/api/projects');
+jest.mock('../../../lib/api/account', () => ({ datDongYAI: jest.fn() }));
 jest.mock('../../../lib/api/entitlements', () => ({
   MA_HET_LUOT_AI: 'AI_QUOTA_EXCEEDED',
   getEntitlements: jest.fn(),
@@ -93,6 +95,7 @@ const mockedTin = getProjectMessages as jest.MockedFunction<typeof getProjectMes
 const mockedDaDoc = markProjectRead as jest.MockedFunction<typeof markProjectRead>;
 const mockedGoiY = requestTaskSuggestion as jest.MockedFunction<typeof requestTaskSuggestion>;
 const mockedHanMuc = getEntitlements as jest.MockedFunction<typeof getEntitlements>;
+const mockedDatDongYAI = datDongYAI as jest.MockedFunction<typeof datDongYAI>;
 const mockedDanhSachChan = listBlocks as jest.MockedFunction<typeof listBlocks>;
 const mockedChan = blockUser as jest.MockedFunction<typeof blockUser>;
 const mockedBaoCao = reportContent as jest.MockedFunction<typeof reportContent>;
@@ -218,6 +221,10 @@ describe('nhấn giữ tin trong chat dự án', () => {
   });
 
   it('Leader: có mục AI, chọn thì gửi ĐÚNG tin đó cho AI', async () => {
+    // Đã đồng ý dùng AI từ trước — ca chưa đồng ý nằm ở nhóm dưới.
+    mockedAuth.mockReturnValue({
+      user: { id: 'u1', fullName: 'Đại', aiConsentAt: '2026-09-20T10:00:00.000Z' },
+    } as never);
     mockedDuAn.mockResolvedValue([
       {
         id: 'p1',
@@ -327,5 +334,95 @@ describe('nhấn giữ tin trong chat dự án', () => {
 
     await waitFor(() => expect(man.getByText('Lan hỏi bài')).toBeTruthy());
     await waitFor(() => expect(man.queryByText('Tuấn nói bậy')).toBeNull());
+  });
+});
+
+/*
+  Guideline 5.1.2(i): hỏi TRƯỚC lần đầu gửi tin nhắn cho AI bên thứ ba. Từ chối
+  hay lưu hỏng thì không được gửi gì.
+*/
+describe('xin đồng ý trước khi gửi tin nhắn cho AI', () => {
+  const capNhatHoSo = jest.fn();
+  const HO_SO = { id: 'u1', email: '', fullName: 'Đại', aiConsentAt: null };
+
+  beforeEach(() => {
+    mockedAuth.mockReturnValue({ user: HO_SO, capNhatHoSo } as never);
+    // Chủ không gian làm việc: được dùng AI.
+    mockedWorkspace.mockReturnValue({ active: { id: 'w1', ownerId: 'u1' } } as never);
+    mockedGoiY.mockResolvedValue({ hasTask: true, title: 'Nộp báo cáo', confidence: 'high' });
+  });
+
+  async function chonMucAI() {
+    const man = await moMan();
+    await nhanGiu(man, 'm3');
+    await fireEvent.press(man.getByTestId('thao-tac-ai'));
+    return man;
+  }
+
+  function nutCuaHopThoai() {
+    return hopThoai.mock.calls[0][2] as Array<{ text: string; style?: string; onPress?: () => void }>;
+  }
+
+  it('chưa đồng ý: hỏi đúng câu, chưa gửi gì cho AI', async () => {
+    await chonMucAI();
+
+    expect(hopThoai).toHaveBeenCalledTimes(1);
+    const [tieuDe, noiDung] = hopThoai.mock.calls[0] as [string, string];
+    expect(tieuDe).toBe('Dùng AI để gợi ý công việc?');
+    expect(noiDung).toContain('nhà cung cấp AI bên thứ ba');
+    expect(noiDung).toContain('Google Gemini hoặc OpenAI');
+    expect(noiDung).toContain('không gửi email hay số điện thoại');
+    expect(noiDung).toContain('Tài khoản');
+    expect(nutCuaHopThoai().map((nut) => nut.text)).toEqual(['Không, cảm ơn', 'Đồng ý']);
+    expect(mockedGoiY).not.toHaveBeenCalled();
+    expect(mockedDatDongYAI).not.toHaveBeenCalled();
+  });
+
+  it('"Không, cảm ơn": không lưu, không gửi', async () => {
+    const man = await chonMucAI();
+
+    await act(async () => nutCuaHopThoai()[0].onPress?.());
+
+    expect(nutCuaHopThoai()[0].style).toBe('cancel');
+    expect(mockedDatDongYAI).not.toHaveBeenCalled();
+    expect(mockedGoiY).not.toHaveBeenCalled();
+    expect(man.queryByText('phiếu đề xuất AI')).toBeNull();
+  });
+
+  it('"Đồng ý": lưu lên máy chủ, ghi vào hồ sơ, rồi mới gửi ĐÚNG tin đó', async () => {
+    mockedDatDongYAI.mockResolvedValue({ aiConsentAt: '2026-09-26T10:00:00.000Z' });
+    const man = await chonMucAI();
+
+    await act(async () => nutCuaHopThoai()[1].onPress?.());
+
+    await waitFor(() => expect(mockedGoiY).toHaveBeenCalledTimes(1));
+    expect(mockedDatDongYAI).toHaveBeenCalledWith(true);
+    expect(capNhatHoSo).toHaveBeenCalledWith({ ...HO_SO, aiConsentAt: '2026-09-26T10:00:00.000Z' });
+    // Lưu xong mới gửi: dấu đồng ý phải có trước dữ liệu đầu tiên tới AI.
+    expect(mockedDatDongYAI.mock.invocationCallOrder[0]).toBeLessThan(
+      mockedGoiY.mock.invocationCallOrder[0],
+    );
+    expect(mockedGoiY.mock.calls[0][1]).toBe('m3');
+    expect(man.getByText('phiếu đề xuất AI')).toBeTruthy();
+  });
+
+  it('lưu lựa chọn hỏng: báo lỗi, không gửi gì cho AI', async () => {
+    mockedDatDongYAI.mockRejectedValue(new Error('Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.'));
+    await chonMucAI();
+
+    await act(async () => nutCuaHopThoai()[1].onPress?.());
+
+    await waitFor(() => expect(hopThoai).toHaveBeenCalledTimes(2));
+    expect(hopThoai.mock.calls[1][0]).toBe('Chưa lưu được lựa chọn');
+    expect(capNhatHoSo).not.toHaveBeenCalled();
+    expect(mockedGoiY).not.toHaveBeenCalled();
+  });
+
+  it('đã rút lại đồng ý trong Tài khoản: lần sau hỏi lại', async () => {
+    mockedAuth.mockReturnValue({ user: { ...HO_SO, aiConsentAt: null }, capNhatHoSo } as never);
+    await chonMucAI();
+
+    expect(hopThoai).toHaveBeenCalledTimes(1);
+    expect(mockedGoiY).not.toHaveBeenCalled();
   });
 });

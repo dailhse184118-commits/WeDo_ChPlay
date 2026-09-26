@@ -30,7 +30,7 @@ describe('TaskSuggestionSheet', () => {
         onDismiss={() => {}}
       />,
     );
-    expect(getByText('Đang phân tích tin nhắn…')).toBeTruthy();
+    expect(getByText('AI đang đọc tin nhắn…')).toBeTruthy();
   });
 
   it('điền sẵn tiêu đề từ đề xuất', async () => {

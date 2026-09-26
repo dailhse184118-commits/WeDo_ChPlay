@@ -36,6 +36,7 @@ import {
 import type { TepChon } from '../../../lib/api/tasks';
 import { MA_HET_LUOT_AI, getEntitlements } from '../../../lib/api/entitlements';
 import { listProjects } from '../../../lib/api/projects';
+import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
 import { ApiError } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/auth-context';
@@ -76,6 +77,7 @@ export default function ChatThreadScreen() {
   }, [router]);
 
   const { user } = useAuth();
+  const { xinDongYRoiChay } = useDongYAI();
   const { active } = useWorkspace();
   const { socket } = useSocket();
 
@@ -667,7 +669,8 @@ export default function ChatThreadScreen() {
         thaoTac.push({
           khoa: 'ai',
           nhan: 'Tạo công việc bằng AI',
-          onChon: () => void batDauGoiYAI(tin),
+          // Chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem `useDongYAI`.
+          onChon: () => xinDongYRoiChay(() => void batDauGoiYAI(tin)),
         });
       }
 
@@ -697,7 +700,7 @@ export default function ChatThreadScreen() {
 
       moBang({ tieuDe: tenNguoiGui || undefined, thaoTac });
     },
-    [pending, members, duocDungAI, batDauGoiYAI, user?.id, hoiRoiChan, moBang],
+    [pending, members, duocDungAI, batDauGoiYAI, xinDongYRoiChay, user?.id, hoiRoiChan, moBang],
   );
 
   const handleConfirm = useCallback(
@@ -866,7 +869,7 @@ export default function ChatThreadScreen() {
               // Chỉ hứa tính năng AI với người thật sự dùng được nó — xem `duocDungAI`.
               body={
                 duocDungAI
-                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để biến nó thành công việc.'
+                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để AI gợi ý thành công việc.'
                   : 'Gửi tin nhắn đầu tiên cho cả nhóm.'
               }
             />
