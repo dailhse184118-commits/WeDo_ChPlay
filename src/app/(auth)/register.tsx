@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -15,6 +14,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GoogleButton } from '../../components/ui/GoogleButton';
+import { KhungCuonBieuMau, khungCuonTuLoBanPhim } from '../../components/ui/KhungCuonBieuMau';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
 import { useAuth } from '../../lib/auth/auth-context';
@@ -109,11 +109,18 @@ export default function RegisterScreen() {
         ô nhập bị che trên máy này mà không che trên máy khác. Bản này đọc thẳng
         `WindowInsetsAnimation` của hệ điều hành, không còn phụ thuộc máy.
 
-        Nhờ vậy `behavior="padding"` dùng được cho cả Android, không phải tách
-        theo nền tảng như trước.
+        Nhờ vậy `behavior="padding"` dùng được cho Android.
+
+        iPhone thì tắt nó đi: `KhungCuonBieuMau` trên iPhone tự cuộn ô đang gõ
+        lên trên bàn phím, bật cả hai là bàn phím bị tính hai lần.
       */}
-      <KeyboardAvoidingView style={styles.flex} behavior="padding" automaticOffset>
-        <ScrollView
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior="padding"
+        automaticOffset
+        enabled={!khungCuonTuLoBanPhim()}
+      >
+        <KhungCuonBieuMau
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -207,7 +214,7 @@ export default function RegisterScreen() {
               Đã có tài khoản? Đăng nhập
             </Link>
           </View>
-        </ScrollView>
+        </KhungCuonBieuMau>
       </KeyboardAvoidingView>
     </View>
   );

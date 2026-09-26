@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '../../../components/ui/Button';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { KhungCuonBieuMau } from '../../../components/ui/KhungCuonBieuMau';
 import { TextField } from '../../../components/ui/TextField';
 import { listProjects } from '../../../lib/api/projects';
 import { createTask } from '../../../lib/api/tasks';
@@ -137,7 +138,8 @@ export default function ManTaoCongViec() {
         dense
       />
 
-      <ScrollView
+      {/* iPhone tự cuộn ô đang gõ lên trên bàn phím; Android như cũ. */}
+      <KhungCuonBieuMau
         style={styles.than}
         contentContainerStyle={styles.thanNoiDung}
         keyboardShouldPersistTaps="handled"
@@ -201,7 +203,7 @@ export default function ManTaoCongViec() {
           loading={taoMoi.isPending}
           testID="nut-tao"
         />
-      </ScrollView>
+      </KhungCuonBieuMau>
     </View>
   );
 }
