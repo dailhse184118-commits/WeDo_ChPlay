@@ -144,4 +144,20 @@ describe('taiMotTepLen', () => {
 
     await expect(taiMotTepLen('/p/files', TEP, '')).rejects.toThrow('Tệp quá nặng.');
   });
+
+  /* Hai người đã chặn nhau: đường native cũng phải mang mã `BLOCKED` như đường fetch. */
+  it('đường native giữ mã lỗi của máy chủ', async () => {
+    goi.mockRejectedValue(new ApiError('Không thể kết nối.', 0));
+    upload.mockResolvedValue({
+      status: 403,
+      body: '{"statusCode":403,"code":"BLOCKED","message":"Bạn không thể nhắn tin cho người này."}',
+    });
+
+    const loi = (await taiMotTepLen('/p/files', TEP, '').catch((e) => e)) as ApiError;
+
+    expect(loi).toBeInstanceOf(ApiError);
+    expect(loi.status).toBe(403);
+    expect(loi.code).toBe('BLOCKED');
+    expect(loi.message).toBe('Bạn không thể nhắn tin cho người này.');
+  });
 });

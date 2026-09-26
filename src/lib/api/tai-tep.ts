@@ -72,7 +72,16 @@ async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string)
         ? String((payload as { message: unknown }).message)
         : `Máy chủ trả lỗi ${ketQua.status}.`;
 
-    throw new ApiError(message, ketQua.status);
+    /*
+      Giữ cả `code` như `apiRequest`: màn gửi ảnh phân biệt lỗi bằng mã (chặn
+      nhau là `BLOCKED`), và đường dự phòng không được mất thứ đường chính có.
+    */
+    const code =
+      payload && typeof payload === 'object' && typeof (payload as { code?: unknown }).code === 'string'
+        ? (payload as { code: string }).code
+        : undefined;
+
+    throw new ApiError(message, ketQua.status, code);
   }
 
   return payload as T;
