@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -30,6 +31,8 @@ import { listFriends } from '../../../lib/api/friends';
 import { listProjects } from '../../../lib/api/projects';
 import { getWorkspace } from '../../../lib/api/workspaces';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { locHoiThoaiNguoiDaChan } from '../../../lib/moderation/loc-chan';
+import { useNguoiDaChan } from '../../../lib/moderation/use-kiem-duyet';
 import { useSocket } from '../../../lib/socket/socket-context';
 import { usePhienBan } from '../../../lib/version/use-phien-ban';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
@@ -89,6 +92,15 @@ export default function ChatListScreen() {
       void queryClient.invalidateQueries({ queryKey: ['direct-conversations'] });
       router.push(`/chat/dm/${hoiThoai.id}?ten=${encodeURIComponent(bien.hoTen)}`);
     },
+    /*
+      Trước đây hỏng là im lặng: bấm tên mà không có gì xảy ra. Giờ còn thêm một
+      lý do có thật — hai người đã chặn nhau — và máy chủ trả sẵn câu để nói.
+    */
+    onError: (loi) =>
+      Alert.alert(
+        'Không mở được cuộc trò chuyện',
+        loi instanceof Error ? loi.message : 'Thử lại sau.',
+      ),
   });
 
   /*
@@ -116,6 +128,16 @@ export default function ChatListScreen() {
     */
     enabled: muc === 'tin-nhan',
   });
+
+  /*
+    Hội thoại với người mình đã chặn thì giấu đi. Nó vẫn còn trên máy chủ — bỏ
+    chặn là hiện lại, kèm lịch sử cũ.
+  */
+  const daChan = useNguoiDaChan();
+  const hoiThoaiHien = useMemo(
+    () => locHoiThoaiNguoiDaChan(conversationsQuery.data ?? [], daChan, user?.id),
+    [conversationsQuery.data, daChan, user?.id],
+  );
 
   const projectsQuery = useQuery({
     queryKey: ['projects', workspaceId],
@@ -260,7 +282,7 @@ export default function ChatListScreen() {
             </View>
           ) : (
             <FlatList
-              data={conversationsQuery.data ?? []}
+              data={hoiThoaiHien}
               ListHeaderComponent={
                 <Pressable
                   testID="nut-nhan-tin-moi"

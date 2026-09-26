@@ -85,7 +85,7 @@ export function MessageBubble({
   const handleLongPress = () => {
     if (recalled) return;
     // Rung nhẹ khi nhấn giữ. tapFeedback không bao giờ ném lỗi nên thiếu mô-tơ rung
-    // hay thiếu module native cũng không chặn được luồng tạo công việc.
+    // hay thiếu module native cũng không chặn được bảng thao tác.
     void tapFeedback();
     onLongPress();
   };
@@ -117,7 +117,7 @@ export function MessageBubble({
         <Pressable
           testID={`message-${message.id}`}
           accessibilityRole="button"
-          accessibilityHint={recalled ? undefined : 'Nhấn giữ để tạo công việc từ tin nhắn này'}
+          accessibilityHint={recalled ? undefined : 'Nhấn giữ để xem thao tác với tin nhắn này'}
           onLongPress={handleLongPress}
           delayLongPress={350}
           style={[
