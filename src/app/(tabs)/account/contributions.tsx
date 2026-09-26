@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -158,8 +159,15 @@ export default function ManDongGop() {
 
               `duongDanWeb` chặn sẵn mọi đường dẫn dính thanh toán, nên nút này
               không thể vô tình trở thành lối lách Google Play Billing.
+
+              ẨN HẲN trên iPhone. Trang #/contributions của web mở vào màn Cài
+              đặt, mà ngay cạnh tab Bảng đóng góp là tab "Quản lý gói và thanh
+              toán". Bộ lọc của `duongDanWeb` không bắt được vì đường dẫn chỉ có
+              chữ "contributions". Một lối dẫn sang trang mua như vậy trái
+              Guideline 3.1.1(a) và làm mất vị thế app đồng hành miễn phí
+              3.1.3(f) của App Store.
             */}
-            {coWeb() ? (
+            {coWeb() && Platform.OS !== 'ios' ? (
               <Pressable
                 onPress={() => void WebBrowser.openBrowserAsync(duongDanWeb('contributions'))}
                 style={styles.nutWeb}
