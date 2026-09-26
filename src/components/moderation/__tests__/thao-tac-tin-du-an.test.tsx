@@ -370,7 +370,8 @@ describe('xin đồng ý trước khi gửi tin nhắn cho AI', () => {
     const [tieuDe, noiDung] = hopThoai.mock.calls[0] as [string, string];
     expect(tieuDe).toBe('Dùng AI để gợi ý công việc?');
     expect(noiDung).toContain('nhà cung cấp AI bên thứ ba');
-    expect(noiDung).toContain('Google Gemini hoặc OpenAI');
+    expect(noiDung).toContain('Google Gemini, Azure OpenAI hoặc OpenAI');
+    expect(noiDung).toContain('khoảng 12 tin nhắn gần nhất');
     expect(noiDung).toContain('không gửi email hay số điện thoại');
     expect(noiDung).toContain('Tài khoản');
     expect(nutCuaHopThoai().map((nut) => nut.text)).toEqual(['Không, cảm ơn', 'Đồng ý']);

@@ -15,7 +15,7 @@ import { useAuth } from '../auth/auth-context';
 export const TIEU_DE_DONG_Y_AI = 'Dùng AI để gợi ý công việc?';
 
 export const NOI_DUNG_DONG_Y_AI =
-  'Để gợi ý công việc, WeDo sẽ gửi tin nhắn bạn chọn cùng vài tin nhắn xung quanh và tên các thành viên trong dự án cho nhà cung cấp AI bên thứ ba (Google Gemini hoặc OpenAI). WeDo không gửi email hay số điện thoại của ai. Bạn có thể tắt tính năng này bất cứ lúc nào trong Tài khoản.';
+  'Để gợi ý công việc, WeDo sẽ gửi tin nhắn bạn chọn cùng khoảng 12 tin nhắn gần nhất và tên các thành viên trong dự án cho một nhà cung cấp AI bên thứ ba (Google Gemini, Azure OpenAI hoặc OpenAI). WeDo không gửi email hay số điện thoại của ai. Bạn có thể tắt tính năng này bất cứ lúc nào trong Tài khoản.';
 
 /**
  * Chốt chặn trước mọi thao tác gửi dữ liệu cho AI.
