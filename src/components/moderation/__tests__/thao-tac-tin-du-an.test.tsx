@@ -426,3 +426,35 @@ describe('xin đồng ý trước khi gửi tin nhắn cho AI', () => {
     expect(mockedGoiY).not.toHaveBeenCalled();
   });
 });
+
+/*
+  Lời gợi ý của khung chat trống. "để AI gợi ý thành công việc" đọc thành "gợi ý
+  thành công | việc" — người đọc lướt hiểu nhầm là AI "gợi ý thành công".
+*/
+describe('khung chat trống', () => {
+  beforeEach(() => {
+    mockedTin.mockResolvedValue([]);
+  });
+
+  it('Leader: nói rõ nhấn giữ một tin để nhờ AI biến nó thành công việc', async () => {
+    mockedWorkspace.mockReturnValue({ active: { id: 'w1', ownerId: 'u1' } } as never);
+    const man = await render(dung());
+
+    await waitFor(() => expect(man.getByText('Nhóm EXE')).toBeTruthy());
+    await waitFor(() =>
+      expect(
+        man.getByText(
+          'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để nhờ AI biến nó thành công việc.',
+        ),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('thành viên thường: không hứa tính năng AI', async () => {
+    const man = await render(dung());
+
+    await waitFor(() => expect(man.getByText('Nhóm EXE')).toBeTruthy());
+    await waitFor(() => expect(man.getByText('Gửi tin nhắn đầu tiên cho cả nhóm.')).toBeTruthy());
+    expect(man.queryByText(/AI/)).toBeNull();
+  });
+});

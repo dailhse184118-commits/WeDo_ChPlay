@@ -869,7 +869,7 @@ export default function ChatThreadScreen() {
               // Chỉ hứa tính năng AI với người thật sự dùng được nó — xem `duocDungAI`.
               body={
                 duocDungAI
-                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để AI gợi ý thành công việc.'
+                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để nhờ AI biến nó thành công việc.'
                   : 'Gửi tin nhắn đầu tiên cho cả nhóm.'
               }
             />
