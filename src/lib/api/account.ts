@@ -79,3 +79,34 @@ export function capNhatThongTinCaNhan(thongTin: ThongTinCaNhan): Promise<UserPro
     },
   });
 }
+
+/** Mốc đồng ý điều khoản, do `POST /users/me/accept-terms` trả về. */
+export interface DauDongYDieuKhoan {
+  termsAcceptedAt: string;
+  adultConfirmedAt: string;
+}
+
+/**
+ * Đồng ý Điều khoản sử dụng và xác nhận đủ 18 tuổi — cho người chưa đi qua màn
+ * đăng ký của app (tài khoản cũ, người vào bằng Google).
+ *
+ * Máy chủ chỉ trả hai mốc thời gian, không trả cả hồ sơ: chỗ gọi tự ghép vào
+ * hồ sơ đang giữ rồi đẩy qua `capNhatHoSo`.
+ */
+export function dongYDieuKhoan(): Promise<DauDongYDieuKhoan> {
+  return apiRequest<DauDongYDieuKhoan>('/users/me/accept-terms', {
+    method: 'POST',
+    body: { confirmAdult: true },
+  });
+}
+
+/**
+ * Cho phép, hoặc thôi cho phép, gửi tin nhắn đã chọn tới nhà cung cấp AI.
+ *
+ * Gọi lại khi đã đồng ý thì máy chủ giữ nguyên mốc cũ; rút lại thì trả `null`.
+ */
+export function datDongYAI(choPhep: boolean): Promise<{ aiConsentAt: string | null }> {
+  return apiRequest<{ aiConsentAt: string | null }>('/users/me/ai-consent', {
+    method: choPhep ? 'POST' : 'DELETE',
+  });
+}
