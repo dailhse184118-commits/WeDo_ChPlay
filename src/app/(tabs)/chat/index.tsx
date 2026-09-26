@@ -252,7 +252,11 @@ export default function ChatListScreen() {
 
       <View style={styles.body}>
         {capNhat.muc === 'nen-cap-nhat' ? (
-          <UpdateBanner phienBanMoi={capNhat.latest} notes={capNhat.notes} />
+          <UpdateBanner
+            phienBanMoi={capNhat.latest}
+            notes={capNhat.notes}
+            storeUrl={capNhat.storeUrl}
+          />
         ) : null}
 
         {muc === 'du-an' && projectsQuery.isError ? (

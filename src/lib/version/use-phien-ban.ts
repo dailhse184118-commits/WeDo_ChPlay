@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { useQuery } from '@tanstack/react-query';
 
 import { getAppVersionInfo } from '../api/app-version';
+import { coNutCapNhat } from './mo-cua-hang';
 import { mucCapNhat, type MucCapNhat } from './so-sanh';
 
 /** Phiên bản của chính bản build này. Rỗng nghĩa là không đọc được. */
@@ -19,8 +20,16 @@ const PHIEN_BAN_HIEN_TAI = Constants.expoConfig?.version ?? '';
  *
  * Lượt gọi hỏng thì `data` vắng, và `mucCapNhat` nhận `undefined` rồi trả
  * `'khong-can'` — đúng nguyên tắc hỏng thì im lặng.
+ *
+ * iPhone mà máy chủ không gửi trang App Store thì cũng `'khong-can'`: không có
+ * chỗ để cập nhật thì không được chặn, cũng không được nhắc.
  */
-export function usePhienBan(): { muc: MucCapNhat; latest: string; notes: string } {
+export function usePhienBan(): {
+  muc: MucCapNhat;
+  latest: string;
+  notes: string;
+  storeUrl: string | null;
+} {
   const { data } = useQuery({
     queryKey: ['app-version'],
     queryFn: getAppVersionInfo,
@@ -29,13 +38,18 @@ export function usePhienBan(): { muc: MucCapNhat; latest: string; notes: string 
     retry: 1,
   });
 
+  const storeUrl = data?.storeUrl ?? null;
+
   return {
-    muc: mucCapNhat({
-      hienTai: PHIEN_BAN_HIEN_TAI,
-      latest: data?.latest,
-      minimum: data?.minimum,
-    }),
+    muc: coNutCapNhat(storeUrl)
+      ? mucCapNhat({
+          hienTai: PHIEN_BAN_HIEN_TAI,
+          latest: data?.latest ?? undefined,
+          minimum: data?.minimum ?? undefined,
+        })
+      : 'khong-can',
     latest: data?.latest ?? '',
     notes: data?.notes ?? '',
+    storeUrl,
   };
 }

@@ -3,14 +3,16 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { daBoQua, ghiNhoBoQua } from '../../lib/version/bo-qua';
-import { moChPlay } from '../../lib/version/mo-ch-play';
+import { chuNutCapNhat, coNutCapNhat, moCuaHang } from '../../lib/version/mo-cua-hang';
 import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
 
 interface UpdateBannerProps {
-  /** Phiên bản mới nhất trên CH Play. Dùng làm khoá khi ghi nhớ việc tắt. */
+  /** Phiên bản mới nhất trên cửa hàng của máy này. Dùng làm khoá khi ghi nhớ việc tắt. */
   phienBanMoi: string;
   /** Câu mô tả bản mới do máy chủ gửi. Có thể rỗng. */
   notes: string;
+  /** Trang WeDo trên cửa hàng, do máy chủ gửi. iPhone chỉ mở được trang này. */
+  storeUrl?: string | null;
 }
 
 const CAU_MAC_DINH = 'Đã có phiên bản mới của WeDo.';
@@ -24,7 +26,7 @@ const CAU_MAC_DINH = 'Đã có phiên bản mới của WeDo.';
  * Bắt đầu ở trạng thái ẩn rồi mới hiện sau khi đọc xong bộ nhớ. Làm ngược lại
  * thì mỗi lần mở app dải băng sẽ chớp lên một nhịp trước khi biết là đã bị tắt.
  */
-export function UpdateBanner({ phienBanMoi, notes }: UpdateBannerProps) {
+export function UpdateBanner({ phienBanMoi, notes, storeUrl }: UpdateBannerProps) {
   const [hien, setHien] = useState(false);
 
   useEffect(() => {
@@ -62,15 +64,22 @@ export function UpdateBanner({ phienBanMoi, notes }: UpdateBannerProps) {
       </View>
 
       <View style={styles.nutDoc}>
-        <Pressable
-          testID="update-banner-cap-nhat"
-          accessibilityRole="button"
-          accessibilityLabel="Mở CH Play để cập nhật"
-          onPress={() => void moChPlay()}
-          style={({ pressed }) => [styles.nut, pressed ? styles.nutNhan : null]}
-        >
-          <Text style={styles.nutChu}>Cập nhật</Text>
-        </Pressable>
+        {/*
+          iPhone thiếu trang App Store thì không có nút: một nút bấm vào không đi
+          đâu còn tệ hơn không có. Chữ đọc cho trình đọc màn hình cũng theo nền
+          tảng — iPhone không được nghe nhắc tới CH Play.
+        */}
+        {coNutCapNhat(storeUrl) ? (
+          <Pressable
+            testID="update-banner-cap-nhat"
+            accessibilityRole="button"
+            accessibilityLabel={chuNutCapNhat()}
+            onPress={() => void moCuaHang(storeUrl)}
+            style={({ pressed }) => [styles.nut, pressed ? styles.nutNhan : null]}
+          >
+            <Text style={styles.nutChu}>Cập nhật</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable
           testID="update-banner-tat"

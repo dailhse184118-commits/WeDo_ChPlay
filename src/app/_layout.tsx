@@ -83,10 +83,10 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
  * nhập cũng có thể hỏng.
  */
 function CongPhienBan({ children }: { children: React.ReactNode }) {
-  const { muc, notes } = usePhienBan();
+  const { muc, notes, storeUrl } = usePhienBan();
 
   if (muc === 'bat-buoc') {
-    return <UpdateGate notes={notes} />;
+    return <UpdateGate notes={notes} storeUrl={storeUrl} />;
   }
 
   return <>{children}</>;
