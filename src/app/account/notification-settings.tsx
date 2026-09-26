@@ -22,9 +22,9 @@ interface Row {
 /**
  * Hiện đủ cả bốn loại, kể cả `notifyMeeting`.
  *
- * Cuộc họp không có màn hình riêng trên mobile, nhưng người dùng vẫn nhận thông báo
- * họp trên điện thoại. Ẩn công tắc đi sẽ khiến họ không tắt được thứ đang làm phiền
- * mình — đó mới là vấn đề thật, chứ không phải chuyện thiếu màn hình.
+ * Cuộc họp giờ đã có tab riêng trên mobile, chạm vào thông báo là mở thẳng cuộc
+ * họp đó — nên câu gợi ý không còn đẩy người dùng sang web. Ẩn công tắc đi sẽ
+ * khiến họ không tắt được thứ đang làm phiền mình.
  */
 const ROWS: Row[] = [
   {
@@ -51,7 +51,7 @@ const ROWS: Row[] = [
   {
     key: 'notifyMeeting',
     label: 'Cuộc họp',
-    hint: 'Khi có cuộc họp mới được lên lịch. Xem chi tiết họp trên web WeDo',
+    hint: 'Khi có cuộc họp mới được lên lịch',
     icon: 'videocam-outline',
     tone: 'info',
   },

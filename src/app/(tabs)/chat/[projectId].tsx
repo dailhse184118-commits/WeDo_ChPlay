@@ -932,9 +932,6 @@ export default function ChatThreadScreen() {
         submitting={sheetSubmitting}
         onConfirm={handleConfirm}
         onDismiss={() => setSheetOpen(false)}
-        onReport={() =>
-          Alert.alert('Cảm ơn phản hồi', 'Chúng tôi đã ghi nhận rằng đề xuất này chưa chính xác.')
-        }
       />
 
       {bangThaoTac}
