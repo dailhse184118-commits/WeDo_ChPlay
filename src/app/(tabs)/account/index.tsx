@@ -237,6 +237,19 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/feedback')}
           />
           {/*
+            Câu xác nhận chặn chỉ đường tới đúng chỗ này ("Tài khoản → Người đã
+            chặn"). Đổi tên hay dời đi thì phải sửa cả câu đó trong
+            `src/lib/moderation/noi-dung.ts`.
+          */}
+          <MenuRow
+            testID="account-blocked"
+            icon="ban-outline"
+            tone="info"
+            label="Người đã chặn"
+            hint="Xem và bỏ chặn"
+            onPress={() => router.push('/account/blocked')}
+          />
+          {/*
             Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
             chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.
           */}
