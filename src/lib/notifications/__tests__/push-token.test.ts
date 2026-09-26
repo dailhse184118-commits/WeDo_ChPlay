@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { registerPushToken, unregisterPushToken } from '../../api/notifications';
-import { ensureNotificationPermission } from '../permission';
+import { checkNotificationPermission, ensureNotificationPermission } from '../permission';
 import { dongBoPushToken, huyDangKyPushToken } from '../push-token';
 
 jest.mock('expo-notifications', () => ({
@@ -10,7 +10,10 @@ jest.mock('expo-notifications', () => ({
   setNotificationChannelAsync: jest.fn(),
   AndroidImportance: { DEFAULT: 3 },
 }));
-jest.mock('../permission', () => ({ ensureNotificationPermission: jest.fn() }));
+jest.mock('../permission', () => ({
+  checkNotificationPermission: jest.fn(),
+  ensureNotificationPermission: jest.fn(),
+}));
 jest.mock('../../api/notifications', () => ({
   registerPushToken: jest.fn(),
   unregisterPushToken: jest.fn(),
@@ -19,14 +22,77 @@ jest.mock('../../api/notifications', () => ({
 const mockedQuyen = ensureNotificationPermission as jest.MockedFunction<
   typeof ensureNotificationPermission
 >;
+const mockedDocQuyen = checkNotificationPermission as jest.MockedFunction<
+  typeof checkNotificationPermission
+>;
 const mockedLayToken = Notifications.getExpoPushTokenAsync as jest.MockedFunction<
   typeof Notifications.getExpoPushTokenAsync
 >;
 const mockedDangKy = registerPushToken as jest.MockedFunction<typeof registerPushToken>;
 const mockedHuy = unregisterPushToken as jest.MockedFunction<typeof unregisterPushToken>;
 
+let heDieuHanh: jest.ReplaceProperty<typeof Platform.OS> | undefined;
+
 beforeEach(() => {
   jest.clearAllMocks();
+  heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
+});
+
+afterEach(() => {
+  heDieuHanh?.restore();
+  heDieuHanh = undefined;
+});
+
+/*
+  iOS chỉ cho hỏi quyền thông báo đúng một lần. Bật hộp thoại ngay sau đăng
+  nhập — khi người dùng chưa biết để làm gì — là phí mất lần hỏi đó. Trên
+  iPhone, đăng nhập chỉ ghi token nếu ĐÃ có quyền; việc hỏi để cho thẻ giải
+  thích ở tab Thông báo.
+*/
+describe('dongBoPushToken trên iPhone', () => {
+  beforeEach(() => {
+    heDieuHanh?.restore();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
+    mockedLayToken.mockResolvedValue({ data: 'ExponentPushToken[ios]' } as never);
+  });
+
+  it('chưa có quyền: không bật hộp thoại hệ thống, không ghi token', async () => {
+    mockedDocQuyen.mockResolvedValue('undetermined');
+
+    await dongBoPushToken();
+
+    expect(mockedQuyen).not.toHaveBeenCalled();
+    expect(mockedLayToken).not.toHaveBeenCalled();
+    expect(mockedDangKy).not.toHaveBeenCalled();
+  });
+
+  it('đã có quyền từ trước: ghi token với nền tảng ios, vẫn không hỏi', async () => {
+    mockedDocQuyen.mockResolvedValue('granted');
+
+    await dongBoPushToken();
+
+    expect(mockedQuyen).not.toHaveBeenCalled();
+    expect(mockedDangKy).toHaveBeenCalledWith('ExponentPushToken[ios]', 'ios');
+  });
+
+  it('đã từ chối: im lặng', async () => {
+    mockedDocQuyen.mockResolvedValue('blocked');
+
+    await expect(dongBoPushToken()).resolves.toBeUndefined();
+    expect(mockedDangKy).not.toHaveBeenCalled();
+  });
+});
+
+describe('dongBoPushToken trên Android — giữ nguyên như cũ', () => {
+  it('hỏi quyền ngay như trước, không chỉ đọc', async () => {
+    mockedQuyen.mockResolvedValue(true);
+    mockedLayToken.mockResolvedValue({ data: 'ExponentPushToken[abc]' } as never);
+
+    await dongBoPushToken();
+
+    expect(mockedQuyen).toHaveBeenCalledTimes(1);
+    expect(mockedDocQuyen).not.toHaveBeenCalled();
+  });
 });
 
 describe('dongBoPushToken', () => {

@@ -31,6 +31,7 @@ import {
   ensureNotificationPermission,
   type NotificationPermissionState,
 } from '../../../lib/notifications/permission';
+import { dongBoPushToken } from '../../../lib/notifications/push-token';
 import { planReminders } from '../../../lib/notifications/scheduler';
 import { locThongBaoHienThi } from '../../../lib/notifications/thanh-toan';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
@@ -86,6 +87,13 @@ export default function NotificationsScreen() {
   const handleEnable = useCallback(async () => {
     const granted = await ensureNotificationPermission();
     setPermission(granted ? 'granted' : 'blocked');
+
+    /*
+      iPhone không xin quyền lúc đăng nhập (xem `dongBoPushToken`), nên đây
+      thường là lần đầu máy có quyền: phải ghi token lên máy chủ ngay, không thì
+      phải đợi tới lần mở app sau mới nhận được thông báo đẩy.
+    */
+    if (granted) void dongBoPushToken();
   }, []);
 
   const refreshBadge = useCallback(() => {

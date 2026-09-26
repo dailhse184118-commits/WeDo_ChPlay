@@ -244,8 +244,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     /*
       Ghi nhận thiết bị để máy chủ đẩy thông báo xuống. Đặt sau khi đã vào được
-      app: hàm này tự nuốt lỗi, nhưng nó có thể hiện hộp xin quyền hệ thống, và
-      hỏi quyền trước khi người dùng thấy màn hình nào thì rất khó hiểu.
+      app: hàm này tự nuốt lỗi, nhưng trên Android nó có thể hiện hộp xin quyền
+      hệ thống, và hỏi quyền trước khi người dùng thấy màn hình nào thì rất khó
+      hiểu. Trên iPhone nó không bao giờ hỏi — chỉ ghi token nếu đã có quyền.
     */
     void dongBoPushToken();
   }, []);
