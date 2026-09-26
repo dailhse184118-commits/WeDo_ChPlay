@@ -1,4 +1,4 @@
-import type { Friendship, NguoiTimDuoc, UserSummary } from '../types';
+import type { Friendship, NguoiTimDuoc, NguoiTrongTinhBan } from '../types';
 
 /**
  * Trạng thái quan hệ giữa mình và một người tìm được.
@@ -21,7 +21,7 @@ export type TrangThaiKetBan = 'chua-gi-ca' | 'da-gui-loi-moi' | 'cho-minh-duyet'
 export function nguoiKiaTrongTinhBan(
   tinhBan: Friendship,
   userId: string,
-): UserSummary | null {
+): NguoiTrongTinhBan | null {
   if (tinhBan.requesterId === userId) return tinhBan.addressee ?? null;
   if (tinhBan.addresseeId === userId) return tinhBan.requester ?? null;
   return null;

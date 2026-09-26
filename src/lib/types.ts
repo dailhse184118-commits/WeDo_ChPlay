@@ -223,9 +223,18 @@ export interface Friendship {
   status: FriendshipStatus;
   createdAt: string;
   updatedAt: string;
-  requester?: UserSummary;
-  addressee?: UserSummary;
+  requester?: NguoiTrongTinhBan;
+  addressee?: NguoiTrongTinhBan;
 }
+
+/**
+ * Một bên trong quan hệ bạn bè.
+ *
+ * Ở lời mời mình đã gửi mà người kia chưa nhận, máy chủ giấu email và số điện
+ * thoại của người nhận — khoá vẫn có, giá trị là `null`. Tìm theo tên đã giấu
+ * hai thứ đó; lộ ở đây thì chỉ cần bấm "Kết bạn" là đọc được liên lạc người lạ.
+ */
+export type NguoiTrongTinhBan = Omit<UserSummary, 'email'> & { email: string | null };
 
 /**
  * `GET /friends` trả cả ba nhóm trong một lượt gọi.

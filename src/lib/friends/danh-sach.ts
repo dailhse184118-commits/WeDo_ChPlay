@@ -1,5 +1,5 @@
 import { nguoiKiaTrongTinhBan } from './quan-he';
-import type { FriendsList, Friendship, UserSummary } from '../types';
+import type { FriendsList, Friendship, NguoiTrongTinhBan } from '../types';
 
 /**
  * Một dòng để vẽ: người kia là ai, và quan hệ nào sinh ra dòng này.
@@ -9,7 +9,7 @@ import type { FriendsList, Friendship, UserSummary } from '../types';
  */
 export interface DongBanBe {
   tinhBanId: string;
-  nguoi: UserSummary;
+  nguoi: NguoiTrongTinhBan;
 }
 
 export interface NhomBanBe {
