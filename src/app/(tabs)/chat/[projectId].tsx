@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
   StyleSheet,
   Text,
@@ -38,7 +39,7 @@ import { ApiError } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { createTaskFromMessage } from '../../../lib/chat/create-task-from-message';
 import { createLocalId } from '../../../lib/chat/local-id';
-import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
+import { applyRecall, ghepTrangMoiNhat, mergeMessages } from '../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
 import { useHeaderTep } from '../../../lib/chat/use-header-tep';
 import { datManDangMo, quenManDangMo } from '../../../lib/notifications/man-dang-mo';
@@ -71,9 +72,14 @@ export default function ChatThreadScreen() {
 
   const { user } = useAuth();
   const { active } = useWorkspace();
-  const { socket } = useSocket();
+  const { socket, connected } = useSocket();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Bản đã hiển thị gần nhất, để lượt tải bù biết trang mới có chạm danh sách không.
+  const messagesRef = useRef<ChatMessage[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -229,6 +235,66 @@ export default function ChatThreadScreen() {
       socket.off('typing:project', onTyping);
     };
   }, [socket, projectId, user?.id]);
+
+  /*
+    TẢI BÙ. Màn này tải tin một lần lúc mở, sau đó chỉ nhận tin mới qua socket.
+    Socket đứt thì tin gửi trong lúc đứt rơi mất: máy chủ không phát lại. Mà đứt
+    là chuyện thường ngày: app xuống nền, đổi wifi sang 4G, mỗi lần deploy
+    backend. Trước đây những tin đó vắng mặt cho tới khi thoát ra vào lại, nên
+    mỗi người trong nhóm thấy một cuộc trò chuyện khác nhau.
+
+    Lỗi mạng thì im lặng: lần nối lại hay lần quay lại app sau sẽ thử tiếp.
+  */
+  const taiBu = useCallback(async () => {
+    if (!projectId) return;
+    let moiNhat: ChatMessage[];
+    try {
+      moiNhat = await getProjectMessages(projectId);
+    } catch {
+      return;
+    }
+
+    const { khoangHo } = ghepTrangMoiNhat(messagesRef.current, moiNhat);
+    setMessages((current) => ghepTrangMoiNhat(current, moiNhat).danhSach);
+    if (khoangHo) {
+      // Danh sách bắt đầu lại từ trang mới nhất: "tải tin cũ hơn" đi tiếp từ đầu trang đó.
+      setCursor(mergeMessages([], moiNhat)[0].createdAt);
+    }
+  }, [projectId]);
+
+  /*
+    Socket NỐI LẠI trong lúc màn đang mở: xin vào lại phòng, vì máy chủ quên
+    phòng của socket cũ, rồi tải bù. Mở màn lúc socket đã nối sẵn thì không cần:
+    lượt tải ban đầu vừa lấy xong.
+
+    Chờ ngẫu nhiên tới 1,5 giây: sau mỗi lần deploy mọi máy nối lại cùng lúc,
+    đừng để chúng cùng đổ vào máy chủ một nhịp.
+  */
+  const daNoiRef = useRef(connected);
+  useEffect(() => {
+    const truoc = daNoiRef.current;
+    daNoiRef.current = connected;
+    if (!socket || !connected || truoc || !projectId) return;
+
+    socket.emit('join:project', { projectId });
+    const hen = setTimeout(() => void taiBu(), Math.floor(Math.random() * 1500));
+    return () => clearTimeout(hen);
+  }, [socket, connected, projectId, taiBu]);
+
+  /*
+    Quay lại app thì tải bù ngay, không chờ socket. Android có thể đã cắt mạng
+    của app lúc ở nền, và socket cần tới vài chục giây mới tự nhận ra kết nối cũ
+    đã chết.
+  */
+  useEffect(() => {
+    let truoc = AppState.currentState;
+    const sub = AppState.addEventListener('change', (sau) => {
+      const quayLai = truoc !== 'active' && sau === 'active';
+      truoc = sau;
+      if (quayLai) void taiBu();
+    });
+    return () => sub.remove();
+  }, [taiBu]);
 
   // Nhịp đếm để chữ "đang nhập" tự biến mất khi quá hạn, kể cả khi không có sự kiện mới.
   useEffect(() => {
