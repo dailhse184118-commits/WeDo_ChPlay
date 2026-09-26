@@ -229,7 +229,12 @@ export interface FriendsList {
 }
 
 /** Một người tìm được qua `GET /friends/search`, kèm quan hệ hiện có nếu có. */
-export interface NguoiTimDuoc extends UserSummary {
+export interface NguoiTimDuoc extends Omit<UserSummary, 'email'> {
+  /**
+   * Máy chủ chỉ trả email và số điện thoại của người ĐÃ là bạn. Người lạ tìm
+   * được thì cả hai là `null` — khoá vẫn có, chỉ giá trị bị giấu.
+   */
+  email: string | null;
   friendship?: Friendship | null;
 }
 

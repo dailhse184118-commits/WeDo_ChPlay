@@ -27,19 +27,20 @@ describe('API kết bạn', () => {
   });
 
   /*
-    Máy chủ chặn từ khoá dưới 2 ký tự và trả mảng rỗng. Bắn lượt gọi chắc chắn
+    Máy chủ chặn từ khoá dưới 3 ký tự và trả mảng rỗng. Bắn lượt gọi chắc chắn
     rỗng chỉ tốn dữ liệu di động của người dùng.
   */
   it('không gọi máy chủ khi từ khoá quá ngắn', async () => {
     await expect(searchUsers('a')).resolves.toEqual([]);
+    await expect(searchUsers('ab')).resolves.toEqual([]);
     await expect(searchUsers('   ')).resolves.toEqual([]);
 
     expect(mockedRequest).not.toHaveBeenCalled();
   });
 
   it('cắt khoảng trắng thừa trước khi đếm độ dài', async () => {
-    await searchUsers('  ab  ');
-    expect(mockedRequest).toHaveBeenCalledWith('/friends/search?query=ab');
+    await searchUsers('  abc  ');
+    expect(mockedRequest).toHaveBeenCalledWith('/friends/search?query=abc');
   });
 
   it('POST gửi lời mời kết bạn', async () => {

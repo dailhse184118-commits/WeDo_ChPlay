@@ -1,8 +1,14 @@
 import { apiRequest } from './client';
 import type { FriendsList, Friendship, NguoiTimDuoc } from '../types';
 
-/** Máy chủ chặn từ khoá dưới 2 ký tự, khớp luôn ở đây cho khỏi bắn lượt gọi thừa. */
-export const DO_DAI_TU_KHOA_TOI_THIEU = 2;
+/**
+ * Máy chủ chặn từ khoá dưới 3 ký tự, khớp luôn ở đây cho khỏi bắn lượt gọi thừa.
+ *
+ * Từng là 2. Nâng lên 3 cùng lúc máy chủ thôi cho dò email và số điện thoại
+ * theo từng mẩu (giờ phải khớp đúng cả chuỗi): từ khoá hai ký tự chỉ còn dò
+ * được tên, và kết quả rộng tới mức chẳng giúp gì.
+ */
+export const DO_DAI_TU_KHOA_TOI_THIEU = 3;
 
 /**
  * Bạn bè, lời mời đến và lời mời đã gửi — cả ba trong một lượt gọi.
@@ -17,7 +23,7 @@ export function listFriends(): Promise<FriendsList> {
 /**
  * Tìm người theo tên, email hoặc số điện thoại.
  *
- * Trả mảng rỗng ngay khi từ khoá quá ngắn, không gọi máy chủ: dưới 2 ký tự thì
+ * Trả mảng rỗng ngay khi từ khoá quá ngắn, không gọi máy chủ: dưới 3 ký tự thì
  * máy chủ cũng trả rỗng, nên gọi chỉ tổ tốn dữ liệu di động của người dùng.
  */
 export function searchUsers(query: string): Promise<NguoiTimDuoc[]> {

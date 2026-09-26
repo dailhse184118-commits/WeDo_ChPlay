@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { FriendRow } from '../../../components/friends/FriendRow';
+import { useBangThaoTac } from '../../../components/moderation/BangThaoTac';
+import { PhieuBaoCao, type DoiTuongBaoCao } from '../../../components/moderation/PhieuBaoCao';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { startConversation } from '../../../lib/api/direct-chat';
@@ -26,6 +28,11 @@ import {
 import { useAuth } from '../../../lib/auth/auth-context';
 import { nhomBanBe } from '../../../lib/friends/danh-sach';
 import { trangThaiKetBan } from '../../../lib/friends/quan-he';
+import {
+  useChanNguoi,
+  useNguoiDaChan,
+  type NguoiCanChan,
+} from '../../../lib/moderation/use-kiem-duyet';
 import { useDebouncedValue } from '../../../lib/use-debounced-value';
 import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } from '../../../theme/tokens';
 
@@ -65,10 +72,42 @@ export default function FriendsScreen() {
     enabled: tuKhoaCho.trim().length >= DO_DAI_TU_KHOA_TOI_THIEU,
   });
 
-  const nhom = useMemo(
-    () => nhomBanBe(danhSachQuery.data ?? { friends: [], incoming: [], outgoing: [] }, user?.id ?? ''),
-    [danhSachQuery.data, user?.id],
-  );
+  /*
+    Chặn xong là máy chủ xoá tình bạn và giấu người đó khỏi tìm kiếm, nhưng lượt
+    nạp lại cần một nhịp. Lọc ngay ở đây để người vừa bị chặn biến mất tức thì.
+  */
+  const daChan = useNguoiDaChan();
+
+  const nhom = useMemo(() => {
+    const tatCa = nhomBanBe(
+      danhSachQuery.data ?? { friends: [], incoming: [], outgoing: [] },
+      user?.id ?? '',
+    );
+    if (daChan.size === 0) return tatCa;
+
+    const conLai = (ds: typeof tatCa.banBe) => ds.filter((dong) => !daChan.has(dong.nguoi.id));
+    return { banBe: conLai(tatCa.banBe), denMinh: conLai(tatCa.denMinh), daGui: conLai(tatCa.daGui) };
+  }, [danhSachQuery.data, user?.id, daChan]);
+
+  const [doiTuongBaoCao, setDoiTuongBaoCao] = useState<DoiTuongBaoCao | null>(null);
+  const { moBang, bang: bangThaoTac } = useBangThaoTac();
+  const { hoiRoiChan } = useChanNguoi();
+
+  /* Báo cáo và Chặn cho mọi dòng người — Điều khoản sử dụng hứa có cả hai ở đây. */
+  function moThaoTacNguoi(nguoi: NguoiCanChan) {
+    moBang({
+      tieuDe: nguoi.fullName,
+      thaoTac: [
+        {
+          khoa: 'bao-cao',
+          nhan: 'Báo cáo người này',
+          onChon: () =>
+            setDoiTuongBaoCao({ targetType: 'USER', targetId: nguoi.id, tenNguoi: nguoi.fullName }),
+        },
+        { khoa: 'chan', nhan: 'Chặn người này', nguyHiem: true, onChon: () => hoiRoiChan(nguoi) },
+      ],
+    });
+  }
 
   function xongMotLuot() {
     setDongDangXuLy(null);
@@ -101,7 +140,7 @@ export default function FriendsScreen() {
   });
 
   const dangTim = tuKhoaCho.trim().length >= DO_DAI_TU_KHOA_TOI_THIEU;
-  const nguoiTimDuoc = timQuery.data ?? [];
+  const nguoiTimDuoc = (timQuery.data ?? []).filter((nguoi) => !daChan.has(nguoi.id));
 
   const loi =
     danhSachQuery.error instanceof Error
@@ -192,6 +231,7 @@ export default function FriendsScreen() {
                       setDongDangXuLy(nguoi.id);
                       traLoi.mutate({ tinhBanId, dongY: false });
                     }}
+                    onThem={() => moThaoTacNguoi(nguoi)}
                   />
                 );
               })
@@ -219,6 +259,7 @@ export default function FriendsScreen() {
                       setDongDangXuLy(dong.nguoi.id);
                       traLoi.mutate({ tinhBanId: dong.tinhBanId, dongY: false });
                     }}
+                    onThem={() => moThaoTacNguoi(dong.nguoi)}
                   />
                 ))}
               </Muc>
@@ -241,6 +282,7 @@ export default function FriendsScreen() {
                       setDongDangXuLy(dong.nguoi.id);
                       moHoiThoai.mutate({ userId: dong.nguoi.id, hoTen: dong.nguoi.fullName });
                     }}
+                    onThem={() => moThaoTacNguoi(dong.nguoi)}
                   />
                 ))
               )}
@@ -249,13 +291,21 @@ export default function FriendsScreen() {
             {nhom.daGui.length > 0 ? (
               <Muc tieuDe={`Đã gửi, đang chờ (${nhom.daGui.length})`}>
                 {nhom.daGui.map((dong) => (
-                  <FriendRow key={dong.tinhBanId} nguoi={dong.nguoi} trangThai="da-gui-loi-moi" />
+                  <FriendRow
+                    key={dong.tinhBanId}
+                    nguoi={dong.nguoi}
+                    trangThai="da-gui-loi-moi"
+                    onThem={() => moThaoTacNguoi(dong.nguoi)}
+                  />
                 ))}
               </Muc>
             ) : null}
           </>
         )}
       </ScrollView>
+
+      {bangThaoTac}
+      <PhieuBaoCao doiTuong={doiTuongBaoCao} onDong={() => setDoiTuongBaoCao(null)} />
     </View>
   );
 }
