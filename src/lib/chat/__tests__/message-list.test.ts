@@ -1,4 +1,4 @@
-import { mergeMessages, applyRecall } from '../message-list';
+import { mergeMessages, applyRecall, ghepTrangMoiNhat } from '../message-list';
 import type { ChatMessage } from '../../types';
 
 function makeMessage(id: string, minute: number, content = 'noi dung'): ChatMessage {
@@ -64,5 +64,54 @@ describe('applyRecall', () => {
   it('bỏ qua khi không tìm thấy tin nhắn', () => {
     const list = [makeMessage('a', 1)];
     expect(applyRecall(list, makeMessage('khong-ton-tai', 9))).toEqual(list);
+  });
+});
+
+describe('ghepTrangMoiNhat', () => {
+  const ids = (list: ChatMessage[]) => list.map((m) => m.id);
+
+  it('trang mới chạm danh sách đang hiện thì gộp, giữ nguyên tin cũ đã tải', () => {
+    const dangHien = [makeMessage('a', 1), makeMessage('b', 2), makeMessage('c', 3)];
+    const trangMoi = [makeMessage('c', 3), makeMessage('d', 4), makeMessage('e', 5)];
+
+    const ket = ghepTrangMoiNhat(dangHien, trangMoi);
+
+    expect(ids(ket.danhSach)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(ket.khoangHo).toBe(false);
+  });
+
+  it('tin bị sửa trong lúc mất kết nối thì lấy bản mới từ trang vừa tải', () => {
+    const ket = ghepTrangMoiNhat([makeMessage('a', 1, 'ban cu')], [makeMessage('a', 1, 'ban sua')]);
+    expect(ket.danhSach[0].content).toBe('ban sua');
+  });
+
+  it('không chạm nhau thì bắt đầu lại từ trang mới nhất, không để khoảng hở lặng lẽ', () => {
+    const dangHien = [makeMessage('a', 1), makeMessage('b', 2)];
+    // Trong lúc mất kết nối đã có hơn một trang tin: trang mới nhất bắt đầu từ phút 30.
+    const trangMoi = [makeMessage('x', 30), makeMessage('y', 31)];
+
+    const ket = ghepTrangMoiNhat(dangHien, trangMoi);
+
+    expect(ids(ket.danhSach)).toEqual(['x', 'y']);
+    expect(ket.khoangHo).toBe(true);
+  });
+
+  it('có khoảng hở vẫn giữ tin socket vừa tới trong lúc đang tải', () => {
+    const dangHien = [makeMessage('a', 1), makeMessage('z', 40)];
+    const trangMoi = [makeMessage('x', 30), makeMessage('y', 31)];
+
+    expect(ids(ghepTrangMoiNhat(dangHien, trangMoi).danhSach)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('danh sách đang trống thì nhận nguyên trang mới', () => {
+    const ket = ghepTrangMoiNhat([], [makeMessage('a', 1)]);
+    expect(ids(ket.danhSach)).toEqual(['a']);
+    expect(ket.khoangHo).toBe(false);
+  });
+
+  it('trang mới rỗng thì giữ nguyên danh sách', () => {
+    const ket = ghepTrangMoiNhat([makeMessage('a', 1)], []);
+    expect(ids(ket.danhSach)).toEqual(['a']);
+    expect(ket.khoangHo).toBe(false);
   });
 });

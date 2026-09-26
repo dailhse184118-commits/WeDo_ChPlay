@@ -32,6 +32,28 @@ export function keysToInvalidate(event: RealtimeEvent): string[][] {
 }
 
 /**
+ * Khoá cần nạp lại sau khi socket NỐI LẠI.
+ *
+ * Trong lúc đứt kết nối, mọi sự kiện máy chủ bắn ra đều rơi mất: socket.io không
+ * phát lại. Mà đứt là chuyện thường ngày trên điện thoại: app xuống nền, đổi
+ * wifi sang 4G, mỗi lần deploy backend. Những thứ vốn nhờ sự kiện để tươi thì
+ * phải hỏi lại máy chủ một lượt, không thì tin nhắn riêng, thông báo và số chưa
+ * đọc đứng yên ở trạng thái trước lúc đứt.
+ *
+ * `chat-unread` là số tin chưa đọc của từng dự án ở màn danh sách chat. Luồng
+ * tin của màn chat dự án không nằm trong react-query; màn đó tự tải bù.
+ */
+export const KHOA_NAP_LAI_KHI_NOI_LAI: string[][] = [
+  ['direct-conversations'],
+  ['direct-messages'],
+  ['notifications'],
+  ['notifications-unread'],
+  ['tasks'],
+  ['task'],
+  ['chat-unread'],
+];
+
+/**
  * Danh sách phòng dự án cần tham gia.
  *
  * Máy chủ tự cho vào phòng `user:<id>` lúc kết nối, nên thông báo cá nhân tới nơi

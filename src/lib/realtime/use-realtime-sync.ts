@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { listProjects } from '../api/projects';
 import { useSocket } from '../socket/socket-context';
 import { useWorkspace } from '../workspace/workspace-context';
-import { keysToInvalidate, projectRoomsToJoin } from './sync-rules';
+import { KHOA_NAP_LAI_KHI_NOI_LAI, keysToInvalidate, projectRoomsToJoin } from './sync-rules';
 
 /**
  * Giữ dữ liệu tươi bằng socket có sẵn, thay cho việc hỏi vòng theo nhịp.
@@ -28,6 +28,27 @@ export function useRealtimeSync(): void {
   });
 
   const projectIds = projectRoomsToJoin(projectsQuery.data ?? []).join(',');
+
+  /*
+    Nối lại sau một lần đứt thì nạp lại những gì đã có thể lỡ. Bỏ qua lần nối
+    ĐẦU của mỗi socket: lúc đó dữ liệu vừa tải xong, nạp lại chỉ tốn một loạt
+    yêu cầu trùng ngay lúc mở app.
+  */
+  const daTungNoiRef = useRef(false);
+  useEffect(() => {
+    daTungNoiRef.current = false;
+  }, [socket]);
+
+  useEffect(() => {
+    if (!connected) return;
+    if (!daTungNoiRef.current) {
+      daTungNoiRef.current = true;
+      return;
+    }
+    for (const queryKey of KHOA_NAP_LAI_KHI_NOI_LAI) {
+      void queryClient.invalidateQueries({ queryKey });
+    }
+  }, [connected, queryClient]);
 
   // Xin vào phòng của mọi dự án. Phải chạy lại sau mỗi lần kết nối lại: máy chủ
   // quên sạch danh sách phòng khi socket cũ đứt.

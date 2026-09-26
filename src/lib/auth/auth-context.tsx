@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   getMe,
@@ -49,54 +49,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<UserProfile | null>(null);
 
-  const signOut = useCallback(async () => {
-    /*
-      Bảo máy chủ cắt phiên TRƯỚC khi xoá token khỏi máy — xoá trước thì không
-      còn gì để gửi lên. Bọc lại vì mất mạng không được phép giữ người dùng ở
-      lại trong app.
-    */
-    /*
-      Gỡ thiết bị TRƯỚC khi cắt phiên và xoá token: request này cần header xác
-      thực. Bỏ qua bước này thì người vừa đăng xuất vẫn nhận thông báo công việc
-      trên chiếc máy họ vừa trả lại.
-    */
-    await huyDangKyPushToken();
+  /*
+    Lượt đăng xuất đang chạy, nếu có. Lời gọi thứ hai trong lúc lượt đầu chưa
+    xong nhận lại đúng lời hứa ấy, không chạy lại từ đầu.
 
-    try {
-      const refreshToken = await loadRefreshToken();
-      if (refreshToken) {
-        await logoutRequest(refreshToken);
+    Cần vì 401 tới từ nhiều nơi cùng lúc: phiên hết hạn thì mọi màn đang tải đều
+    nhận 401, và chính lượt gỡ push token bên dưới cũng có thể nhận 401 khi token
+    còn nằm trong máy. Mỗi 401 gọi `signOut` một lần; thiếu chốt này, các lượt
+    chồng lên nhau và lượt sau lại sinh ra 401 mới.
+  */
+  const dangDangXuatRef = useRef<Promise<void> | null>(null);
+
+  const signOut = useCallback((): Promise<void> => {
+    dangDangXuatRef.current ??= thucHienDangXuat().finally(() => {
+      dangDangXuatRef.current = null;
+    });
+    return dangDangXuatRef.current;
+
+    async function thucHienDangXuat() {
+      /*
+        Bảo máy chủ cắt phiên TRƯỚC khi xoá token khỏi máy — xoá trước thì không
+        còn gì để gửi lên. Bọc lại vì mất mạng không được phép giữ người dùng ở
+        lại trong app.
+      */
+      /*
+        Gỡ thiết bị TRƯỚC khi cắt phiên và xoá token: request này cần header xác
+        thực. Bỏ qua bước này thì người vừa đăng xuất vẫn nhận thông báo công việc
+        trên chiếc máy họ vừa trả lại.
+      */
+      await huyDangKyPushToken();
+
+      try {
+        const refreshToken = await loadRefreshToken();
+        if (refreshToken) {
+          await logoutRequest(refreshToken);
+        }
+      } catch {
+        // Máy chủ không phản hồi. Phiên vẫn hết hạn sau 60 ngày.
       }
-    } catch {
-      // Máy chủ không phản hồi. Phiên vẫn hết hạn sau 60 ngày.
-    }
 
-    await clearToken();
+      await clearToken();
 
-    /*
-      Xoá cache đã ghi xuống đĩa. Nó chứa công việc, tin nhắn và tên dự án của
-      người vừa dùng — không xoá thì người đăng nhập tiếp theo trên cùng máy sẽ
-      thấy dữ liệu của người trước ngay khi mở app, trước cả khi lượt gọi mạng
-      đầu tiên kịp trả về.
-    */
-    await xoaCacheBenBi();
+      /*
+        Xoá cache đã ghi xuống đĩa. Nó chứa công việc, tin nhắn và tên dự án của
+        người vừa dùng — không xoá thì người đăng nhập tiếp theo trên cùng máy sẽ
+        thấy dữ liệu của người trước ngay khi mở app, trước cả khi lượt gọi mạng
+        đầu tiên kịp trả về.
+      */
+      await xoaCacheBenBi();
 
-    setUser(null);
-    setStatus('signedOut');
+      setUser(null);
+      setStatus('signedOut');
 
-    /*
-      Xoá luôn phiên phía Google, nếu không Google vẫn nhớ tài khoản: lần sau
-      bấm "Tiếp tục với Google" là vào thẳng tài khoản cũ, không hiện hộp chọn,
-      người dùng không đổi được tài khoản.
+      /*
+        Xoá luôn phiên phía Google, nếu không Google vẫn nhớ tài khoản: lần sau
+        bấm "Tiếp tục với Google" là vào thẳng tài khoản cũ, không hiện hộp chọn,
+        người dùng không đổi được tài khoản.
 
-      Làm SAU khi đã đăng xuất khỏi WeDo, và bọc lại: người đăng nhập bằng email
-      chưa hề chạm tới Google, và trục trặc phía Google không được phép giữ
-      người dùng ở lại trong app.
-    */
-    try {
-      await signOutFromGoogle();
-    } catch {
-      // Không có phiên Google, hoặc Google trục trặc. Người dùng đã ra khỏi app rồi.
+        Làm SAU khi đã đăng xuất khỏi WeDo, và bọc lại: người đăng nhập bằng email
+        chưa hề chạm tới Google, và trục trặc phía Google không được phép giữ
+        người dùng ở lại trong app.
+      */
+      try {
+        await signOutFromGoogle();
+      } catch {
+        // Không có phiên Google, hoặc Google trục trặc. Người dùng đã ra khỏi app rồi.
+      }
     }
   }, []);
 
@@ -137,10 +155,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           `status === 0` là lỗi kết nối do tầng API đặt ra. Lúc đó giữ nguyên
           token và khôi phục hồ sơ đã lưu, để người dùng vào được app và đọc dữ
           liệu ngoại tuyến.
-        */
-        const matMang = err instanceof ApiError && err.status === 0;
 
-        if (matMang) {
+          MÁY CHỦ TRỤC TRẶC CŨNG VẬY. 5xx — App Service khởi động lại, đang
+          deploy, quá tải — là lỗi của máy chủ chứ không phải phiên hết hạn. Xoá
+          token lúc đó là đăng xuất tất cả những ai mở app đúng lúc máy chủ sập.
+        */
+        const loiTamThoi = err instanceof ApiError && (err.status === 0 || err.status >= 500);
+
+        if (loiTamThoi) {
           const luuSan = await loadUserProfile();
           if (cancelled) return;
 

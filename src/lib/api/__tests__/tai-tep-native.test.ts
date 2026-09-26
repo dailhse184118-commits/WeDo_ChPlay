@@ -16,7 +16,8 @@ jest.mock('expo-file-system', () => {
 
 jest.mock('../client', () => {
   const thuc = jest.requireActual('../client');
-  return { ApiError: thuc.ApiError, baseUrl: thuc.baseUrl, apiRequest: jest.fn() };
+  // Giữ mọi hàm thật, chỉ thay `apiRequest`: liệt kê từng hàm thì thêm hàm mới là vỡ mock.
+  return { ...thuc, apiRequest: jest.fn() };
 });
 
 jest.mock('../../auth/token-storage', () => ({

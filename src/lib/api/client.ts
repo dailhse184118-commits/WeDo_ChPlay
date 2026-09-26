@@ -125,7 +125,31 @@ function extractMessage(payload: unknown, status: number): string {
     if (typeof message === 'string' && message.trim()) return message;
     if (Array.isArray(message) && message.length) return message.join('. ');
   }
+  if (status >= 500) return `Máy chủ đang gặp sự cố (mã ${status}). Thử lại sau ít phút.`;
   return `Máy chủ trả lỗi ${status}.`;
+}
+
+const LOI_MAT_MANG = 'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.';
+
+function moTaLoi(loi: unknown): string {
+  return loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi);
+}
+
+/**
+ * Parse thân phản hồi. Thân rỗng hoặc không phải JSON đều cho `undefined`
+ * thay vì ném lỗi.
+ *
+ * Máy chủ không phải lúc nào cũng trả JSON: lúc App Service khởi động lại hay
+ * quá tải, gateway trả trang lỗi HTML (502, 503). `JSON.parse` trần ném
+ * `JSON Parse error: Unexpected character: <` và câu đó hiện thẳng lên màn hình.
+ */
+export function docThanPhanHoi(raw: string): unknown {
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -142,21 +166,33 @@ async function giaHanPhien(): Promise<string | null> {
   const refreshToken = await loadRefreshToken();
   if (!refreshToken) return null;
 
-  const response = await fetch(`${baseUrl()}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl()}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch (loi) {
+    /*
+      Mất mạng giữa lúc gia hạn KHÔNG phải là hết phiên. Trước đây lỗi này lọt ra
+      ngoài dưới dạng `TypeError` trần, auth-context không nhận ra là lỗi mạng nên
+      xoá token và đá người dùng về màn đăng nhập.
+    */
+    throw new ApiError(LOI_MAT_MANG, 0, undefined, moTaLoi(loi));
+  }
 
+  // Máy chủ trục trặc cũng không phải là hết phiên: báo lỗi, giữ token cho lần sau.
+  if (response.status >= 500) {
+    throw new ApiError(extractMessage(undefined, response.status), response.status);
+  }
   if (!response.ok) return null;
 
   // Đọc bằng `text()` rồi tự parse, giống hệt phần còn lại của tệp này.
-  const raw = await response.text();
-  const payload = (raw ? JSON.parse(raw) : {}) as {
-    accessToken?: string;
-    refreshToken?: string;
-  };
-  if (!payload.accessToken || !payload.refreshToken) return null;
+  const payload = docThanPhanHoi(await response.text()) as
+    | { accessToken?: string; refreshToken?: string }
+    | undefined;
+  if (!payload?.accessToken || !payload.refreshToken) return null;
 
   // Lưu cả cặp: token cũ đã bị máy chủ huỷ ngay khi đổi.
   await saveToken(payload.accessToken);
@@ -172,9 +208,21 @@ function giaHanMotLuot(): Promise<string | null> {
   return dangGiaHan;
 }
 
-export async function apiRequest<T = unknown>(
+export function apiRequest<T = unknown>(
   path: string,
   options: ApiRequestOptions = {},
+): Promise<T> {
+  return goiApi<T>(path, options);
+}
+
+/**
+ * `tokenDaGiaHan`: có mặt nghĩa là đây là lượt gửi lại ngay sau khi gia hạn,
+ * mang token vừa nhận. Lượt này không gia hạn thêm lần nữa.
+ */
+async function goiApi<T>(
+  path: string,
+  options: ApiRequestOptions,
+  tokenDaGiaHan?: string,
 ): Promise<T> {
   const { method = 'GET', body, headers = {}, skipAuth = false } = options;
 
@@ -182,10 +230,13 @@ export async function apiRequest<T = unknown>(
   if (body !== undefined && !laFormData(body)) {
     requestHeaders['Content-Type'] = 'application/json';
   }
+  // Yêu cầu này có mang access token hay không. Xem chỗ gọi `unauthorizedHandlers`.
+  let coPhien = false;
   if (!skipAuth) {
-    const token = await loadToken();
+    const token = tokenDaGiaHan ?? (await loadToken());
     if (token) {
       requestHeaders.Authorization = `Bearer ${token}`;
+      coPhien = true;
     }
   }
 
@@ -209,16 +260,11 @@ export async function apiRequest<T = unknown>(
       PHẢI hứng lấy lỗi. `catch {` trơn vứt sạch câu lỗi của hệ điều hành, và
       mọi sự cố mạng đều trông y hệt nhau từ phía người sửa.
     */
-    throw new ApiError(
-      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
-      0,
-      undefined,
-      loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi),
-    );
+    throw new ApiError(LOI_MAT_MANG, 0, undefined, moTaLoi(loi));
   }
 
   const raw = await response.text();
-  const payload = raw ? (JSON.parse(raw) as unknown) : undefined;
+  const payload = docThanPhanHoi(raw);
 
   if (!response.ok) {
     /*
@@ -229,24 +275,34 @@ export async function apiRequest<T = unknown>(
       là sai mật khẩu, gia hạn không giúp được gì mà còn dễ thành vòng lặp.
     */
     if (response.status === 401 && !skipAuth) {
-      const tokenMoi = await giaHanMotLuot();
-
-      if (tokenMoi) {
-        return apiRequest<T>(path, { ...options, skipAuth: true, headers: {
-          ...headers,
-          Authorization: `Bearer ${tokenMoi}`,
-        } });
+      if (!tokenDaGiaHan) {
+        const tokenMoi = await giaHanMotLuot();
+        if (tokenMoi) return goiApi<T>(path, options, tokenMoi);
       }
-    }
 
-    if (response.status === 401) {
-      unauthorizedHandlers.forEach((handler) => handler());
+      /*
+        CHỈ báo hết phiên khi yêu cầu có mang token. Yêu cầu không token bị 401
+        là chuyện đương nhiên của người chưa đăng nhập, không có phiên nào để hết.
+
+        Trước đây mọi 401 đều gọi handler, kể cả sai mật khẩu. Handler là
+        `signOut`, mà `signOut` lại gọi API gỡ push token — không token thì 401
+        — lại gọi handler... Một lần nhập sai mật khẩu sinh ra chuỗi yêu cầu
+        không bao giờ dừng: 56 lượt trong 300ms khi đo bằng test.
+      */
+      if (coPhien) {
+        unauthorizedHandlers.forEach((handler) => handler());
+      }
     }
     throw new ApiError(
       extractMessage(payload, response.status),
       response.status,
       extractCode(payload),
     );
+  }
+
+  // Thành công mà thân không đọc được thì báo lỗi, đừng trả `undefined` như thể không có gì.
+  if (raw && payload === undefined) {
+    throw new ApiError('Máy chủ trả về dữ liệu không đọc được. Thử lại sau.', response.status);
   }
 
   return payload as T;
