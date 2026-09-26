@@ -39,6 +39,45 @@ describe('đường dẫn pháp lý', () => {
     expect(PRIVACY_URL).toMatch(/^https:\/\/.+privacy\.html$/);
   });
 
+  /*
+    Trước đây thiếu `EXPO_PUBLIC_PRIVACY_URL` trên EAS là dòng chính sách biến
+    mất khỏi app — mà Apple bắt buộc có (Guideline 5.1.1). Giờ phải rơi về trang
+    chính thức, kể cả khi biến bị khai rỗng.
+  */
+  it.each([undefined, '', '   '])(
+    'thiếu biến EXPO_PUBLIC_PRIVACY_URL (%p) thì dùng trang chính thức',
+    (giaTri) => {
+      const cu = process.env.EXPO_PUBLIC_PRIVACY_URL;
+      if (giaTri === undefined) delete process.env.EXPO_PUBLIC_PRIVACY_URL;
+      else process.env.EXPO_PUBLIC_PRIVACY_URL = giaTri;
+
+      try {
+        jest.isolateModules(() => {
+          const { PRIVACY_URL: duongDan } = require('../legal-links') as typeof import('../legal-links');
+          expect(duongDan).toBe('https://wedofpt.com.vn/privacy.html');
+        });
+      } finally {
+        if (cu === undefined) delete process.env.EXPO_PUBLIC_PRIVACY_URL;
+        else process.env.EXPO_PUBLIC_PRIVACY_URL = cu;
+      }
+    },
+  );
+
+  it('có biến EXPO_PUBLIC_PRIVACY_URL thì theo biến', () => {
+    const cu = process.env.EXPO_PUBLIC_PRIVACY_URL;
+    process.env.EXPO_PUBLIC_PRIVACY_URL = 'https://thu.example.vn/privacy.html';
+
+    try {
+      jest.isolateModules(() => {
+        const { PRIVACY_URL: duongDan } = require('../legal-links') as typeof import('../legal-links');
+        expect(duongDan).toBe('https://thu.example.vn/privacy.html');
+      });
+    } finally {
+      if (cu === undefined) delete process.env.EXPO_PUBLIC_PRIVACY_URL;
+      else process.env.EXPO_PUBLIC_PRIVACY_URL = cu;
+    }
+  });
+
   it('mở trong trình duyệt nhúng để người dùng quay lại đúng chỗ đang gõ', async () => {
     mockedMoTrang.mockResolvedValue({ type: 'opened' } as never);
 

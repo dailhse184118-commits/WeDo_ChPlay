@@ -139,7 +139,21 @@ describe('công tắc Cho phép dùng AI', () => {
 });
 
 describe('đường pháp lý và hỗ trợ', () => {
-  it('Điều khoản sử dụng và Chính sách bảo mật mở đúng trang, luôn hiện', async () => {
+  /*
+    Apple đòi đường tới chính sách, điều khoản và cách liên hệ phải dễ tìm ngay
+    trong app (Guideline 1.2, 1.5, 5.1.1). Bốn dòng này luôn hiện, không phụ
+    thuộc biến môi trường nào.
+  */
+  it('luôn có đủ bốn dòng: quyền riêng tư, điều khoản, hỗ trợ, địa chỉ liên hệ', async () => {
+    const man = await renderScreen(<ManTaiKhoan />);
+
+    expect(man.getByText('Chính sách quyền riêng tư')).toBeTruthy();
+    expect(man.getByText('Điều khoản sử dụng')).toBeTruthy();
+    expect(man.getByText('Hỗ trợ')).toBeTruthy();
+    expect(man.getByText('Liên hệ: wedosupport6886@gmail.com')).toBeTruthy();
+  });
+
+  it('Điều khoản sử dụng và Chính sách quyền riêng tư mở đúng trang', async () => {
     const man = await renderScreen(<ManTaiKhoan />);
 
     await fireEvent.press(man.getByTestId('account-terms'));
@@ -149,11 +163,18 @@ describe('đường pháp lý và hỗ trợ', () => {
     expect(mockedMoTrang.mock.calls[1][0]).toMatch(/privacy\.html$/);
   });
 
-  it('Liên hệ hỗ trợ hiện email và mở ứng dụng thư', async () => {
+  it('Hỗ trợ mở trang hỗ trợ', async () => {
+    const man = await renderScreen(<ManTaiKhoan />);
+
+    await fireEvent.press(man.getByTestId('account-help'));
+
+    expect(mockedMoTrang).toHaveBeenCalledWith('https://wedofpt.com.vn/ho-tro.html');
+  });
+
+  it('dòng liên hệ ghi rõ email và mở ứng dụng thư', async () => {
     const moNgoai = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     const man = await renderScreen(<ManTaiKhoan />);
 
-    expect(man.getByText('wedosupport6886@gmail.com')).toBeTruthy();
     await fireEvent.press(man.getByTestId('account-support'));
 
     expect(moNgoai).toHaveBeenCalledWith('mailto:wedosupport6886@gmail.com');

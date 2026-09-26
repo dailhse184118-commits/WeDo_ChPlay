@@ -250,7 +250,7 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/notification-settings')}
           />
           {/*
-            Đặt ngay dưới Cài đặt thông báo, trên Chính sách bảo mật: người thử
+            Đặt ngay dưới Cài đặt thông báo, trên các đường pháp lý: người thử
             nghiệm cần một đường báo lỗi từ trong app, không phải nhắn tin riêng.
           */}
           <MenuRow
@@ -319,28 +319,38 @@ export default function AccountScreen() {
             testID="account-privacy"
             icon="shield-checkmark-outline"
             tone="done"
-            label="Chính sách bảo mật"
+            label="Chính sách quyền riêng tư"
             hint="Mở trong trình duyệt"
             onPress={() => void openLegalLink(PRIVACY_URL)}
           />
           {/*
             App có nội dung người dùng tự đăng phải công bố cách liên hệ ngay
-            trong app (Guideline 1.2, 1.5). Mở thư trước; máy không có ứng dụng
-            thư thì mở trang hỗ trợ.
+            trong app (Guideline 1.2, 1.5): một trang hỗ trợ, và một địa chỉ thư
+            ghi rõ ra chứ không giấu sau nút bấm.
           */}
           <MenuRow
-            testID="account-support"
+            testID="account-help"
             icon="help-buoy-outline"
             tone="info"
-            label="Liên hệ hỗ trợ"
-            hint={SUPPORT_EMAIL}
+            label="Hỗ trợ"
+            hint="Câu hỏi thường gặp, cách báo cáo nội dung xấu"
+            onPress={() => void openLegalLink(SUPPORT_URL)}
+          />
+          {/* Mở thư trước; máy không có ứng dụng thư thì mở trang hỗ trợ. */}
+          <MenuRow
+            testID="account-support"
+            icon="mail-outline"
+            tone="info"
+            label={`Liên hệ: ${SUPPORT_EMAIL}`}
+            hint="Gửi thư cho WeDo"
             onPress={() =>
               void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openLegalLink(SUPPORT_URL))
             }
           />
           {/*
-            Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
-            chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.
+            Google Play và App Store đều bắt buộc có đường xoá tài khoản NGAY TRONG
+            APP, không được chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ
+            người dùng tìm.
           */}
           <MenuRow
             testID="account-delete"
