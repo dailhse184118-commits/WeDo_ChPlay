@@ -24,6 +24,9 @@ const CHAT_LUONG = 0.7;
  * chục MB dữ liệu di động mỗi lần mở hội thoại. Nên phải thu về
  * `CANH_ANH_DAI_DIEN` trước khi mã hoá — còn chừng hai chục KB.
  *
+ * Bước dựng lại rồi lưu JPEG này lo luôn ảnh HEIC của iPhone: web và Android
+ * không hiện được HEIC, nhưng ra khỏi đây thì ảnh nào cũng là JPEG.
+ *
  * Trả `null` khi người dùng bấm huỷ: huỷ không phải lỗi.
  */
 export async function chonAnhDaiDien(): Promise<string | null> {
