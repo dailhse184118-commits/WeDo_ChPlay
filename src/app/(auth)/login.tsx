@@ -10,7 +10,9 @@ import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GoogleButton } from '../../components/ui/GoogleButton';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
+import { docLyDoHetPhien } from '../../lib/api/client';
 import { useAuth } from '../../lib/auth/auth-context';
+import { coDangNhapGoogle } from '../../lib/auth/google-signin';
 import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
 export default function LoginScreen() {
@@ -19,7 +21,11 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  /*
+    Bị đưa ra khỏi app vì tài khoản bị khoá thì màn này là thứ đầu tiên người
+    dùng thấy. Không nói lý do thì họ tưởng app lỗi rồi cứ đăng nhập lại mãi.
+  */
+  const [error, setError] = useState(() => docLyDoHetPhien() ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
@@ -108,6 +114,8 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 placeholder="ban@example.com"
                 keyboardType="email-address"
+                textContentType="username"
+                autoComplete="email"
               />
               <TextField
                 testID="password"
@@ -116,6 +124,8 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 placeholder="Ít nhất 6 ký tự"
                 secureTextEntry
+                textContentType="password"
+                autoComplete="current-password"
               />
 
               <Button
@@ -126,18 +136,23 @@ export default function LoginScreen() {
                 disabled={googleSubmitting}
               />
 
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerLabel}>hoặc</Text>
-                <View style={styles.dividerLine} />
-              </View>
+              {/* iPhone chỉ có email và mật khẩu — xem `coDangNhapGoogle`. */}
+              {coDangNhapGoogle() ? (
+                <>
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerLabel}>hoặc</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
 
-              <GoogleButton
-                testID="google"
-                onPress={handleGoogle}
-                loading={googleSubmitting}
-                disabled={submitting}
-              />
+                  <GoogleButton
+                    testID="google"
+                    onPress={handleGoogle}
+                    loading={googleSubmitting}
+                    disabled={submitting}
+                  />
+                </>
+              ) : null}
             </Card>
 
             <Link href="/forgot-password" style={styles.link}>

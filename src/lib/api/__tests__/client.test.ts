@@ -2,6 +2,7 @@ import {
   apiRequest,
   ApiError,
   batDauPhien,
+  docLyDoHetPhien,
   giaHanMotLuot,
   ketThucPhien,
   onUnauthorized,
@@ -407,5 +408,86 @@ describe('gia hạn trong lúc đăng xuất', () => {
     mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
 
     await expect(giaHanMotLuot()).rejects.toMatchObject({ status: 0 });
+  });
+});
+
+/*
+  Tài khoản bị đình chỉ giữa chừng: mọi lượt gọi nhận 401, gia hạn nhận 403, cả
+  hai kèm mã ACCOUNT_SUSPENDED. Người dùng bị đưa ra màn đăng nhập mà không bấm
+  gì — màn đó phải nói được vì sao.
+*/
+describe('lý do phiên bị cắt vì tài khoản bị khoá', () => {
+  const CAU_BI_KHOA =
+    'Tài khoản của bạn đã bị khoá vì vi phạm Điều khoản sử dụng. Liên hệ wedosupport6886@gmail.com nếu bạn cho rằng đây là nhầm lẫn.';
+  const BI_KHOA = { statusCode: 403, code: 'ACCOUNT_SUSPENDED', message: CAU_BI_KHOA };
+
+  beforeEach(() => {
+    batDauPhien();
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
+    mockFetch.mockReset();
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+    mockedLoadToken.mockResolvedValue('tok-cu');
+    mockedLoadRefresh.mockResolvedValue('rt-cu');
+  });
+
+  it('gia hạn bị từ chối vì tài khoản bị khoá: giữ câu máy chủ, TRƯỚC khi báo 401', async () => {
+    let lyDoLucBao: string | null = 'chưa gọi';
+    const huy = onUnauthorized(() => {
+      lyDoLucBao = docLyDoHetPhien();
+    });
+    mockFetchOnce({ ...BI_KHOA, statusCode: 401 }, { status: 401 });
+    mockFetchOnce(BI_KHOA, { status: 403 });
+
+    await expect(apiRequest('/users/me')).rejects.toMatchObject({ status: 401 });
+
+    expect(docLyDoHetPhien()).toBe(CAU_BI_KHOA);
+    // Màn đăng nhập dựng ngay khi 401 được báo, nên lý do phải có sẵn lúc đó.
+    expect(lyDoLucBao).toBe(CAU_BI_KHOA);
+    huy();
+  });
+
+  it('chỉ gia hạn (socket bị ngắt) cũng giữ được lý do', async () => {
+    mockFetchOnce(BI_KHOA, { status: 403 });
+
+    await expect(giaHanMotLuot()).resolves.toBeNull();
+    expect(docLyDoHetPhien()).toBe(CAU_BI_KHOA);
+  });
+
+  it('đọc bao nhiêu lần cũng còn; phiên mới bắt đầu thì xoá', async () => {
+    mockFetchOnce(BI_KHOA, { status: 403 });
+    await giaHanMotLuot();
+
+    expect(docLyDoHetPhien()).toBe(CAU_BI_KHOA);
+    expect(docLyDoHetPhien()).toBe(CAU_BI_KHOA);
+
+    batDauPhien();
+    expect(docLyDoHetPhien()).toBeNull();
+  });
+
+  it('refresh token hết hạn bình thường thì không bịa ra lý do nào', async () => {
+    mockFetchOnce({ message: 'Unauthorized' }, { status: 401 });
+    mockFetchOnce({ message: 'Phiên đăng nhập không hợp lệ' }, { status: 403 });
+
+    await expect(apiRequest('/users/me')).rejects.toThrow(ApiError);
+    expect(docLyDoHetPhien()).toBeNull();
+  });
+
+  it('thân lỗi 403 không phải JSON thì bỏ qua êm, vẫn là hết phiên', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      text: async () => '<html>Forbidden</html>',
+    });
+
+    await expect(giaHanMotLuot()).resolves.toBeNull();
+    expect(docLyDoHetPhien()).toBeNull();
+  });
+
+  it('đăng nhập bị từ chối vì bị khoá: câu lỗi là câu máy chủ, kèm mã', async () => {
+    mockFetchOnce(BI_KHOA, { status: 403 });
+
+    await expect(
+      apiRequest('/auth/login', { method: 'POST', body: {}, skipAuth: true }),
+    ).rejects.toMatchObject({ status: 403, code: 'ACCOUNT_SUSPENDED', message: CAU_BI_KHOA });
   });
 });
