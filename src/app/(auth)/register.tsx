@@ -10,6 +10,7 @@ import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ODongYDieuKhoan } from '../../components/auth/ODongYDieuKhoan';
+import { AppleButton } from '../../components/ui/AppleButton';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
@@ -17,13 +18,16 @@ import { GoogleButton } from '../../components/ui/GoogleButton';
 import { KhungCuonBieuMau, khungCuonTuLoBanPhim } from '../../components/ui/KhungCuonBieuMau';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
+import { useCoDangNhapApple } from '../../lib/auth/apple-signin';
 import { useAuth } from '../../lib/auth/auth-context';
 import { coDangNhapGoogle } from '../../lib/auth/google-signin';
 import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
 export default function RegisterScreen() {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
+  const coApple = useCoDangNhapApple();
+  const coGoogle = coDangNhapGoogle();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,6 +37,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [appleSubmitting, setAppleSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     // Nút đã tắt khi chưa đánh dấu; chốt thêm ở đây cho chắc.
@@ -96,6 +101,23 @@ export default function RegisterScreen() {
       setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại. Vui lòng thử lại.');
     } finally {
       setGoogleSubmitting(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setError('');
+    setAppleSubmitting(true);
+    try {
+      /*
+        Không hộp thoại chào mừng, cùng lý do như Google: `/auth/apple` vừa tạo
+        tài khoản mới vừa nhận lại tài khoản cũ. Cũng không hỏi lại họ tên hay
+        email — Apple đã đưa rồi (hoặc người dùng đã chọn không đưa).
+      */
+      await signInWithApple();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đăng nhập Apple thất bại. Vui lòng thử lại.');
+    } finally {
+      setAppleSubmitting(false);
     }
   };
 
@@ -182,17 +204,19 @@ export default function RegisterScreen() {
                 label="Đăng ký"
                 onPress={handleSubmit}
                 loading={submitting}
-                disabled={googleSubmitting || !dongY}
+                disabled={googleSubmitting || appleSubmitting || !dongY}
               />
 
               {/*
-                iPhone chỉ có email và mật khẩu — xem `coDangNhapGoogle`.
+                Apple chỉ có trên iPhone; Google có trên Android, và trên iPhone
+                khi đã khai client iOS — xem `coDangNhapGoogle`. Apple đứng trước
+                và cùng cỡ với Google (Guideline 4.8).
 
-                Nút Google không đòi ô trên: người vào bằng Google chưa đồng ý
-                điều khoản sẽ gặp màn đồng ý một lần ngay sau khi vào
+                Hai nút này không đòi ô trên: người vào bằng Apple hay Google mà
+                chưa đồng ý điều khoản sẽ gặp màn đồng ý một lần ngay sau khi vào
                 (`CongDieuKhoan`), nên không ai lọt qua mà chưa đồng ý.
               */}
-              {coDangNhapGoogle() ? (
+              {coApple || coGoogle ? (
                 <>
                   <View style={styles.divider}>
                     <View style={styles.dividerLine} />
@@ -200,12 +224,25 @@ export default function RegisterScreen() {
                     <View style={styles.dividerLine} />
                   </View>
 
-                  <GoogleButton
-                    testID="google"
-                    onPress={handleGoogle}
-                    loading={googleSubmitting}
-                    disabled={submitting}
-                  />
+                  <View style={styles.nutKhac}>
+                    {coApple ? (
+                      <AppleButton
+                        testID="apple"
+                        onPress={handleApple}
+                        loading={appleSubmitting}
+                        disabled={submitting || googleSubmitting}
+                      />
+                    ) : null}
+
+                    {coGoogle ? (
+                      <GoogleButton
+                        testID="google"
+                        onPress={handleGoogle}
+                        loading={googleSubmitting}
+                        disabled={submitting || appleSubmitting}
+                      />
+                    ) : null}
+                  </View>
                 </>
               ) : null}
             </Card>
@@ -249,6 +286,7 @@ const styles = StyleSheet.create({
   },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerLabel: { color: colors.textMuted, fontSize: fontSize.sm },
+  nutKhac: { gap: spacing.sm },
   link: {
     marginTop: spacing.lg,
     textAlign: 'center',
