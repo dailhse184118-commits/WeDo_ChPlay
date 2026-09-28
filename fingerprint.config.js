@@ -13,5 +13,9 @@ const { SourceSkips } = require('expo/fingerprint');
 
 /** @type {import('expo/fingerprint').Config} */
 module.exports = {
-  sourceSkips: SourceSkips.ExpoConfigVersions,
+  // PHẢI giữ lại bước bỏ qua mặc định (PackageJsonAndroidAndIosScriptsIfNotContainRun):
+  // Prebuild trên EAS đổi script `android`/`ios` trong package.json thành `expo run:*`,
+  // thiếu nó là vân tay máy và vân tay EAS lệch nhau, build dừng ở Configure expo-updates.
+  sourceSkips:
+    SourceSkips.ExpoConfigVersions | SourceSkips.PackageJsonAndroidAndIosScriptsIfNotContainRun,
 };
