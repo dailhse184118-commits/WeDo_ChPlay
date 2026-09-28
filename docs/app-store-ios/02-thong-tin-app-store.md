@@ -3,7 +3,7 @@
 Tài liệu này gom mọi trường bạn phải điền trong App Store Connect ở hai chỗ:
 
 - **App Information**: thông tin chung của ứng dụng (tên, phụ đề, danh mục, độ tuổi, quyền nội dung, đường dẫn Chính sách quyền riêng tư).
-- **Trang phiên bản iOS 1.0.13**: văn bản quảng bá, mô tả, từ khoá, đường dẫn hỗ trợ, bản quyền, giá và phạm vi phát hành, tuân thủ xuất khẩu.
+- **Trang phiên bản iOS 1.0.14**: văn bản quảng bá, mô tả, từ khoá, đường dẫn hỗ trợ, bản quyền, giá và phạm vi phát hành, tuân thủ xuất khẩu.
 
 Các phần khác nằm ở tài liệu riêng trong thư mục `docs\app-store-ios`:
 
@@ -16,7 +16,7 @@ Các phần khác nằm ở tài liệu riêng trong thư mục `docs\app-store-
 **Cách đọc:**
 
 - Chữ trong khung `text` là chữ để dán thẳng vào App Store Connect.
-- Mỗi khung đều ghi số ký tự. Khung nào Apple tính theo byte thì ghi thêm số byte. Tôi đếm bằng Python (`len()` trên chuỗi đã chuẩn hoá NFC), ngày 26/09/2026. Một chữ tiếng Việt có dấu tính là 1 ký tự.
+- Mỗi khung đều ghi số ký tự. Khung nào Apple tính theo byte thì ghi thêm số byte. Tôi đếm bằng Python (`len()` trên chuỗi đã chuẩn hoá NFC), ngày 26/09/2026. Mô tả và mục Có gì mới đếm lại ngày 28/09/2026. Một chữ tiếng Việt có dấu tính là 1 ký tự.
 - Hai trường Apple giới hạn theo **byte**, không theo ký tự: **Keywords (100 byte)** và **App Review Notes (4000 byte)**. Chữ có dấu chiếm 2 hoặc 3 byte (ví dụ "á" 2 byte, "ọ" 3 byte). Các trường còn lại tính theo ký tự.
 - Chỗ nào dựa trên quyết định chưa chốt đều ghi **⚠ Giả định:** để bạn sửa.
 
@@ -37,13 +37,13 @@ Các phần khác nằm ở tài liệu riêng trong thư mục `docs\app-store-
 | Privacy Policy URL | App Information | `https://wedofpt.com.vn/privacy.html` | — | — |
 | License Agreement | App Information | EULA chuẩn của Apple (để mặc định) | — | — |
 | Promotional Text | Trang phiên bản | mục 6 | 170 ký tự | 159 |
-| Description | Trang phiên bản | mục 7 | 4000 ký tự | 2780 |
+| Description | Trang phiên bản | mục 7 | 4000 ký tự | 2775 |
 | Keywords | Trang phiên bản | mục 8 | 100 byte | 100 byte |
-| Support URL | Trang phiên bản | `https://wedofpt.com.vn/ho-tro.html` (trang đã có trên nhánh `ios-web`, **chưa đăng**) | — | — |
+| Support URL | Trang phiên bản | `https://wedofpt.com.vn/ho-tro.html` (đã đăng) | — | — |
 | Marketing URL | Trang phiên bản | để trống ở bản này | — | — |
-| Version | Trang phiên bản | `1.0.13` | — | — |
+| Version | Trang phiên bản | `1.0.14` | — | — |
 | Copyright | Trang phiên bản | `2026 Lê Hữu Đại` | — | — |
-| What's New | Trang phiên bản | không hiện ở bản đầu tiên (mục 9) | 4000 ký tự | 345 |
+| What's New | Trang phiên bản | không hiện ở bản đầu tiên (mục 9) | 4000 ký tự | 364 |
 | Price | Pricing and Availability | Free | — | — |
 | Availability | Pricing and Availability | Chỉ Việt Nam | — | — |
 | Export compliance | Info.plist | `ITSAppUsesNonExemptEncryption` = NO | — | — |
@@ -52,10 +52,10 @@ Các phần khác nằm ở tài liệu riêng trong thư mục `docs\app-store-
 
 ## 2. Các quyết định và giả định dùng trong tài liệu
 
-Đã chốt ngày 26/09/2026:
+Đã chốt ngày 26/09/2026, sửa ngày 28/09/2026:
 
-- **Đăng nhập trên iPhone: chỉ email và mật khẩu.** Nút Google bị ẩn trên iPhone, còn Android và web giữ Google. App iPhone chỉ dùng hệ tài khoản riêng của WeDo, nên Guideline 4.8 không áp dụng, và bản này **không có Đăng nhập bằng Apple**. Mô tả và mục "Có gì mới" chỉ nói đăng nhập bằng email.
-- **Báo cáo, chặn và bộ lọc từ ngữ** cho tin nhắn và tên hiển thị có trong bản 1.0.13 (Guideline 1.2). Đã làm trên nhánh iOS (`08-sua-code-truoc-khi-nop.md`, IOS-03, IOS-04). Bộ lọc thay từ phản cảm bằng `***`. Mô tả có nhắc báo cáo và chặn.
+- **Đăng nhập trên iPhone: Apple, Google, hoặc email và mật khẩu.** Màn Đăng nhập và Đăng ký có nút "Tiếp tục với Apple" (nút của chính Apple, chỉ có trên iPhone) và "Tiếp tục với Google". Android và web có email và Google, không có nút Apple. App iPhone có đăng nhập Google nên Guideline 4.8 áp dụng, và Sign in with Apple đáp ứng điều đó (`08`, SAU-01, SAU-02, SAU-03). Mô tả và mục "Có gì mới" nói đủ ba cách.
+- **Báo cáo, chặn và bộ lọc từ ngữ** cho tin nhắn và tên hiển thị có trong bản 1.0.14 (Guideline 1.2). Đã làm trên nhánh iOS (`08-sua-code-truoc-khi-nop.md`, IOS-03, IOS-04). Bộ lọc thay từ phản cảm bằng `***`. Mô tả có nhắc báo cáo và chặn.
 - **Tên trang chính sách là "Chính sách quyền riêng tư"** ở mọi nơi.
 - **Tuổi tối thiểu 18** (mục 14). Chính sách, điều khoản và trang hỗ trợ ghi cùng số.
 - **Email hỗ trợ: `wedosupport6886@gmail.com`.**
@@ -66,10 +66,10 @@ Còn là giả định:
 
 - Đã làm: **hộp thoại xin đồng ý trước lần dùng AI đầu tiên** (Guideline 5.1.2(i), `08`, IOS-08). Mô tả có nhắc tới nó.
 - ⚠ Giả định: ứng dụng **không bán gì trong app** và **không có lời mời mua ở nơi khác** (Guideline 3.1.3(f)). Ba chỗ cũ đã sửa trên nhánh `ios`: nút "Xem đầy đủ trên web" ở Bảng đóng góp đã ẩn trên iPhone, thông báo gói và thanh toán đã ẩn trên iPhone (máy chủ mới cũng bỏ câu "Gia hạn sớm…"), và nút cập nhật trên iPhone mở App Store thay cho CH Play.
-- ⚠ Giả định: bạn đăng ký Apple Developer Program **dưới dạng cá nhân**. Tên người bán trên App Store sẽ là **Lê Hữu Đại**. Phí 99 USD mỗi năm (Apple có thể thu theo giá tiền địa phương).
+- Đã xong: tài khoản Apple Developer Program **dạng cá nhân** đã được duyệt (28/09/2026), Team ID `LR53W8386S`. Tên người bán trên App Store là **Lê Hữu Đại**. Phí 99 USD mỗi năm (Apple có thể thu theo giá tiền địa phương).
 - ⚠ Giả định: bản đầu **miễn phí**, **chỉ cho iPhone** (`supportsTablet: false`), **ngôn ngữ chính tiếng Việt**. Việc chỉ phát hành ở Việt Nam thì đã chốt.
-- ⚠ Giả định: Bundle ID `vn.wedo.app`, phiên bản `1.0.13`, số build iOS đầu tiên là `1`.
-- Trang hỗ trợ nằm ở `https://wedofpt.com.vn/ho-tro.html` và trang điều khoản ở `https://wedofpt.com.vn/dieu-khoan.html`. Cả hai đã có trên nhánh `ios-web` (commit `1f6e813`, `f6052b3`), app đã trỏ tới đúng hai địa chỉ này, nhưng **chưa đăng**: hôm nay hai địa chỉ còn trả 404. Đăng theo `08`, Bước B.
+- Đã chốt: Bundle ID `vn.wedo.app`, phiên bản `1.0.14`. Build iOS mới nhất là `3`, build đầu tiên có nút Apple và Google.
+- Trang hỗ trợ nằm ở `https://wedofpt.com.vn/ho-tro.html` và trang điều khoản ở `https://wedofpt.com.vn/dieu-khoan.html`. App trỏ tới đúng hai địa chỉ này. Web đã lên production ngày 28/09/2026 và hai trang trả 200.
 
 ---
 
@@ -86,7 +86,7 @@ Vào App Store Connect → Apps → nút **+** → **New App**, rồi điền:
 | SKU | `wedo-ios` | Mã nội bộ, khách không thấy. Không đổi được sau này. |
 | User Access | Full Access | |
 
-**Nên tạo bản ghi bằng tay trước khi chạy `eas submit`.** Tệp `eas.json` hiện có `"submit": { "production": {} }`, chưa có `ascAppId`. Theo tài liệu EAS, khi thiếu `ascAppId` thì EAS tự tạo bản ghi, lấy tên từ `expo.name` ("WeDo") và ngôn ngữ mặc định `en-US`. Tên "WeDo" đã có người dùng (mục 4), nên bước tạo đó gần như chắc sẽ lỗi, còn nếu qua được thì ngôn ngữ chính lại sai. Tạo xong bằng tay thì chép **Apple ID** của ứng dụng (dãy số ở App Information) vào `submit.production.ios.ascAppId`.
+**Đã làm:** bản ghi đã tạo bằng tay. Apple ID của app là `6816878767`, và `eas.json` trên nhánh `ios` đã có `ascAppId` và `appleTeamId` (commit `962517f`). Đoạn dưới giữ lại để biết lý do. Theo tài liệu EAS, khi thiếu `ascAppId` thì EAS tự tạo bản ghi, lấy tên từ `expo.name` ("WeDo") và ngôn ngữ mặc định `en-US`. Tên "WeDo" đã có người dùng (mục 4), nên bước tạo đó gần như chắc sẽ lỗi, còn nếu qua được thì ngôn ngữ chính lại sai. Tạo xong bằng tay thì chép **Apple ID** của ứng dụng (dãy số ở App Information) vào `submit.production.ios.ascAppId`.
 
 ---
 
@@ -181,7 +181,7 @@ Mùa bài tập lớn đã tới. Tạo việc, đặt hạn chót, nộp bài v
 
 Mô tả trên App Store là chữ thuần, không có in đậm hay HTML. Tôi dùng dòng trống, tiêu đề viết hoa và dấu "•" để chia đoạn.
 
-**Bản khuyên dùng** — 2780 ký tự, 3712 byte, 54 dòng:
+**Bản khuyên dùng** — 2775 ký tự, 3702 byte, 54 dòng:
 
 ```text
 WeDo giúp nhóm sinh viên làm bài tập nhóm và dự án gọn gàng hơn. Chia việc rõ ràng, trò chuyện theo từng dự án, theo dõi hạn chót và cuộc họp, tất cả trên iPhone.
@@ -227,13 +227,13 @@ BẢNG ĐÓNG GÓP
 
 KHÔNG GIAN LÀM VIỆC VÀ TÀI KHOẢN
 • Tạo không gian làm việc cho nhóm và chuyển qua lại giữa các không gian.
-• Đăng nhập bằng email và mật khẩu.
+• Đăng nhập bằng Apple, Google hoặc email và mật khẩu.
 • Đổi ảnh đại diện, cập nhật họ tên, số điện thoại, ngày sinh.
 • Gửi góp ý cho WeDo ngay trong ứng dụng.
 • Tự xoá tài khoản ngay trong ứng dụng.
 
 DÙNG CÙNG BẢN WEB
-WeDo trên iPhone dùng chung tài khoản và dữ liệu với bản web WeDo. Dự án và thành viên dự án được tạo trên bản web, sau đó cả nhóm cùng làm việc trên điện thoại. Nếu bạn đăng ký bằng Google trên bản web, hãy bấm "Quên mật khẩu?" để đặt mật khẩu, rồi đăng nhập trên iPhone bằng email đó.
+WeDo trên iPhone dùng chung tài khoản và dữ liệu với bản web WeDo. Dự án và thành viên dự án được tạo trên bản web, sau đó cả nhóm cùng làm việc trên điện thoại. Nếu bạn đã đăng ký bằng Google trên bản web, hãy bấm "Tiếp tục với Google" để vào đúng tài khoản đó.
 
 Ứng dụng có giao diện tiếng Việt.
 
@@ -242,18 +242,19 @@ Cần hỗ trợ? Viết cho chúng tôi: wedosupport6886@gmail.com
 
 ### 7.1. Dòng nào phụ thuộc vào tính năng mới
 
-Hai tính năng dưới đây đã có trong mã trên nhánh `ios` và `ios-backend` (`08-sua-code-truoc-khi-nop.md`, mục Đã làm). Chúng chỉ chạy khi máy chủ mới đã lên production. Kiểm trên TestFlight trước khi dán. Apple từ chối mô tả nói tới thứ app không có (Guideline 2.3.1).
+Ba dòng dưới đây dựa vào tính năng mới trên nhánh `ios` và máy chủ `backend` (`08-sua-code-truoc-khi-nop.md`, mục Đã làm và SAU-01 … SAU-03). Máy chủ mới đã lên production. Kiểm trên TestFlight trước khi dán. Apple từ chối mô tả nói tới thứ app không có (Guideline 2.3.1).
 
 | Dòng trong mô tả | Phụ thuộc | Trạng thái |
 |---|---|---|
 | `• Trước lần dùng đầu tiên, WeDo nói rõ dữ liệu nào được gửi tới nhà cung cấp AI và chỉ gửi khi bạn đồng ý.` | Hộp thoại xin đồng ý dùng AI | Đã làm (`0585335`) |
 | `• Báo cáo tin nhắn không phù hợp và chặn người làm phiền bạn.` | Báo cáo và chặn | Đã làm (`05a0f15` và các commit liền đó) |
+| `• Đăng nhập bằng Apple, Google hoặc email và mật khẩu.` | Nút Apple và Google trên iPhone, `POST /auth/apple` | Đã làm (app `b016c3f`, `df0c255`; máy chủ `654db2a`). Đã thử trên iPhone thật ngày 28/09/2026 |
 
-Nếu bỏ cả hai dòng trên, mô tả còn 2611 ký tự, 52 dòng. Vẫn dưới 4000.
+Nếu bỏ hai dòng đầu của bảng, mô tả còn 2606 ký tự, 52 dòng. Vẫn dưới 4000. Dòng đăng nhập thì giữ, vì app có đủ ba cách.
 
-Lưu ý: theo Guideline 1.2, bạn **không thể** gửi bản iOS thiếu báo cáo và chặn. Guideline 5.1.2(i) cũng buộc phải xin phép rõ ràng trước khi gửi dữ liệu cá nhân cho AI bên thứ ba. Bảng trên chỉ để mô tả luôn khớp với app, không phải gợi ý bỏ các tính năng đó. Guideline 4.8 thì không áp dụng, vì app iPhone không có nút Google (đã làm, `08` IOS-02).
+Lưu ý: theo Guideline 1.2, bạn **không thể** gửi bản iOS thiếu báo cáo và chặn. Guideline 5.1.2(i) cũng buộc phải xin phép rõ ràng trước khi gửi dữ liệu cá nhân cho AI bên thứ ba. Bảng trên chỉ để mô tả luôn khớp với app, không phải gợi ý bỏ các tính năng đó. Guideline 4.8 áp dụng vì app iPhone có nút Google. App đáp ứng bằng nút "Tiếp tục với Apple" đặt trước nút Google, cùng cỡ (`08`, SAU-02).
 
-Câu "Nếu bạn đăng ký bằng Google trên bản web, hãy bấm "Quên mật khẩu?"…" đúng với mã hôm nay: máy chủ tìm tài khoản theo email, không phân biệt cách đăng ký, nên tài khoản tạo bằng Google đặt được mật khẩu (`08-sua-code-truoc-khi-nop.md`, IOS-02). Câu này chỉ nhắc Google như một cách đăng ký trên web, không nhắc nền tảng di động nào khác (Guideline 2.3.10).
+Câu "Nếu bạn đã đăng ký bằng Google trên bản web, hãy bấm "Tiếp tục với Google"…" đúng với mã hôm nay: máy chủ tìm tài khoản Google theo email, nên người đã đăng ký bằng Google trên web vào đúng tài khoản cũ (`BE src/auth/auth.service.ts`, `googleLogin`). Đã thử trên iPhone thật ngày 28/09/2026. Câu này nhắc Google như một cách đăng nhập, không nhắc nền tảng di động nào khác (Guideline 2.3.10).
 
 ### 7.2. Mỗi dòng dựa vào đâu trong mã
 
@@ -273,7 +274,7 @@ Tính năng mới đọc trên nhánh `ios` ở `D:\WeDo_ChPlay-ios`. Số dòng
 | Thông báo, nhắc trước 24 giờ và đúng giờ hạn, bốn công tắc thông báo, chạm để mở đúng màn | `src/app/account/notification-settings.tsx:29-58`, `src/lib/notifications/handler.ts:37-42,61-100`, `src/lib/notifications/scheduler.ts:19,44,52` |
 | Bảng đóng góp | `src/app/(tabs)/account/contributions.tsx:33-60` |
 | Không gian làm việc, hồ sơ, góp ý, xoá tài khoản | `src/components/workspace/*`, `src/app/account/profile.tsx`, `src/app/account/feedback.tsx`, `src/app/account/delete-account.tsx` |
-| Đăng nhập bằng email; tài khoản Google đặt mật khẩu qua "Quên mật khẩu?" | `src/app/(auth)/login.tsx`, `src/app/(auth)/forgot-password.tsx`; máy chủ `D:\WEDO_PC\BE_WEDO\src\auth\password-reset.service.ts:43`, `:123-128` |
+| Đăng nhập bằng Apple, Google hoặc email và mật khẩu | `src/app/(auth)/login.tsx`, `src/app/(auth)/register.tsx`, `src/components/ui/AppleButton.tsx`, `src/lib/auth/apple-signin.ts`, `src/lib/auth/google-signin.ts` (`coDangNhapGoogle`); máy chủ `D:\WEDO_PC\BE_WEDO-ios\src\auth\auth.service.ts` (`appleLogin`, `googleLogin`) |
 | Dự án và thành viên chỉ tạo trên web | `src/app/(tabs)/chat/index.tsx:365` |
 
 ### 7.3. Những gì cố ý không đưa vào
@@ -328,14 +329,14 @@ sinh viên,dự án,quản lý,giao,họp,lịch,nhắc,hạn,nhắn tin,todo,ta
 
 ## 9. Có gì mới (What's New in This Version, tối đa 4000 ký tự)
 
-**Quan trọng:** theo trang tham chiếu của Apple, **ô này không có ở phiên bản đầu tiên** của một app. Nó chỉ bắt buộc từ phiên bản thứ hai. Vì vậy khi gửi 1.0.13, bạn sẽ không thấy ô này.
+**Quan trọng:** theo trang tham chiếu của Apple, **ô này không có ở phiên bản đầu tiên** của một app. Nó chỉ bắt buộc từ phiên bản thứ hai. Vì vậy khi gửi 1.0.14, bạn sẽ không thấy ô này.
 
 Đoạn dưới đây vẫn dùng được ở hai chỗ:
 
-- Ô **What to Test** của TestFlight, khi mời người thử bản 1.0.13.
+- Ô **What to Test** của TestFlight, khi mời người thử bản 1.0.14.
 - Làm khung cho mục "Có gì mới" của bản sau (Guideline 2.3.12 yêu cầu nêu rõ tính năng mới).
 
-Bản đầu tiên — 345 ký tự, 7 dòng:
+Bản đầu tiên — 364 ký tự, 7 dòng:
 
 ```text
 Phiên bản đầu tiên của WeDo trên iPhone.
@@ -343,11 +344,11 @@ Phiên bản đầu tiên của WeDo trên iPhone.
 • AI gợi ý công việc từ tin nhắn, bạn xem lại trước khi tạo.
 • Giao việc, nhận việc, nộp bài và duyệt bài.
 • Cuộc họp, lịch hạn chót và thông báo nhắc hạn.
-• Đăng nhập bằng email, dùng chung tài khoản với bản web.
+• Đăng nhập bằng Apple, Google hoặc email, dùng chung tài khoản với bản web.
 • Báo cáo tin nhắn và chặn người dùng.
 ```
 
-Dòng cuối dựa vào Báo cáo và chặn (xem 7.1), đã có trong mã.
+Dòng cuối dựa vào báo cáo và chặn. Dòng áp chót dựa vào nút Apple và Google (xem 7.1). Cả hai đã có trong mã.
 
 ---
 
@@ -366,12 +367,12 @@ Dòng cuối dựa vào Báo cáo và chặn (xem 7.1), đã có trong mã.
 
 ## 11. Các đường dẫn (URL)
 
-Tôi kiểm bằng `curl` ngày 26/09/2026.
+Tôi kiểm bằng `curl` ngày 26/09/2026. Web lên production ngày 28/09/2026 (`main` = `056d3b0`); từ đó ba trang dưới đều trả 200. Bản có đoạn về Apple và Google trên iPhone nằm trên nhánh `ios-web` (commit `3a7920c` … `7bbf0c1`), **chưa đăng**.
 
 | Trường | Đường dẫn | Tình trạng | Việc phải làm |
 |---|---|---|---|
-| **Privacy Policy URL** (bắt buộc) | `https://wedofpt.com.vn/privacy.html` | Trả về 200, nhưng bản đang sống còn ghi "Áp dụng cho cả web WeDo và ứng dụng Android WeDo" | Bản viết lại "Chính sách quyền riêng tư" đã có trên nhánh `ios-web` (commit `c4b98c2`). **Phải đăng trước khi gửi duyệt** (`08`, Bước B). |
-| **Support URL** (bắt buộc) | `https://wedofpt.com.vn/ho-tro.html` | **Trả về 404** cho tới khi đăng | Trang đã có trên nhánh `ios-web` (commit `1f6e813`). **Phải đăng trước khi gửi duyệt** (`08`, Bước B). |
+| **Privacy Policy URL** (bắt buộc) | `https://wedofpt.com.vn/privacy.html` | Trả về 200. Bản đang sống là "Chính sách quyền riêng tư" mới, phủ iPhone, nhưng chưa có đoạn về Apple | Gộp `ios-web` vào `main` và đẩy web **trước khi gửi duyệt**, để chính sách nêu dữ liệu nhận từ Apple. |
+| **Support URL** (bắt buộc) | `https://wedofpt.com.vn/ho-tro.html` | Trả về 200 (đã đăng ngày 28/09/2026), có email liên hệ | Đẩy lại cùng lượt với chính sách, để trang có mục Đăng nhập bằng Apple. |
 | **Marketing URL** (không bắt buộc) | để trống | — | Xem giải thích bên dưới. |
 | User Privacy Choices URL (không bắt buộc, trong mục App Privacy) | để trống | — | Không cần cho bản đầu. |
 
@@ -387,7 +388,7 @@ https://wedofpt.com.vn/ho-tro.html
 
 **Về Support URL.** Apple yêu cầu đường dẫn này dẫn tới thông tin liên hệ thật: email, và điện thoại, địa chỉ nếu luật địa phương đòi hỏi. Email hỗ trợ đã chốt là `wedosupport6886@gmail.com`, cũng là email đang công bố trên trang chính sách và trang xoá tài khoản, và hiện trong app (dòng "Liên hệ: wedosupport6886@gmail.com" ở tab Tài khoản). Trang hỗ trợ **không được có đường dẫn tới Bảng giá hay trang thanh toán**. Nếu tới lúc gửi duyệt mà trang hỗ trợ chưa lên, dùng tạm `https://wedofpt.com.vn/privacy.html` vì trang này có email liên hệ. Đó chỉ là cách chữa cháy.
 
-**Về Marketing URL.** Ứng viên tự nhiên là `https://wedofpt.com.vn/`. Nhưng trang này có mục **"Bảng giá"** trên thanh điều hướng và một phần bảng giá ngay trên trang (`D:\WEDO_PC\FE_WEDO\src\views\LandingView.tsx:254,633`). WeDo dựa vào Guideline 3.1.3(f): app miễn phí đi kèm dịch vụ web trả phí thì không cần in-app purchase, **với điều kiện** không có chỗ mua trong app và không có lời mời mua ở nơi khác. Guideline 2.3.7 cũng không cho metadata chứa thông tin giá. Không có điều nào cấm hẳn một trang chủ có bảng giá trong ô Marketing URL, nhưng người duyệt có thể coi đó là lời mời mua. Ô này không bắt buộc, nên **để trống ở bản 1.0.13** là cách an toàn nhất (`07-trang-ho-tro.md`, mục 4.2, cũng nêu rủi ro này). Nếu vẫn muốn điền, hãy làm một trang giới thiệu không có bảng giá.
+**Về Marketing URL.** Ứng viên tự nhiên là `https://wedofpt.com.vn/`. Nhưng trang này có mục **"Bảng giá"** trên thanh điều hướng và một phần bảng giá ngay trên trang (`D:\WEDO_PC\FE_WEDO\src\views\LandingView.tsx:254,633`). WeDo dựa vào Guideline 3.1.3(f): app miễn phí đi kèm dịch vụ web trả phí thì không cần in-app purchase, **với điều kiện** không có chỗ mua trong app và không có lời mời mua ở nơi khác. Guideline 2.3.7 cũng không cho metadata chứa thông tin giá. Không có điều nào cấm hẳn một trang chủ có bảng giá trong ô Marketing URL, nhưng người duyệt có thể coi đó là lời mời mua. Ô này không bắt buộc, nên **để trống ở bản 1.0.14** là cách an toàn nhất (`07-trang-ho-tro.md`, mục 4.2, cũng nêu rủi ro này). Nếu vẫn muốn điền, hãy làm một trang giới thiệu không có bảng giá.
 
 Trang **điều khoản sử dụng** không có ô riêng trong App Store Connect. Nó được mở từ trong app (ô đồng ý khi đăng ký, màn đồng ý một lần, dòng "Điều khoản sử dụng" ở tab Tài khoản) và ghi trong App Review Notes (xem `06-dieu-khoan-su-dung.md`).
 
@@ -561,7 +562,8 @@ Expo sẽ ghi `ITSAppUsesNonExemptEncryption = NO` vào `Info.plist`. Nhờ vậ
 - Gọi API qua HTTPS bằng `fetch`, bên dưới là NSURLSession của iOS.
 - Trò chuyện thời gian thực qua socket.io trên TLS, do hệ điều hành xử lý.
 - Lưu mã đăng nhập trong Keychain qua `expo-secure-store`.
-- Google Sign-In và Sentry chỉ gửi dữ liệu qua HTTPS.
+- Google Sign-In và Sentry chỉ gửi dữ liệu qua HTTPS. Sign in with Apple dùng khung đăng nhập có sẵn của iOS (`expo-apple-authentication`).
+- App băm SHA-256 chuỗi nonce trước khi gửi cho Apple (`src/lib/auth/sha256.ts`). Đó là hàm băm để chống dùng lại token, không phải mã hoá dữ liệu.
 - Không có thư viện mã hoá riêng chạy trong app. `src/lib/chat/local-id.ts` cố ý dùng `Math.random`, không dùng thư viện mã hoá. Thư viện `node-forge` chỉ có trong công cụ build của Expo, không nằm trong app.
 
 **Nếu App Store Connect vẫn hỏi** (ví dụ một build được tải lên thiếu khoá trên):
@@ -583,7 +585,7 @@ Theo bảng của Apple, app chỉ dùng mã hoá có sẵn trong hệ điều h
 
 Giữ **EULA chuẩn của Apple** (mặc định, không phải làm gì). Người dùng đồng ý Điều khoản sử dụng WeDo ngay trong app. Chi tiết ở `06-dieu-khoan-su-dung.md`.
 
-Đã làm trên nhánh `ios` (`08-sua-code-truoc-khi-nop.md`, IOS-06): màn đăng ký có ô bắt buộc "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư", nút Đăng ký tắt tới khi đánh dấu. Tài khoản chưa đồng ý (tạo trên web, bằng Google, hay trước khi có ô) gặp màn "Điều khoản sử dụng" một lần sau khi đăng nhập, với nút "Đồng ý và tiếp tục". Guideline 1.2 đòi người dùng phải đồng ý điều khoản cấm nội dung phản cảm, nên trang `dieu-khoan.html` phải đăng trước khi gửi.
+Đã làm trên nhánh `ios` (`08-sua-code-truoc-khi-nop.md`, IOS-06): màn đăng ký có ô bắt buộc "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư", nút Đăng ký tắt tới khi đánh dấu. Tài khoản chưa đồng ý (tạo trên web, bằng Apple, bằng Google, hay trước khi có ô) gặp màn "Điều khoản sử dụng" một lần sau khi đăng nhập, với nút "Đồng ý và tiếp tục". Guideline 1.2 đòi người dùng phải đồng ý điều khoản cấm nội dung phản cảm, nên trang `dieu-khoan.html` phải đăng trước khi gửi.
 
 ### 17.2. Digital Services Act của EU (DSA)
 
@@ -597,8 +599,8 @@ Khi gửi app mới lần đầu, App Store Connect sẽ bắt bạn khai mình 
 
 | Mục | Chọn |
 |---|---|
-| Version | `1.0.13` |
-| Build | `1.0.13 (1)` |
+| Version | `1.0.14` |
+| Build | Build có commit `2b94b17` (câu "Đã xoá tài khoản"). Build 3 được build trước commit này. OTA chỉ chạy từ lần mở app sau, nên người duyệt mở build 3 lần đầu vẫn gặp mã cũ. Chắc nhất: build 4 trở lên, build từ `2b94b17` hoặc mới hơn |
 | Version Release | **Manually release this version** (tự bấm phát hành sau khi được duyệt, để chủ động giờ ra mắt) |
 | Phased Release | Không áp dụng cho bản đầu tiên |
 
@@ -623,23 +625,26 @@ Thông tin tài khoản demo B ghi trong Notes, không ghi ở đây.
 
 ## 18. Kiểm trước khi dán và bấm gửi
 
-Các chữ ở trên chỉ đúng khi những việc sau đã xong. Phần mã của mọi dòng đã có trên nhánh iOS (`08-sua-code-truoc-khi-nop.md`, mục Đã làm). Việc còn lại là đưa máy chủ và web lên production (`08`, mục Thứ tự đưa lên) và thử trên TestFlight. Mục nào chưa xong thì sửa chữ tương ứng hoặc hoãn gửi.
+Các chữ ở trên chỉ đúng khi những việc sau đã xong. Phần mã của mọi dòng đã có trên nhánh iOS (`08-sua-code-truoc-khi-nop.md`, mục Đã làm). Máy chủ và web đã lên production ngày 28/09/2026. Việc còn lại là thử trên TestFlight. Mục nào chưa xong thì sửa chữ tương ứng hoặc hoãn gửi.
 
-- [ ] Máy chủ `ios-backend` và web `ios-web` đã lên production.
-- [ ] Màn Đăng nhập và Đăng ký trên iPhone không có nút Google (mô tả: "Đăng nhập bằng email và mật khẩu").
-- [ ] Tài khoản tạo bằng Google trên web đặt được mật khẩu qua "Quên mật khẩu?" rồi đăng nhập trên iPhone (mô tả, phần DÙNG CÙNG BẢN WEB).
+- [x] Máy chủ (`backend` = `3d24e39`) và web (`main` = `056d3b0`) đã lên production (28/09/2026).
+- [x] Màn Đăng nhập và Đăng ký trên iPhone có nút "Tiếp tục với Apple" và "Tiếp tục với Google" (mô tả: "Đăng nhập bằng Apple, Google hoặc email và mật khẩu"). Đã thử trên iPhone thật với build 3 ngày 28/09/2026.
+- [x] Tài khoản tạo bằng Google trên web bấm "Tiếp tục với Google" trên iPhone là vào đúng tài khoản cũ (mô tả, phần DÙNG CÙNG BẢN WEB). Đã thử ngày 28/09/2026.
+- [x] Đăng nhập Apple với "Ẩn địa chỉ email" tạo được tài khoản mới. Xoá tài khoản đó thì WeDo biến khỏi Cài đặt → Đăng nhập bằng Apple. Đã thử ngày 28/09/2026.
 - [ ] Báo cáo và chặn chạy được ở trò chuyện dự án, tin nhắn riêng và lời mời kết bạn (mô tả).
 - [ ] Bộ lọc từ ngữ thay từ phản cảm trong tin nhắn và tên hiển thị bằng `***` (Guideline 1.2).
 - [ ] Hộp thoại xin đồng ý dùng AI hiện trước lần đầu chọn "Tạo công việc bằng AI" (mô tả).
 - [ ] Gửi ảnh chọn từ thư viện iPhone thành công. Mã đã đổi ảnh HEIC sang JPEG trước khi gửi (commit `0cc5b3b`); còn phải thử trên máy thật (mô tả: "chọn ảnh có sẵn để gửi").
 - [ ] Thông báo đẩy tới được iPhone, tức là đã có khoá APNs (mô tả: phần Thông báo).
-- [ ] Trang `https://wedofpt.com.vn/ho-tro.html` đã lên và có email liên hệ (Support URL).
-- [ ] Trang "Chính sách quyền riêng tư" mới đã lên, phủ cả iPhone và nêu đúng việc gửi dữ liệu tới AI (Privacy Policy URL).
+- [x] Trang `https://wedofpt.com.vn/ho-tro.html` đã lên và có email liên hệ (Support URL).
+- [ ] Trang "Chính sách quyền riêng tư" đã lên, phủ cả iPhone, nêu đúng việc gửi dữ liệu tới AI và dữ liệu nhận từ Apple khi đăng nhập bằng Apple (Privacy Policy URL). Bản có đoạn về Apple phải được đẩy lên web trước khi nộp.
 - [ ] Trang `https://wedofpt.com.vn/dieu-khoan.html` đã lên, tuổi tối thiểu 18 khớp mức 18+ đã khai (mục 14).
+- [ ] Đã gộp `ios-web` (`3a7920c` … `7bbf0c1`) vào `main` và web đã chạy lại: bốn trang pháp lý có đoạn về Apple và Google trên iPhone.
+- [ ] Build nộp có commit `2b94b17`: xoá tài khoản xong app báo "Đã xoá tài khoản" ngay ở lần mở đầu tiên (mục 17.3).
 - [ ] Trên iOS không còn đường nào dẫn tới Bảng giá, thanh toán hay CH Play (mục 13).
 - [ ] Ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" hiện ở màn đăng ký trên bản TestFlight (mục 17.1).
 - [ ] Age Rating đã chọn Override to Higher Age Rating → 18+ (mục 14.2).
-- [x] `app.json` trên nhánh `ios` đã có `bundleIdentifier: vn.wedo.app`, `buildNumber: "1"`, `supportsTablet: false`, `usesNonExemptEncryption: false`, `locales.vi`, và biểu tượng iOS là logo WeDo (`assets/images/icon.png`), tôi kiểm ngày 26/09/2026. Chỉ cần xem lại trên bản build đầu tiên.
+- [x] `app.json` trên nhánh `ios` đã có `bundleIdentifier: vn.wedo.app`, `version: 1.0.14`, `buildNumber: "3"`, `usesAppleSignIn: true`, `supportsTablet: false`, `usesNonExemptEncryption: false`, `locales.vi`, và biểu tượng iOS là logo WeDo (`assets/images/icon.png`). Tôi kiểm ngày 28/09/2026.
 - [ ] Ba tài khoản demo A, B, C đã có dữ liệu mẫu (xem `04-thong-tin-cho-reviewer.md`, mục 4).
 
 ---
@@ -658,16 +663,16 @@ Các chữ ở trên chỉ đúng khi những việc sau đã xong. Phần mã c
 - Export compliance documentation for encryption: https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption/
 - Overview of export compliance: https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance/
 - EU DSA trader requirements: https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-trader-requirements/
-- App Review Guidelines, bản cập nhật ngày 8/6/2026 (1.2, 2.3.1, 2.3.7, 2.3.8, 2.3.10, 2.3.12, 3.1.3, 3.1.3(f), 4.8 và ngoại lệ cho app chỉ dùng tài khoản riêng, 5.1.2(i)): https://developer.apple.com/app-store/review/guidelines/
+- App Review Guidelines, bản cập nhật ngày 8/6/2026 (1.2, 2.3.1, 2.3.7, 2.3.8, 2.3.10, 2.3.12, 3.1.3, 3.1.3(f), 4.8 (có đăng nhập bên thứ ba thì phải có thêm một cách đăng nhập giữ kín được email, như Sign in with Apple), 5.1.2(i)): https://developer.apple.com/app-store/review/guidelines/
 - Tra tên trùng: iTunes Search API, `https://itunes.apple.com/search?term=WeDo&country=vn&entity=software` (và `country=us`)
 - EAS Submit, các khoá `ascAppId`, `appName`, `language`: https://docs.expo.dev/eas/json/
 
 **Mã nguồn:**
 
-- `D:\WeDo_ChPlay-ios\app.json` (nhánh `ios`: tên "WeDo", phiên bản 1.0.13, cấu hình iOS, quyền máy ảnh và thư viện ảnh) và `D:\WeDo_ChPlay-ios\locales\vi.json` (tên hiển thị "WeDo")
-- `D:\WeDo_ChPlay\eas.json` (`submit.production` còn trống)
+- `D:\WeDo_ChPlay-ios\app.json` (nhánh `ios`: tên "WeDo", phiên bản 1.0.14, build iOS 3, `usesAppleSignIn`, cấu hình iOS, quyền máy ảnh và thư viện ảnh) và `D:\WeDo_ChPlay-ios\locales\vi.json` (tên hiển thị "WeDo")
+- `D:\WeDo_ChPlay-ios\eas.json` (nhánh `ios`: `submit.production.ios` có `ascAppId` và `appleTeamId`)
 - Các màn hình trong `D:\WeDo_ChPlay\src\app` (xem bảng 7.2)
-- `D:\WEDO_PC\FE_WEDO\public\privacy.html:44,126-129,140,144` (bản đang đăng: phạm vi "web và Android", tuổi 13 mà bản mới ở `05` đổi thành 18, email liên hệ, "© 2026 WeDo Team")
+- `D:\WEDO_PC\FE_WEDO\public\privacy.html:44,126-129,140,144` (bản cũ, đăng tới ngày 28/09/2026: phạm vi "web và Android", tuổi 13 mà bản mới ở `05` đổi thành 18, email liên hệ, "© 2026 WeDo Team")
 - `D:\WEDO_PC\FE_WEDO\src\views\LandingView.tsx:254,420,472,633` (Bảng giá và các câu chỉ đúng với bản web)
 - `D:\WEDO_PC\BE_WEDO\src\chat\chat.service.ts`, `src\tasks\tasks.service.ts`, `src\meetings\meetings.service.ts`, `src\payments\billing-operations.service.ts` (quyền Leader, nhà cung cấp AI, thông báo gia hạn)
 - Kết quả kiểm tra sẵn sàng iOS (`ios-audit.json`), chỉ dùng các kết luận không bị bác bỏ.

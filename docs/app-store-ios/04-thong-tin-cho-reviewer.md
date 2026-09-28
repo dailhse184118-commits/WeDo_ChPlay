@@ -1,14 +1,14 @@
 # 04 — Thông tin cho người duyệt của Apple (App Review Information)
 
-Trang này gom mọi thứ bạn điền vào mục **App Review Information** của phiên bản iOS 1.0.13 trong App Store Connect: tài khoản demo, thông tin liên hệ, ghi chú cho người duyệt (Notes), tệp đính kèm. Cuối trang là cách trả lời khi bị từ chối.
+Trang này gom mọi thứ bạn điền vào mục **App Review Information** của phiên bản iOS 1.0.14 trong App Store Connect: tài khoản demo, thông tin liên hệ, ghi chú cho người duyệt (Notes), tệp đính kèm. Cuối trang là cách trả lời khi bị từ chối.
 
-Chỗ điền: App Store Connect → Apps → WeDo → phiên bản iOS 1.0.13 → kéo xuống mục **App Review Information**.
+Chỗ điền: App Store Connect → Apps → WeDo → phiên bản iOS 1.0.14 → kéo xuống mục **App Review Information**.
 
 Quy ước:
 
 - `[NGOẶC VUÔNG]` là chỗ bạn phải tự điền. Trước khi dán, tìm ký tự `[` để chắc không còn sót.
 - **⚠ Giả định:** là chỗ dựa trên quyết định chưa chốt. Bạn đổi được.
-- Đường dẫn tệp: `M` = app mobile, nhánh `ios` ở `D:\WeDo_ChPlay-ios`; `BE` = máy chủ, nhánh `ios-backend` ở `D:\WEDO_PC\BE_WEDO-ios`; `FE` = web, nhánh `ios-web` ở `D:\WEDO_PC\FE_WEDO-ios`. Chỗ nào ghi số dòng mà không nói nhánh là số dòng đọc trên nhánh chính lúc kiểm tra, có thể lệch vài dòng.
+- Đường dẫn tệp: `M` = app mobile, nhánh `ios` ở `D:\WeDo_ChPlay-ios`; `BE` = máy chủ, nhánh `ios-backend` ở `D:\WEDO_PC\BE_WEDO-ios` (đã gộp vào `backend`, đang chạy); `FE` = web, nhánh `ios-web` ở `D:\WEDO_PC\FE_WEDO-ios` (tới `056d3b0` đã gộp vào `main` và đang chạy; các commit về Apple `3a7920c` … `7bbf0c1` chưa gộp). Chỗ nào ghi số dòng mà không nói nhánh là số dòng đọc trên nhánh chính lúc kiểm tra, có thể lệch vài dòng.
 - Văn bản người duyệt của Apple đọc thì viết bằng tiếng Anh. Bản dịch tiếng Việt nằm ngay dưới, chỉ để bạn đối chiếu, không dán.
 
 ---
@@ -18,20 +18,20 @@ Quy ước:
 1. Đăng nhập **không** bị chặn bởi xác minh email hay OTP. Đã kiểm trong mã (mục 2).
 2. Dùng **3 tài khoản demo**. B làm chủ không gian làm việc. A là Leader của dự án nhưng **không** làm chủ, nên A xoá tài khoản được ngay. C dùng để thử xoá (mục 4).
 3. Không đăng ký A và C trên web: web tự tạo không gian trống cho người chưa có. Đăng ký hai tài khoản này trong app bản iOS mới (mục 4.2, bước 1).
-4. Apple giới hạn ô Notes ở **4.000 byte** (không phải 4.000 ký tự). Khối Notes ở mục 6 dài **3.674 ký tự, 3.850 byte** và đã **gộp sẵn** đoạn 1.2 của tài liệu 06. Đừng dán thêm đoạn đó.
-5. Mọi tính năng Notes mô tả **đã có trong mã** trên nhánh `ios`, `ios-backend`, `ios-web` (`08-sua-code-truoc-khi-nop.md`, mục Đã làm). Nhưng chúng **chưa lên production**. Chỉ dựng tài khoản demo và nộp sau khi máy chủ và web mới đã chạy (`08`, mục Thứ tự đưa lên), và sau khi đã thử trên iPhone thật (mục 8).
+4. Apple giới hạn ô Notes ở **4.000 byte** (không phải 4.000 ký tự). Khối Notes ở mục 6 dài **3.716 ký tự, 3.905 byte** và đã **gộp sẵn** đoạn 1.2 của tài liệu 06. Đừng dán thêm đoạn đó.
+5. Mọi tính năng Notes mô tả **đã có trong mã** (`08-sua-code-truoc-khi-nop.md`, mục Đã làm). Máy chủ và web mới **đã lên production** ngày 28/09/2026. Dựng tài khoản demo trên hệ thống thật, và chỉ nộp sau khi đã thử trên iPhone thật (mục 8).
 6. Tài khoản nào tạo công việc, cuộc họp là quan trọng: việc tự giao cho mình thì tự "đã nhận", còn cuộc họp bị xoá theo người tạo. Làm đúng thứ tự ở mục 4.2.
-7. Đăng nhập trên iPhone chỉ có email và mật khẩu. Không có Sign in with Apple ở bản này, nên Notes không nhắc tới nó.
+7. Màn Đăng nhập và Đăng ký trên iPhone có ba cách: email và mật khẩu, "Tiếp tục với Apple" (Sign in with Apple), "Tiếp tục với Google". App có Google nên Guideline 4.8 áp dụng, và Sign in with Apple đáp ứng điều đó. Người duyệt vào bằng tài khoản demo email. Nút Apple và Google họ tự thử bằng tài khoản của họ; Notes nói rõ điều này (mục 6).
 
 ---
 
 ## 1. Các quyết định và giả định trong trang này
 
-- Đã chốt và đã làm: màn Đăng nhập và Đăng ký trên iPhone **chỉ có email và mật khẩu**. Nút Google bị ẩn trên iPhone (`08`, IOS-02), Android và web vẫn giữ. Vì vậy **không có Sign in with Apple** ở bản này, và Guideline 4.8 không áp dụng.
+- Đã chốt và đã làm (28/09/2026): màn Đăng nhập và Đăng ký trên iPhone có **email và mật khẩu**, nút **"Tiếp tục với Apple"** (nút gốc của Apple, chỉ có trên iPhone) và nút **"Tiếp tục với Google"**. Android và web có email và Google, không có Apple. Guideline 4.8 áp dụng vì có Google, và **Sign in with Apple** đáp ứng điều đó (`08`, SAU-01, SAU-02, SAU-03). Tài khoản demo cho người duyệt vẫn là tài khoản email và mật khẩu.
 - Đã chốt và đã làm: tuổi tối thiểu **18**. Màn đăng ký có ô bắt buộc "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư". Nút **Đăng ký** bị tắt tới khi đánh dấu ô (`08`, IOS-06). App Store Connect đặt mức 18+.
 - Đã chốt và đã làm: **bộ lọc từ ngữ** tiếng Việt và tiếng Anh cho tin nhắn và tên hiển thị. Bộ lọc **che** từ phản cảm bằng `***`, không chặn cả tin (`08`, IOS-03).
 - Đã làm: nhấn giữ tin của người khác mở bảng thao tác gồm **"Tạo công việc bằng AI"** (chỉ Leader dự án và chủ không gian làm việc), **"Báo cáo tin nhắn"**, **"Chặn người này"**. Nút ba chấm ở đầu tin nhắn riêng và ở mỗi dòng trong màn Bạn bè có **"Báo cáo người này"**, **"Chặn người này"**. Bỏ chặn ở **Tài khoản → Người đã chặn**. Màn đồng ý một lần có nút **"Đồng ý và tiếp tục"** (`08`, IOS-04, IOS-06).
-- Đã làm: **hộp thoại xin đồng ý** trước lần dùng AI đầu tiên, tiêu đề "Dùng AI để gợi ý công việc?", nút **"Đồng ý"** và **"Không, cảm ơn"**. Rút lại bằng công tắc **"Cho phép dùng AI"** trong tab Tài khoản (`08`, IOS-08). ⚠ Hộp thoại hiện ghi nhà cung cấp là "Google Gemini hoặc OpenAI". Ô `[TÊN NHÀ CUNG CẤP AI]` trong Notes phải khớp với câu đó và với cấu hình thật (mục 6.1).
+- Đã làm: **hộp thoại xin đồng ý** trước lần dùng AI đầu tiên, tiêu đề "Dùng AI để gợi ý công việc?", nút **"Đồng ý"** và **"Không, cảm ơn"**. Rút lại bằng công tắc **"Cho phép dùng AI"** trong tab Tài khoản (`08`, IOS-08). Hộp thoại nêu đủ ba tên "Google Gemini, Azure OpenAI hoặc OpenAI" (commit `608d06c`). Ô `[TÊN NHÀ CUNG CẤP AI]` trong Notes phải là một trong ba tên đó và khớp cấu hình thật (mục 6.1).
 - Cam kết **xử lý báo cáo trong 24 giờ** nằm trong điều khoản và trong Notes. Công cụ đã có: thư báo tới `REPORT_NOTIFY_EMAIL` và trang quản trị "Báo cáo vi phạm" (Gỡ nội dung, Khoá tài khoản). Còn thiếu người trực (tài liệu 06, mục 7).
 - Đã chốt: email hỗ trợ và liên hệ là `wedosupport6886@gmail.com`. Tên trang chính sách là **"Chính sách quyền riêng tư"** ở mọi nơi.
 - ⚠ Giả định: app iOS miễn phí, không mua hàng trong app, không lời mời mua ở nơi khác (Guideline 3.1.3(f)). Đã làm: nút "Xem đầy đủ trên web" ở Bảng đóng góp bị ẩn trên iPhone; thông báo gói và thanh toán bị ẩn trên iPhone.
@@ -46,7 +46,7 @@ Quy ước:
 | Bước | Kết quả | Nguồn |
 |---|---|---|
 | Đăng ký | Không xác minh email. Phải đánh dấu ô "Tôi đủ 18 tuổi và đồng ý…" thì nút Đăng ký mới bật. Máy chủ tạo tài khoản, ghi mốc đồng ý và trả token ngay; app báo "Đăng ký thành công" rồi vào thẳng. | `BE src/auth/auth.service.ts` (`register`); `M src/app/(auth)/register.tsx:37-80`, `:178-185` |
-| Màn Điều khoản một lần | Tài khoản chưa có mốc đồng ý (tạo trên web, tạo bằng Google, tạo trước khi có ô) gặp màn "Điều khoản sử dụng" ngay sau khi đăng nhập, trước mọi tab. Đánh dấu ô rồi bấm "Đồng ý và tiếp tục" là vào. | `M src/components/auth/CongDieuKhoan.tsx`; `M src/app/_layout.tsx:123-125`; `BE src/users/users.controller.ts` (`POST /users/me/accept-terms`) |
+| Màn Điều khoản một lần | Tài khoản chưa có mốc đồng ý (tạo trên web, tạo bằng Apple hay Google, tạo trước khi có ô) gặp màn "Điều khoản sử dụng" ngay sau khi đăng nhập, trước mọi tab. Đánh dấu ô rồi bấm "Đồng ý và tiếp tục" là vào. | `M src/components/auth/CongDieuKhoan.tsx`; `M src/app/_layout.tsx:123-125`; `BE src/users/users.controller.ts` (`POST /users/me/accept-terms`) |
 | Tài khoản bị khoá | Tài khoản bị quản trị viên khoá không đăng nhập được. App hiện câu "Tài khoản của bạn đã bị khoá vì vi phạm Điều khoản sử dụng…". | `BE src/auth/tai-khoan-bi-khoa.ts`; `M src/lib/api/client.ts` |
 | Đăng nhập email | Chỉ so mật khẩu. Không OTP, không xác thực hai bước, không CAPTCHA. | `BE src/auth/auth.service.ts:60-65`, `:125-142` |
 | Mật khẩu | Tối thiểu 6 ký tự khi đăng ký. App cũng chặn ngay ở màn đăng nhập nếu ngắn hơn. | `M src/app/(auth)/login.tsx:32`; `BE src/auth/dto/auth.dto.ts:9` (`RegisterDto`, `MinLength(6)`) |
@@ -56,9 +56,10 @@ Quy ước:
 | Giới hạn tần suất | 30 lần gọi `POST /auth/*` mỗi phút cho mỗi địa chỉ IP. Không cản người duyệt. Vượt thì app báo "Bạn thao tác quá nhanh". | `BE src/common/request-rate-limit.guard.ts:93-94` |
 | Cổng phiên bản | iPhone đọc bộ biến riêng `MOBILE_IOS_*`. App chặn **cả màn đăng nhập** chỉ khi `MOBILE_IOS_MINIMUM_VERSION` lớn hơn phiên bản đang duyệt **và** `MOBILE_IOS_STORE_URL` là đường dẫn App Store. Hai biến Android không ảnh hưởng iPhone. | `M src/lib/version/use-phien-ban.ts`; `M src/lib/version/mo-cua-hang.ts`; `BE src/app.service.ts` |
 | Xin quyền thông báo | iPhone **không** hỏi quyền lúc đăng nhập. Tab Thông báo có thẻ "Nhắc bạn trước khi việc đến hạn" với nút "Bật thông báo"; chạm nút đó mới hiện hộp thoại hệ thống. Không cho phép vẫn dùng app bình thường. | `M src/lib/notifications/push-token.ts` (`coQuyenThongBao`); `M src/app/(tabs)/notifications/index.tsx` |
-| Tài khoản mới tinh | Phải tạo không gian làm việc trước khi thấy các tab. | `M src/app/(tabs)/_layout.tsx:92-95` |
+| Tài khoản mới tinh | Phải tạo không gian làm việc trước khi thấy các tab. Tài khoản mới tạo bằng Apple hay Google cũng vậy, sau màn Điều khoản. Đã thấy trên iPhone thật ngày 28/09/2026: tài khoản Apple mới qua màn Điều khoản rồi tới màn "Tạo không gian làm việc"; chủ dự án gõ tên "Tốt Nghiệp Drone 9+", và tên đó hiện dưới email ở tab Tài khoản. Đó là tên không gian vừa tạo, không phải dữ liệu của ai khác. | `M src/app/(tabs)/_layout.tsx:92-95`; `M src/components/workspace/CreateWorkspaceForm.tsx` |
 | Quên mật khẩu | Mã 6 chữ số gửi qua email. Chỉ chạy khi người dùng tự chọn. | `M src/app/(auth)/forgot-password.tsx` |
-| Tài khoản tạo bằng Google | Có mật khẩu ngẫu nhiên người dùng không biết. "Quên mật khẩu" tìm tài khoản theo email, không phân biệt cách đăng ký, rồi ghi mật khẩu mới; đăng nhập email dùng được ngay, còn Google trên web vẫn chạy. Notes nói điều này ở dòng SIGN IN. | `BE src/auth/auth.service.ts:81`, `:125-140`; `BE src/auth/password-reset.service.ts:43`, `:123-128` |
+| Đăng nhập bằng Google | Trên iPhone, "Tiếp tục với Google" dùng client iOS riêng. Máy chủ nhận ID token của client Web và client iOS, tìm tài khoản theo email, chưa có thì tạo. Người đã đăng ký bằng Google trên web vào đúng tài khoản cũ. Đã thử trên iPhone thật ngày 28/09/2026. | `M src/lib/auth/google-signin.ts`; `BE src/auth/auth.service.ts` (`googleLogin`, `verifyGoogleIdToken`) |
+| Đăng nhập bằng Apple | Bảng của Apple hỏi Face ID hoặc mật mã máy, lần đầu hỏi chia sẻ tên và email (có thể ẩn email). Không có bước xác minh nào của WeDo. Máy chủ kiểm identity token và nonce, tìm tài khoản theo mã Apple, rồi theo email đã xác minh, chưa có thì tạo mới. Tài khoản mới gặp màn Điều khoản rồi màn Tạo không gian làm việc. Đã thử trên iPhone thật ngày 28/09/2026 với "Ẩn địa chỉ email". | `M src/lib/auth/apple-signin.ts`; `BE src/auth/apple-auth.service.ts`; `BE src/auth/auth.service.ts` (`appleLogin`) |
 
 Việc bạn cần làm từ bảng này:
 
@@ -82,12 +83,13 @@ Password: [MẬT KHẨU DEMO]
 - `[MẬT KHẨU DEMO]`: 10–16 ký tự, gồm chữ và số. Không dấu tiếng Việt, không khoảng trắng, để người duyệt gõ không sai.
 - Apple yêu cầu tài khoản demo không hết hạn. Tài khoản WeDo không tự hết hạn. Đừng đổi mật khẩu, đừng xoá tài khoản cho tới khi được duyệt.
 - Tài khoản B và C ghi trong Notes (mục 6).
+- Không dùng tài khoản tạo bằng Apple hay Google làm tài khoản demo. Người duyệt không vào được Apple ID hay tài khoản Google của bạn. Họ tự thử hai nút đó bằng tài khoản của họ.
 
 ---
 
 ## 4. Chuẩn bị tài khoản demo trên hệ thống thật
 
-Mọi bước làm trên **hệ thống production**, **sau khi** máy chủ `ios-backend` và web `ios-web` đã lên (`08`, mục Thứ tự đưa lên): web `https://wedofpt.com.vn` và app WeDo bản iPhone qua TestFlight. App không tạo được dự án (`M src/lib/api/projects.ts` chỉ có `listProjects`), nên phần dự án và thành viên phải làm trên web.
+Mọi bước làm trên **hệ thống production** (máy chủ và web mới đã lên ngày 28/09/2026): web `https://wedofpt.com.vn` và app WeDo bản iPhone qua TestFlight. App không tạo được dự án (`M src/lib/api/projects.ts` chỉ có `listProjects`), nên phần dự án và thành viên phải làm trên web.
 
 ### 4.1. Vì sao 3 tài khoản, và vì sao B làm chủ
 
@@ -103,7 +105,7 @@ Lý do B làm chủ: máy chủ **từ chối xoá** tài khoản đang làm ch�
 
 ### 4.2. Các bước, theo đúng thứ tự
 
-**Bước 1 — Tạo ba tài khoản (email + mật khẩu, không dùng Google)**
+**Bước 1 — Tạo ba tài khoản (email + mật khẩu, không dùng Apple hay Google)**
 
 - [ ] B: đăng ký trên web. Web tự tạo cho B một không gian tên "Workspace của tôi" (`FE src/lib/api.ts:1617-1630`). Giữ nó, hoặc đổi tên thành "WeDo Demo" cho dễ nhìn. Web chưa có ô đồng ý điều khoản, nên lần đầu B đăng nhập app sẽ gặp màn "Điều khoản sử dụng": đánh dấu ô, bấm **Đồng ý và tiếp tục**.
 - [ ] A và C: đăng ký **trong app iPhone bản TestFlight**, không đăng ký trên web và không dùng bản Android 1.0.13 (bản đó chưa có ô đồng ý). Đánh dấu ô "Tôi đủ 18 tuổi và đồng ý…" rồi bấm Đăng ký. Đăng ký xong, app hiện màn "Tạo không gian làm việc". **Không tạo**, tắt app. Lý do: web tự tạo không gian riêng cho người chưa có không gian nào. A mà có thêm không gian riêng thì app của người duyệt có thể mở nhầm không gian trống (`M src/lib/workspace/active-workspace.ts:7-21` chọn không gian đầu danh sách, mà danh sách xếp theo lần cập nhật gần nhất, `BE src/workspaces/workspaces.service.ts:26`).
@@ -171,9 +173,11 @@ Cả hai cuộc họp do **B tạo** (B là Leader). Lý do: xoá một tài kho
 - [ ] Cài bản TestFlight, đăng nhập A, làm lần lượt 6 bước "HOW TO TEST" và mọi dòng "USER-GENERATED CONTENT" trong Notes. Chỗ nào không khớp chữ trên màn hình thì sửa Notes.
 - [ ] Không thấy chữ "CH Play" ở đâu. Không có dải "Có bản cập nhật mới".
 - [ ] Gửi được **ảnh từ thư viện iPhone** (ảnh HEIC) trong trò chuyện dự án và tin nhắn riêng (mục 8).
+- [x] Màn Đăng nhập có nút "Tiếp tục với Apple" và "Tiếp tục với Google". Đăng nhập Google vào đúng tài khoản cũ. Đăng nhập Apple với "Ẩn địa chỉ email" tạo tài khoản mới có email `…@privaterelay.appleid.com`, qua màn Điều khoản 18+. Đã thử trên iPhone thật với build 3 ngày 28/09/2026.
 - [ ] Gửi thử một tin có từ phản cảm bằng tài khoản D tạm: người nhận thấy `***`. Báo cáo tin đó: thư tới hộp thư ở `REPORT_NOTIFY_EMAIL`, và báo cáo hiện ở trang quản trị "Báo cáo vi phạm". Xử lý xong báo cáo thử (Bỏ qua).
 - [ ] "Nộp tài liệu" mở ứng dụng Tệp (Files) của iPhone và nộp được một tệp PDF nhỏ (`M src/lib/files/pick-documents.ts:22-30`). Máy của người duyệt có thể không sẵn tệp nào; nếu vậy họ chỉ thử được "Nhận việc" và "Duyệt bài".
-- [ ] Thử xoá tài khoản bằng một tài khoản **D tạm** (đăng ký mới, tạo không gian, rồi xoá). Không xoá C, để C còn nguyên cho người duyệt.
+- [x] Thử xoá tài khoản bằng tài khoản tạm (28/09/2026). Tài khoản email tạm: xoá xong, đăng nhập lại báo sai email hoặc mật khẩu. Tài khoản Apple tạm (ẩn email): xoá xong, WeDo biến khỏi Cài đặt → [tên] → Đăng nhập & Bảo mật → Đăng nhập bằng Apple. Không xoá C, để C còn nguyên cho người duyệt.
+- [ ] Xoá thêm một tài khoản tạm trên bản đã có commit `2b94b17` (qua OTA iOS hoặc build mới): app phải báo "Đã xoá tài khoản" rồi về màn Đăng nhập, không kẹt ở câu "Không tải được thông tin tài khoản.".
 - [ ] Đăng xuất khỏi A trên máy của bạn khi xong. Không bắt buộc, nhưng tránh vô tình thao tác lên dữ liệu mẫu.
 
 ### 4.3. Nội dung mẫu để dán
@@ -219,13 +223,15 @@ Máy chủ làm gì:
 
 - Trước khi xoá, máy chủ tìm các không gian làm việc mà người này **làm chủ và còn thành viên khác**. Có một cái là từ chối, báo "Bạn đang là chủ sở hữu của không gian làm việc còn thành viên khác. Hãy chuyển quyền sở hữu trước khi xoá tài khoản." (`BE src/users/users.service.ts:74-129`).
 - Không vướng thì xoá hẳn tài khoản trong cơ sở dữ liệu, kéo theo tin nhắn, tin nhắn riêng, bạn bè, thông báo, tệp đã nộp, cuộc họp người đó tạo và các không gian chỉ có một mình người đó (`BE src/users/users.service.ts:131`; quan hệ `onDelete: Cascade` trong `BE prisma/schema.prisma`, ví dụ `:368`, `:437`, `:490`, `:617`).
-- Máy chủ mới (`ios-backend`, commit `3386c52`) còn xoá tệp trên Azure Blob Storage: tệp đính kèm trò chuyện và tệp nộp bài người đó tải lên, cùng mọi tệp trong các không gian bị xoá theo. Việc xoá tệp chạy ngay sau khi xoá tài khoản; lỗi thì máy chủ ghi log. Tệp người khác đã chuyển tiếp vẫn còn. Ảnh đại diện nằm ngay trong dòng tài khoản nên mất cùng dòng đó. Máy chủ cũ đang chạy **chưa** xoá tệp; chỉ nộp khi máy chủ mới đã lên.
+- Máy chủ mới (commit `3386c52`, đang chạy) còn xoá tệp trên Azure Blob Storage: tệp đính kèm trò chuyện và tệp nộp bài người đó tải lên, cùng mọi tệp trong các không gian bị xoá theo. Việc xoá tệp chạy ngay sau khi xoá tài khoản; lỗi thì máy chủ ghi log. Tệp người khác đã chuyển tiếp vẫn còn. Ảnh đại diện nằm ngay trong dòng tài khoản nên mất cùng dòng đó.
+- Tài khoản tạo bằng Sign in with Apple: lúc đăng nhập, máy chủ đổi mã uỷ quyền của Apple lấy refresh token và giữ token đó chỉ để thu hồi. Xoá tài khoản xong, máy chủ gọi `appleid.apple.com/auth/revoke`. Apple chậm hay lỗi thì máy chủ ghi log, việc xoá vẫn xong (`BE src/users/users.service.ts`, `thuHoiAppleSauKhiXoa`; commit `a50a58e`). Đã thử trên iPhone thật ngày 28/09/2026: xoá xong, WeDo biến khỏi Cài đặt → Đăng nhập bằng Apple.
 
 App làm gì:
 
 - Màn "Xoá tài khoản" liệt kê dữ liệu sẽ bị xoá, trong đó có dòng "Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên". Màn hiện một thẻ đỏ cho mỗi không gian đang vướng, liệt kê thành viên để chạm chọn người nhận quyền chủ (`M src/app/account/delete-account.tsx`).
 - Ô gõ **XOA** và nút "Xoá tài khoản vĩnh viễn" **chỉ hiện khi không còn vướng**. Sau đó app hỏi lại một lần ("Xoá tài khoản vĩnh viễn?"), chạm "Xoá tài khoản" là xong.
 - Đường đi đầy đủ: tab **Tài khoản** → dòng **Xoá tài khoản** (gần cuối, ngay trên Đăng xuất) → gõ **XOA** → **Xoá tài khoản vĩnh viễn** → **Xoá tài khoản** trong hộp xác nhận (`M src/app/(tabs)/account/index.tsx:355-362`).
+- Xoá xong, app đăng xuất, báo **"Đã xoá tài khoản"** ("Tài khoản WeDo của bạn và dữ liệu đi kèm đã được xoá vĩnh viễn.") và về màn Đăng nhập (commit `2b94b17`). Trước commit này, app kẹt ở câu "Không tải được thông tin tài khoản.", người duyệt dễ tưởng xoá hỏng.
 
 Với cách dựng ở mục 4.1:
 
@@ -266,6 +272,7 @@ Email: wedosupport6886@gmail.com
 ### 6.1. Đọc trước khi dán
 
 - Apple giới hạn ô Notes ở **4.000 byte**, viết bằng ngôn ngữ nào cũng được (trang "Platform version information" của App Store Connect). Chữ tiếng Anh tốn 1 byte, chữ tiếng Việt có dấu tốn 2–3 byte, ký hiệu `⋯` và `⋮` tốn 3 byte. Khối dưới đây là **toàn bộ** ghi chú, đã gộp đoạn "User-generated content (Guideline 1.2)" của tài liệu 06 (mục 9). **Đừng dán thêm đoạn của tài liệu 06**, sẽ trùng ý và vượt giới hạn.
+- Người duyệt đăng nhập bằng tài khoản demo email. Dòng SIGN IN chỉ cho họ biết có thêm nút Apple và Google để tự thử, và tài khoản mới sẽ gặp màn Điều khoản rồi màn Tạo không gian làm việc.
 - Thay 7 chỗ trống trước khi dán: `[EMAIL DEMO]`, `[MẬT KHẨU DEMO]`, `[EMAIL DEMO B]`, `[MẬT KHẨU DEMO B]`, `[EMAIL DEMO C]`, `[MẬT KHẨU DEMO C]`, `[TÊN NHÀ CUNG CẤP AI]`. Email hỗ trợ đã điền sẵn.
 - `[TÊN NHÀ CUNG CẤP AI]`: xem biến môi trường của backend trên Azure. Máy chủ ưu tiên theo thứ tự này (`BE src/chat/chat.service.ts`, khoảng dòng 1072–1103): có `GEMINI_API_KEY` thì ghi `Google Gemini`; không có mà đủ ba biến `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT` thì ghi `Azure OpenAI`; không có cả hai mà có `OPENAI_API_KEY` thì ghi `OpenAI`.
 - Hộp thoại xin đồng ý trong app nêu đủ cả ba "(Google Gemini, Azure OpenAI hoặc OpenAI)" và "khoảng 12 tin nhắn gần nhất" (`M src/lib/ai/dong-y-ai.ts`, commit `608d06c`). Khi đã biết nhà cung cấp thật, ghi đúng tên đó vào Notes; tên trong Notes phải nằm trong ba tên của hộp thoại và của Chính sách quyền riêng tư.
@@ -283,7 +290,7 @@ B, teammate: [EMAIL DEMO B] / [MẬT KHẨU DEMO B] - for real-time chat on a se
 C, for the deletion test: [EMAIL DEMO C] / [MẬT KHẨU DEMO C]
 Please type the emails in lowercase. Projects are created on the web, so the sample data is pre-loaded.
 
-SIGN IN: email and password only; no third-party or social login, so Guideline 4.8 does not apply. Google users from our website first set a password via "Quên mật khẩu?" (Forgot password?).
+SIGN IN: the sign-in screen also offers Tiếp tục với Apple (Sign in with Apple) and Tiếp tục với Google; try them with your own account. A new account agrees to the Terms once, then sees Tạo không gian làm việc (Create workspace): type any name.
 
 HOW TO TEST (as A)
 1. Chat: Trò chuyện (Chat tab) > Dự án (Projects) > "Dự án mẫu (Demo Project)". The camera and photo icons send pictures.
@@ -291,24 +298,24 @@ HOW TO TEST (as A)
 3. DMs: Trò chuyện > Tin nhắn (Messages). Friends: people icon at the top right; Kết bạn (Add), Duyệt (Accept), Từ chối (Decline). Search needs 3+ characters.
 4. Tasks: Công việc (Tasks tab) > a task: Nhận việc (Accept), Nộp tài liệu (Attach file), Gửi duyệt (Submit). Review B's work via Thông báo (Notifications): Duyệt bài (Approve), Trả lại (Return).
 5. Meetings: Cuộc họp (Meetings tab) > a meeting: summary, decisions, action items. Vào phòng họp (Join) opens Daily.co in the browser; the app never uses the microphone.
-6. Tài khoản (Account tab): tap the avatar to change it. Terms, privacy policy, support and contact rows are here.
+6. Tài khoản (Account tab): avatar, Terms, privacy policy, support and contact rows.
 
 ACCOUNT DELETION
-Tài khoản > Xoá tài khoản (Delete account) > type XOA > Xoá tài khoản vĩnh viễn > confirm. Immediate and permanent; uploaded photos and files are deleted too. Please use C; B owns the shared workspace and must hand it over first.
+Tài khoản > Xoá tài khoản (Delete account) > type XOA > Xoá tài khoản vĩnh viễn > confirm. Immediate and permanent; uploaded photos and files are deleted too, and for Apple accounts we revoke the Apple token. Please use C or a new account; B owns the shared workspace and must hand it over first.
 
 USER-GENERATED CONTENT
-- Terms: sign-up requires ticking "I am 18 or older and agree to the Terms of Use and Privacy Policy"; Đăng ký (Sign up) stays disabled until then. Minimum age 18, so the rating is 18+. Accounts that have not agreed get a one-time Terms screen: Đồng ý và tiếp tục (Agree and continue). The Terms state zero tolerance for objectionable content and abusive users: https://wedofpt.com.vn/dieu-khoan.html
-- Filter: objectionable Vietnamese and English words in messages and display names are replaced with *** automatically.
+- Terms: Đăng ký (Sign up) stays disabled until the user ticks "I am 18 or older and agree to the Terms of Use and Privacy Policy". Minimum age 18, so the rating is 18+. Apple, Google and older accounts get a one-time Terms screen: Đồng ý và tiếp tục (Agree and continue). The Terms state zero tolerance for objectionable content and abusive users: https://wedofpt.com.vn/dieu-khoan.html
+- Filter: objectionable Vietnamese and English words in messages and display names become *** automatically.
 - Report: long-press a message > Báo cáo tin nhắn (Report message) > a reason > Gửi báo cáo (Send). Report a person: ⋯ at the top of a DM, or ⋮ on any row in Friends, requests included > Báo cáo người này.
 - Block: the same menus > Chặn người này (Block) > Chặn. Instant: no DMs or friend requests either way, and their messages are hidden. Unblock: Tài khoản > Người đã chặn (Blocked users).
 - Reports reach our team at once (email and admin console). Within 24 hours we remove the content and suspend the poster, who then cannot sign in. Contact: wedosupport6886@gmail.com
 
-PAYMENTS: free; no in-app purchases, prices, upgrade buttons or links to buy. Optional paid plans exist only on our website and are never mentioned in the app (3.1.3(f)). AI use has a monthly limit.
+PAYMENTS: free; no in-app purchases, prices or links to buy. Paid plans exist only on our website and are never mentioned in the app (3.1.3(f)). AI use has a monthly limit.
 
 PERMISSIONS: camera and photos only for chat pictures and the avatar. Notification permission is asked only via Bật thông báo (Turn on notifications) in Thông báo.
 ```
 
-**Số ký tự: 3.674 / 4.000. Số byte UTF-8: 3.850 / 4.000** (3.880 byte nếu mỗi lần xuống dòng tính 2 byte), đếm theo NFC, tính cả 7 chỗ trống. Bảy chỗ trống đang chiếm 110 ký tự, 126 byte. Tính theo cách chặt nhất, 7 giá trị thật được dùng tổng cộng tối đa **246 byte**. Ba email, ba mật khẩu không dấu và tên nhà cung cấp AI thường chỉ khoảng 110–140 byte, còn dư. Dán xong, xem App Store Connect có báo vượt giới hạn không.
+**Số ký tự: 3.716 / 4.000. Số byte UTF-8: 3.905 / 4.000** (3.935 byte nếu mỗi lần xuống dòng tính 2 byte), đếm theo NFC ngày 28/09/2026, tính cả 7 chỗ trống. Bảy chỗ trống đang chiếm 110 ký tự, 126 byte. Tính theo cách chặt nhất, 7 giá trị thật được dùng tổng cộng tối đa **191 byte**. Ba email, ba mật khẩu không dấu và tên nhà cung cấp AI thường chỉ khoảng 110–140 byte, vẫn còn dư. Dán xong, xem App Store Connect có báo vượt giới hạn không. Nếu vượt, bỏ câu `Search needs 3+ characters.` rồi câu `The camera and photo icons send pictures.`.
 
 ### 6.3. Bản dịch tiếng Việt (để đối chiếu, không dán)
 
@@ -321,7 +328,7 @@ B, đồng đội: [EMAIL DEMO B] / [MẬT KHẨU DEMO B] - dùng trên máy th�
 C, để thử xoá tài khoản: [EMAIL DEMO C] / [MẬT KHẨU DEMO C]
 Vui lòng gõ email bằng chữ thường. Dự án được tạo trên web, nên dữ liệu mẫu đã nạp sẵn.
 
-ĐĂNG NHẬP: chỉ email và mật khẩu; không có đăng nhập qua bên thứ ba hay mạng xã hội, nên Guideline 4.8 không áp dụng. Người đã đăng ký bằng Google trên web thì đặt mật khẩu trước bằng "Quên mật khẩu?".
+ĐĂNG NHẬP: màn đăng nhập còn có nút Tiếp tục với Apple (Sign in with Apple) và Tiếp tục với Google; có thể thử bằng tài khoản của chính bạn. Tài khoản mới đồng ý Điều khoản một lần, rồi gặp màn Tạo không gian làm việc: gõ tên bất kỳ.
 
 CÁCH THỬ (bằng A)
 1. Trò chuyện dự án: tab Trò chuyện > Dự án > "Dự án mẫu (Demo Project)". Biểu tượng máy ảnh và ảnh để gửi hình.
@@ -329,19 +336,19 @@ CÁCH THỬ (bằng A)
 3. Tin nhắn riêng: Trò chuyện > Tin nhắn. Bạn bè: biểu tượng người ở góc trên bên phải; Kết bạn, Duyệt, Từ chối. Tìm cần gõ ít nhất 3 ký tự.
 4. Công việc: tab Công việc > một việc: Nhận việc, Nộp tài liệu, Gửi duyệt. Duyệt bài của B từ tab Thông báo: Duyệt bài hoặc Trả lại.
 5. Cuộc họp: tab Cuộc họp > một cuộc họp: tóm tắt, quyết định, hạng mục hành động. Vào phòng họp mở phòng Daily.co trong trình duyệt; ứng dụng không bao giờ dùng micro.
-6. Tab Tài khoản: chạm ảnh đại diện để đổi. Các dòng Điều khoản sử dụng, Chính sách quyền riêng tư, Hỗ trợ và Liên hệ nằm ở đây.
+6. Tab Tài khoản: ảnh đại diện, các dòng Điều khoản sử dụng, Chính sách quyền riêng tư, Hỗ trợ và Liên hệ.
 
 XOÁ TÀI KHOẢN
-Tài khoản > Xoá tài khoản > gõ XOA > Xoá tài khoản vĩnh viễn > xác nhận. Xoá ngay và vĩnh viễn; ảnh và tệp đã tải lên cũng bị xoá. Vui lòng dùng C; B là chủ không gian làm việc chung và phải chuyển quyền trước.
+Tài khoản > Xoá tài khoản > gõ XOA > Xoá tài khoản vĩnh viễn > xác nhận. Xoá ngay và vĩnh viễn; ảnh và tệp đã tải lên cũng bị xoá, và với tài khoản Apple, chúng tôi thu hồi token Apple. Vui lòng dùng C hoặc một tài khoản mới; B là chủ không gian làm việc chung và phải chuyển quyền trước.
 
 NỘI DUNG DO NGƯỜI DÙNG TẠO
-- Điều khoản: để đăng ký phải đánh dấu ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư"; nút Đăng ký tắt cho tới lúc đó. Tuổi tối thiểu 18, nên mức tuổi là 18+. Tài khoản chưa đồng ý sẽ gặp màn Điều khoản một lần: Đồng ý và tiếp tục. Điều khoản nói rõ không khoan nhượng với nội dung phản cảm và người dùng lạm dụng: https://wedofpt.com.vn/dieu-khoan.html
-- Bộ lọc: từ ngữ phản cảm tiếng Việt và tiếng Anh trong tin nhắn và tên hiển thị tự động bị thay bằng ***.
+- Điều khoản: nút Đăng ký tắt cho tới khi người dùng đánh dấu ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư". Tuổi tối thiểu 18, nên mức tuổi là 18+. Tài khoản Apple, Google và tài khoản cũ gặp màn Điều khoản một lần: Đồng ý và tiếp tục. Điều khoản nói rõ không khoan nhượng với nội dung phản cảm và người dùng lạm dụng: https://wedofpt.com.vn/dieu-khoan.html
+- Bộ lọc: từ ngữ phản cảm tiếng Việt và tiếng Anh trong tin nhắn và tên hiển thị tự động thành ***.
 - Báo cáo: nhấn giữ tin nhắn > Báo cáo tin nhắn > chọn lý do > Gửi báo cáo. Báo cáo một người: nút ⋯ ở đầu tin nhắn riêng, hoặc nút ⋮ ở bất kỳ dòng nào trong màn Bạn bè, kể cả lời mời > Báo cáo người này.
 - Chặn: cùng các trình đơn đó > Chặn người này > Chặn. Có tác dụng ngay: hai bên không nhắn riêng hay gửi lời mời kết bạn được, và tin nhắn của họ bị ẩn. Bỏ chặn: Tài khoản > Người đã chặn.
 - Báo cáo tới đội ngũ ngay (qua email và trang quản trị). Trong 24 giờ, chúng tôi gỡ nội dung và khoá tài khoản đã đăng; tài khoản bị khoá không đăng nhập được. Liên hệ: wedosupport6886@gmail.com
 
-THANH TOÁN: miễn phí; không mua hàng trong ứng dụng, không hiện giá, không nút nâng cấp, không đường dẫn để mua. Gói trả phí tuỳ chọn chỉ có trên web và ứng dụng không bao giờ nhắc tới (3.1.3(f)). Dùng AI có giới hạn theo tháng.
+THANH TOÁN: miễn phí; không mua hàng trong ứng dụng, không hiện giá, không đường dẫn để mua. Gói trả phí chỉ có trên web và ứng dụng không bao giờ nhắc tới (3.1.3(f)). Dùng AI có giới hạn theo tháng.
 
 QUYỀN: máy ảnh và ảnh chỉ để gửi hình trong trò chuyện và đặt ảnh đại diện. Quyền thông báo chỉ được hỏi khi người dùng chạm "Bật thông báo" ở tab Thông báo.
 ```
@@ -357,37 +364,37 @@ Gợi ý quay (1–2 phút, iPhone thật, bản TestFlight, dọc):
 1. Đăng nhập bằng A.
 2. Trò chuyện → Dự án mẫu → nhấn giữ **tin số 5** → Tạo công việc bằng AI → hộp thoại "Dùng AI để gợi ý công việc?" → Đồng ý → bản nháp → Tạo công việc. Nếu A đã đồng ý từ trước (hộp thoại không hiện), tắt công tắc "Cho phép dùng AI" trong Tài khoản rồi quay lại. Không dùng tin "slide": tin đã thành công việc thì AI không đề xuất lại, mà tin đó để dành cho người duyệt.
 3. Nhấn giữ một tin khác → Báo cáo tin nhắn → chọn lý do → Gửi báo cáo → "Đã gửi báo cáo…". Nhấn giữ tin của C → Chặn người này → Chặn: tin của C biến mất. Tài khoản → Người đã chặn → Bỏ chặn. Mở màn Bạn bè, chạm nút ⋮ ở một dòng để thấy "Báo cáo người này".
-4. Đăng xuất. Màn Đăng nhập chỉ có email và mật khẩu, không có nút Google. Đăng ký tài khoản **D tạm**: khi chưa đánh dấu ô "Tôi đủ 18 tuổi…" thì nút Đăng ký tắt; đánh dấu rồi mới bấm được.
-5. D tạo không gian → Tài khoản → Xoá tài khoản → gõ XOA → Xoá tài khoản vĩnh viễn → xác nhận.
+4. Đăng xuất. Màn Đăng nhập có ô email, mật khẩu và hai nút "Tiếp tục với Apple", "Tiếp tục với Google". Đăng ký tài khoản **D tạm**: khi chưa đánh dấu ô "Tôi đủ 18 tuổi…" thì nút Đăng ký tắt; đánh dấu rồi mới bấm được.
+5. D tạo không gian → Tài khoản → Xoá tài khoản → gõ XOA → Xoá tài khoản vĩnh viễn → xác nhận → app báo "Đã xoá tài khoản" và về màn Đăng nhập.
 
 Cách quay: Trung tâm điều khiển → nút Ghi màn hình. Cắt bớt trong ứng dụng Ảnh rồi xuất tệp `.mov` hoặc `.mp4`. Đặt đuôi tệp bằng chữ thường (`.mp4`, không phải `.MP4`): trên diễn đàn Apple Developer có người báo tải lên lỗi vì đuôi viết hoa.
 
 Lưu ý khi quay:
 
 - Chỉ dùng tài khoản demo. **Không** quay kết quả tìm bạn bè có người dùng thật. Máy chủ mới giấu email của người chưa là bạn, nhưng danh sách bạn bè vẫn hiện email của bạn bè.
-- Quay trên bản build đã nối máy chủ mới (sau `08`, Bước A). Không dựng cảnh.
+- Quay trên build 3 trở lên, có commit `2b94b17`. Không dựng cảnh. Không quay màn Cài đặt có tên và Apple ID thật của bạn.
 - Quay xong: bỏ chặn C, và kiểm lại mục 4.5 (tin "slide" chưa thành công việc, lượt AI còn).
 
 ---
 
 ## 8. Trước khi bấm Submit for Review: kiểm để ghi chú nói đúng sự thật
 
-Mỗi dòng dưới đây là một câu trong Notes. Cột giữa nói mã đã có chưa (đọc trên ba nhánh iOS ngày 26/09/2026). Cột cuối là việc còn phải làm để câu đó đúng **trên bản đang nộp và máy chủ đang chạy**. Mã có trên nhánh chưa đủ: máy chủ và web phải lên production trước (`08`, mục Thứ tự đưa lên).
+Mỗi dòng dưới đây là một câu trong Notes. Cột giữa nói mã đã có chưa (đọc trên ba nhánh iOS ngày 26/09/2026, phần đăng nhập đọc lại ngày 28/09/2026). Cột cuối là việc còn phải làm để câu đó đúng **trên bản đang nộp và máy chủ đang chạy**. Máy chủ và web mới đã lên production ngày 28/09/2026.
 
 | # | Notes nói | Trạng thái mã | Việc còn phải làm |
 |---|---|---|---|
-| 1 | SIGN IN: chỉ email và mật khẩu, không có đăng nhập bên thứ ba. | Đã làm: nút Google và dòng "hoặc" ẩn trên iPhone, app không gọi SDK Google trên iPhone (`08`, IOS-02). | Thử trên TestFlight: không thấy nút ở cả hai màn. |
-| 2 | Tài khoản tạo bằng Google trên web đặt mật khẩu qua "Quên mật khẩu?". | Đúng với mã máy chủ (mục 2). | Thử một lần trên TestFlight với một tài khoản Google thật của nhóm. |
-| 3 | Nhấn giữ → "Tạo công việc bằng AI"; lần đầu có hộp thoại xin đồng ý; "Không, cảm ơn" không gửi gì; công tắc "Cho phép dùng AI". | Đã làm (`08`, IOS-08). Máy chủ mới không gửi email cho AI (IOS-09). | Máy chủ mới lên production. Điền đúng `[TÊN NHÀ CUNG CẤP AI]`, khớp với câu trong hộp thoại (mục 6.1). |
-| 4 | Báo cáo tin nhắn, Báo cáo người này, Chặn người này, Người đã chặn. | Đã làm (`08`, IOS-03, IOS-04). | Máy chủ mới lên production. Thử trọn luồng trên TestFlight. |
-| 5 | Ô 18+, nút Đăng ký tắt khi chưa đánh dấu, màn Điều khoản một lần "Đồng ý và tiếp tục", trang `dieu-khoan.html`. | Đã làm: app, máy chủ và trang web (`08`, IOS-06). | Máy chủ mới và web mới lên production. `https://wedofpt.com.vn/dieu-khoan.html` trả 200. |
-| 6 | Bộ lọc thay từ phản cảm bằng `***`. | Đã làm (`08`, IOS-03). | Máy chủ mới lên production. Gửi thử một tin có từ phản cảm. |
-| 7 | Báo cáo tới đội ngũ ngay (email, trang quản trị); xử lý trong 24 giờ; khoá tài khoản vi phạm. | Đã làm: thư báo, trang "Báo cáo vi phạm", khoá tài khoản (`08`, IOS-03, IOS-05). | Đặt `REPORT_NOTIFY_EMAIL` trên Azure. Web mới lên production. Phân công người trực mỗi ngày (tài liệu 06, mục 7). |
+| 1 | SIGN IN: có nút "Tiếp tục với Apple" và "Tiếp tục với Google". | Đã làm: app `b016c3f`, `df0c255`; máy chủ `654db2a` (`08`, SAU-01 … SAU-03). | Đã thử trên iPhone thật với build 3 ngày 28/09/2026: nút Apple hiện đúng mẫu của Apple, Google vào đúng tài khoản cũ, Apple tạo được tài khoản mới. Kiểm lại cả màn Đăng ký trên build nộp. |
+| 2 | Tài khoản mới đồng ý Điều khoản một lần, rồi gặp màn Tạo không gian làm việc. | Đã làm (`M src/components/auth/CongDieuKhoan.tsx`; `M src/app/(tabs)/_layout.tsx`). | Đã thấy trên iPhone thật ngày 28/09/2026 với tài khoản Apple mới. |
+| 3 | Nhấn giữ → "Tạo công việc bằng AI"; lần đầu có hộp thoại xin đồng ý; "Không, cảm ơn" không gửi gì; công tắc "Cho phép dùng AI". | Đã làm (`08`, IOS-08). Máy chủ mới không gửi email cho AI (IOS-09). | Điền đúng `[TÊN NHÀ CUNG CẤP AI]`, khớp với câu trong hộp thoại (mục 6.1). |
+| 4 | Báo cáo tin nhắn, Báo cáo người này, Chặn người này, Người đã chặn. | Đã làm (`08`, IOS-03, IOS-04). | Thử trọn luồng trên TestFlight. |
+| 5 | Ô 18+, nút Đăng ký tắt khi chưa đánh dấu, màn Điều khoản một lần "Đồng ý và tiếp tục" (cả tài khoản Apple và Google mới), trang `dieu-khoan.html`. | Đã làm: app, máy chủ và trang web (`08`, IOS-06). | Đã xong phần đưa lên: `https://wedofpt.com.vn/dieu-khoan.html` trả 200 (28/09/2026). Đã thấy màn Điều khoản với tài khoản Apple mới. |
+| 6 | Bộ lọc thay từ phản cảm bằng `***`. | Đã làm (`08`, IOS-03). | Gửi thử một tin có từ phản cảm. |
+| 7 | Báo cáo tới đội ngũ ngay (email, trang quản trị); xử lý trong 24 giờ; khoá tài khoản vi phạm. | Đã làm: thư báo, trang "Báo cáo vi phạm", khoá tài khoản (`08`, IOS-03, IOS-05). | Kiểm `REPORT_NOTIFY_EMAIL` trên Azure đã có giá trị. Phân công người trực mỗi ngày (tài liệu 06, mục 7). |
 | 8 | Biểu tượng ảnh gửi được hình. | Đã làm: ảnh HEIC đổi sang JPEG trước khi gửi (`08`, IOS-13). | Thử gửi ảnh từ thư viện trên iPhone thật. |
-| 9 | Dòng Điều khoản sử dụng, Chính sách quyền riêng tư, Hỗ trợ, Liên hệ trong tab Tài khoản. | Đã làm: bốn dòng luôn hiện, chính sách có đường dẫn dự phòng (`08`, IOS-07, IOS-15). | Web mới lên production, để `ho-tro.html` và `dieu-khoan.html` không trả 404. |
+| 9 | Dòng Điều khoản sử dụng, Chính sách quyền riêng tư, Hỗ trợ, Liên hệ trong tab Tài khoản. | Đã làm: bốn dòng luôn hiện, chính sách có đường dẫn dự phòng (`08`, IOS-07, IOS-15). | Đã xong phần đưa lên: bốn trang web trả 200 (28/09/2026). Đẩy lại web khi chính sách, điều khoản và trang hỗ trợ có đoạn về Apple (`05`, `06`, `07`). |
 | 10 | Không có đường dẫn để mua; ứng dụng không nhắc gói trả phí. | Đã làm: ẩn "Xem đầy đủ trên web"; ẩn thông báo gói và thanh toán; máy chủ bỏ chữ "Gia hạn" (`08`, IOS-11, IOS-21). | Chạy lệnh kiểm chữ ở `08` (IOS-22) trước khi build. |
 | 11 | (Ngầm hiểu) App không nhắc tới Google Play. | Đã làm: iPhone đọc `MOBILE_IOS_*`, nút mở App Store; thiếu đường dẫn App Store thì không hiện gì (`08`, IOS-12). | Để trống `MOBILE_IOS_MINIMUM_VERSION` và `MOBILE_IOS_LATEST_VERSION` trong lúc duyệt. |
-| 12 | Xoá tài khoản xoá ngay, kể cả ảnh và tệp đã tải lên. | Đã làm: máy chủ mới xoá tệp trên Azure Blob (`08`, IOS-20). | Máy chủ mới lên production. Thử xoá một tài khoản tạm có ảnh. |
+| 12 | Xoá tài khoản xoá ngay, kể cả ảnh và tệp đã tải lên; tài khoản Apple được thu hồi token Apple. | Đã làm: máy chủ xoá tệp trên Azure Blob (`08`, IOS-20) và thu hồi token Apple (`a50a58e`). App báo "Đã xoá tài khoản" rồi về màn Đăng nhập (`2b94b17`). | Đã thử thu hồi Apple trên iPhone thật ngày 28/09/2026. Còn thử: xoá một tài khoản tạm có ảnh; thấy câu "Đã xoá tài khoản" trên bản có `2b94b17`. Build nộp phải có sẵn commit này (build 4 trở lên): build 3 chạy mã cũ ở lần mở đầu, OTA chỉ áp dụng từ lần mở sau (`02`, mục 17.3). |
 | 13 | Quyền thông báo chỉ hỏi khi chạm "Bật thông báo". | Đã làm (`08`, IOS-29). | Thử trên máy cài mới. |
 | 14 | Máy chủ đang chạy; AI, phòng họp chạy được. | Phụ thuộc biến môi trường trên Azure. | Thử AI, "Vào phòng họp" và xoá tài khoản ngay trước khi nộp. |
 
@@ -399,7 +406,7 @@ Mỗi dòng dưới đây là một câu trong Notes. Cột giữa nói mã đã
 
 1. Đọc kỹ thư của Apple. Thư ghi số guideline, mô tả lỗi, đôi khi có ảnh chụp màn hình.
 2. Xác định loại việc:
-   - **Cần build mới** (sửa mã): tăng `ios.buildNumber` trong `M app.json` (1 → 2 → 3...), build và tải lên bằng EAS, chọn build mới cho phiên bản 1.0.13 trong App Store Connect rồi gửi duyệt lại.
+   - **Cần build mới** (sửa mã): tăng `ios.buildNumber` trong `M app.json` (3 → 4 → 5...), build và tải lên bằng EAS, chọn build mới cho phiên bản 1.0.14 trong App Store Connect rồi gửi duyệt lại.
    - **Chỉ sửa thông tin** (Notes, ảnh, mô tả): sửa trong App Store Connect rồi trả lời. Apple cho nộp lại đúng build cũ khi lỗi chỉ nằm ở phần thông tin.
    - **Apple hiểu nhầm**: trả lời giải thích, chỉ đúng đường đi trong app, kèm video.
 3. Chỗ trả lời (trang "Reply to App Review messages" của Apple): App Store Connect → Apps → chọn WeDo → bấm dòng báo có vấn đề chưa giải quyết ở đầu trang → mục In Progress → **Resolve** cạnh lần nộp → **Reply to App Review**. Nhiều người vẫn gọi chỗ này là Resolution Center. Ô trả lời giới hạn **4.000 ký tự**. Đính kèm ảnh, video bằng nút **Attach File**.
@@ -412,16 +419,18 @@ Mọi mẫu dưới đây có chỗ trống `[SỐ BUILD]`, `[HỌ TÊN]`. Mọi
 
 ### 9.1. Guideline 4.8 — Login Services (nếu Apple vẫn nhắc)
 
-- **Apple thường nói:** app có đăng nhập Google nhưng không có lựa chọn đăng nhập tương đương giữ kín email, như Sign in with Apple.
-- **Vì sao WeDo ít khả năng dính:** bản iPhone đã ẩn nút Google (`08`, IOS-02), nên app chỉ dùng tài khoản riêng của WeDo. Guideline 4.8 miễn cho app chỉ dùng hệ tài khoản và đăng nhập của chính mình. Nguy cơ còn lại: build nộp vẫn còn nút Google (quên IOS-02), hoặc người duyệt đọc chữ "Google" trong mô tả hay Notes rồi hiểu nhầm.
-- **Làm gì:** mở build đã nộp trên iPhone, kiểm màn Đăng nhập và Đăng ký không có nút Google. Còn nút thì sửa, nộp build mới. Không còn thì trả lời bằng mẫu dưới, kèm video hai màn đó. Nếu Apple vẫn đòi, làm Sign in with Apple theo mục Bản sau của `08` (SAU-01, SAU-02, khoảng 5–6 ngày công).
+- **Apple thường nói:** app có đăng nhập Google nhưng không có lựa chọn đăng nhập tương đương giữ kín được email, như Sign in with Apple.
+- **Vì sao WeDo ít khả năng dính:** từ build 3, màn Đăng nhập và Đăng ký trên iPhone có nút "Tiếp tục với Apple". Đó là nút gốc của Apple, đặt trước nút Google và cùng cỡ (`M src/components/ui/AppleButton.tsx`, `M src/app/(auth)/login.tsx`). Sign in with Apple chỉ xin tên và email, cho người dùng ẩn email, và WeDo không dùng dữ liệu đó để quảng cáo. Nguy cơ còn lại: build nộp là build 1 (chưa có nút Apple), hoặc người duyệt không thấy nút vì app đang chạy bản cũ.
+- **Làm gì:** kiểm số build đang nộp là 3 trở lên. Mở build đó trên iPhone, thấy nút Apple ở cả hai màn. Rồi trả lời bằng mẫu dưới, kèm video hai màn đó.
 
 ```text
 Hello App Review team,
 
-Thank you for your review. The iPhone app uses only our own account system: users sign in with the email and password of their WeDo account. It offers no third-party or social login, and there is no Google button on the Sign in (Đăng nhập) or Sign up (Đăng ký) screen. Under Guideline 4.8, an app that exclusively uses its own account setup and sign-in system does not need to offer Sign in with Apple.
+Thank you for your review. Build [SỐ BUILD] offers Sign in with Apple as an equivalent option to Google sign-in:
 
-Google sign-in exists only on our website. People who created their account that way first set a password with "Quên mật khẩu?" (Forgot password?) on the iPhone sign-in screen.
+- The Đăng nhập (Sign in) and Đăng ký (Sign up) screens show Apple's own Continue with Apple button (Tiếp tục với Apple) above the Google button, at the same size.
+- Sign in with Apple asks only for the name and email address, and users can hide their email. We do not use this data for advertising.
+- Accounts created this way can be deleted in the app (Tài khoản > Xoá tài khoản), and our server then revokes the Apple token.
 
 A short screen recording of both screens is attached. Could you please review build [SỐ BUILD] again?
 
@@ -429,9 +438,9 @@ Best regards,
 [HỌ TÊN]
 ```
 
-Số ký tự: 731 (đếm cả chỗ trống).
+Số ký tự: 692 (đếm cả chỗ trống).
 
-> Bản dịch: Cảm ơn đã xem xét. Ứng dụng iPhone chỉ dùng hệ tài khoản riêng của chúng tôi: người dùng đăng nhập bằng email và mật khẩu của tài khoản WeDo. Ứng dụng không có đăng nhập qua bên thứ ba hay mạng xã hội, và không có nút Google ở màn Đăng nhập hay Đăng ký. Theo Guideline 4.8, ứng dụng chỉ dùng hệ tài khoản và đăng nhập của chính mình thì không cần Sign in with Apple. Đăng nhập Google chỉ có trên web. Người tạo tài khoản theo cách đó đặt mật khẩu trước bằng "Quên mật khẩu?" ở màn đăng nhập trên iPhone. Có kèm video hai màn. Nhờ xem lại build [SỐ BUILD].
+> Bản dịch: Cảm ơn đã xem xét. Build [SỐ BUILD] có Sign in with Apple, một cách đăng nhập tương đương với đăng nhập Google. Màn Đăng nhập và Đăng ký hiện nút "Tiếp tục với Apple" của chính Apple, đặt trên nút Google, cùng cỡ. Sign in with Apple chỉ xin tên và email, và người dùng ẩn được email. Chúng tôi không dùng dữ liệu này để quảng cáo. Tài khoản tạo theo cách này xoá được ngay trong app (Tài khoản > Xoá tài khoản), và máy chủ khi đó thu hồi token Apple. Có kèm video hai màn. Nhờ xem lại build [SỐ BUILD].
 
 ### 9.2. Guideline 1.2 — User-Generated Content (báo cáo, chặn)
 
@@ -464,8 +473,8 @@ Số ký tự: 1.472 (đếm cả chỗ trống).
 ### 9.3. Guideline 5.1.1(v) — Account Sign-In (xoá tài khoản)
 
 - **Apple thường nói:** không tìm thấy cách xoá tài khoản trong app, hoặc xoá không được, hoặc app bắt liên hệ hỗ trợ mới xoá được.
-- **Vì sao WeDo có thể dính:** app đã có đường xoá thật (mục 4.4). Nguy cơ chính là người duyệt thử bằng B (làm chủ không gian chung), gặp thẻ đỏ bắt chuyển quyền, và hiểu là không xoá được. Bản này không có Sign in with Apple, nên không có việc thu hồi token Apple.
-- **Làm gì:** không cần build mới nếu app đã đúng. Trả lời bằng mẫu dưới, kèm video quay đủ đường đi với một tài khoản tạm. Câu "including uploaded photos and files" chỉ đúng khi máy chủ mới (xoá tệp trên Azure Blob, `08` IOS-20) đang chạy. Nếu vì lý do nào đó máy chủ đang chạy là bản cũ, thay câu đầu của đoạn thứ ba bằng `The account is deleted from our servers right away.`
+- **Vì sao WeDo có thể dính:** app đã có đường xoá thật (mục 4.4). Nguy cơ chính là người duyệt thử bằng B (làm chủ không gian chung), gặp thẻ đỏ bắt chuyển quyền, và hiểu là không xoá được. Với tài khoản tạo bằng Sign in with Apple, Apple còn muốn app thu hồi token Apple khi xoá: máy chủ đã làm việc này (mục 4.4), đã thử trên iPhone thật ngày 28/09/2026.
+- **Làm gì:** không cần build mới nếu app đã đúng. Trả lời bằng mẫu dưới, kèm video quay đủ đường đi với một tài khoản tạm, tốt nhất là tài khoản tạo bằng Apple.
 
 ```text
 Hello App Review team,
@@ -474,7 +483,7 @@ Thank you for your review. Users can delete their account inside the app, withou
 
 Tài khoản (Account tab) > Xoá tài khoản (Delete account) > type XOA > Xoá tài khoản vĩnh viễn (Delete account permanently) > confirm.
 
-The account and its personal data, including uploaded photos and files, are deleted from our servers right away. One case needs an extra step: if the user owns a workspace that still has other members, the same screen first asks them to hand ownership to one of those members, so the team's shared projects are not deleted for everyone. The delete button appears right after that.
+The account and its personal data, including uploaded photos and files, are deleted from our servers right away. For accounts created with Sign in with Apple, our server also revokes the Apple token. The app then shows Đã xoá tài khoản (Account deleted) and returns to the sign-in screen. One case needs an extra step: if the user owns a workspace that still has other members, the same screen first asks them to hand ownership to one of those members, so the team's shared projects are not deleted for everyone. The delete button appears right after that.
 
 Demo account C ([EMAIL DEMO C] / [MẬT KHẨU DEMO C]) owns no shared workspace and can be deleted at once.
 
@@ -484,9 +493,9 @@ Best regards,
 [HỌ TÊN]
 ```
 
-Số ký tự: 817 (đếm cả chỗ trống). Dùng câu thay thế ở trên thì còn 756.
+Số ký tự: 993 (đếm cả chỗ trống).
 
-> Bản dịch: Cảm ơn đã xem xét. Người dùng xoá được tài khoản ngay trong app, không cần liên hệ chúng tôi: Tài khoản > Xoá tài khoản > gõ XOA > Xoá tài khoản vĩnh viễn > xác nhận. Tài khoản và dữ liệu cá nhân, kể cả ảnh và tệp đã tải lên, bị xoá khỏi máy chủ ngay. Có một trường hợp thêm một bước: nếu người dùng làm chủ một không gian làm việc còn thành viên khác, chính màn này yêu cầu chuyển quyền chủ cho một thành viên, để dự án chung của nhóm không bị xoá theo. Nút xoá hiện ngay sau đó. Tài khoản demo C không làm chủ không gian chung nào, xoá được ngay. Có kèm video toàn bộ đường đi.
+> Bản dịch: Cảm ơn đã xem xét. Người dùng xoá được tài khoản ngay trong app, không cần liên hệ chúng tôi: Tài khoản > Xoá tài khoản > gõ XOA > Xoá tài khoản vĩnh viễn > xác nhận. Tài khoản và dữ liệu cá nhân, kể cả ảnh và tệp đã tải lên, bị xoá khỏi máy chủ ngay. Với tài khoản tạo bằng Sign in with Apple, máy chủ còn thu hồi token Apple. Sau đó app báo "Đã xoá tài khoản" và về màn đăng nhập. Có một trường hợp thêm một bước: nếu người dùng làm chủ một không gian làm việc còn thành viên khác, chính màn này yêu cầu chuyển quyền chủ cho một thành viên, để dự án chung của nhóm không bị xoá theo. Nút xoá hiện ngay sau đó. Tài khoản demo C không làm chủ không gian chung nào, xoá được ngay. Có kèm video toàn bộ đường đi.
 
 ### 9.4. Guideline 5.1.2(i) — Data Use and Sharing (dữ liệu gửi cho AI bên thứ ba)
 
@@ -637,14 +646,15 @@ Số ký tự: 228 (đếm cả chỗ trống).
 
 ## 10. Nguồn
 
-Trong mã (đọc ngày 26/09/2026):
+Trong mã (đọc ngày 26/09/2026; phần đăng nhập Apple, Google và xoá tài khoản đọc lại ngày 28/09/2026):
 
 - Tab và nhãn: `M src/app/(tabs)/_layout.tsx` (Trò chuyện, Công việc, Cuộc họp, Thông báo, Tài khoản); `M src/app/(tabs)/chat/index.tsx` (Dự án, Tin nhắn, nút Bạn bè); `M src/components/friends/FriendRow.tsx` (Nhắn tin, Kết bạn, Duyệt, Từ chối, nút ⋮); `M src/app/(tabs)/tasks/[taskId].tsx:343-352` (Nhận việc, Từ chối); `M src/components/tasks/TaskSubmissionPanel.tsx:97-131` (Nộp tài liệu, Gửi duyệt, Duyệt bài, Trả lại); `M src/app/(tabs)/meetings/index.tsx:71-93` (Lịch, Tạo cuộc họp); `M src/app/(tabs)/meetings/[id].tsx:188` (Vào phòng họp); `M src/app/(tabs)/account/index.tsx:230-370` (các dòng của tab Tài khoản).
 - Báo cáo, chặn: `M src/components/moderation/BangThaoTac.tsx`, `PhieuBaoCao.tsx`; `M src/lib/moderation/noi-dung.ts` (lý do, câu xác nhận); `M src/app/account/blocked.tsx`; `BE src/moderation/*`.
 - Điều khoản, 18+: `M src/components/auth/ODongYDieuKhoan.tsx`, `CongDieuKhoan.tsx`; `M src/lib/legal-links.ts`.
 - Đồng ý AI: `M src/lib/ai/dong-y-ai.ts`; `BE src/users/users.controller.ts`.
 - Đăng nhập, đăng ký: `M src/app/(auth)/login.tsx`, `register.tsx`; `M src/lib/auth/auth-context.tsx`; `BE src/auth/auth.service.ts`; `BE src/auth/dto/auth.dto.ts`; `BE src/common/request-rate-limit.guard.ts`.
-- Xoá tài khoản: `M src/app/account/delete-account.tsx`; `BE src/users/users.service.ts` (`deleteMe`, `gomTepCanDon`, `donTepSauKhiXoa`).
+- Apple và Google: `M src/components/ui/AppleButton.tsx`; `M src/lib/auth/apple-signin.ts`; `M src/lib/auth/google-signin.ts`; `BE src/auth/apple-auth.service.ts`; `BE src/auth/auth.service.ts` (`appleLogin`, `verifyGoogleIdToken`); `BE prisma/migrations/202609280001_apple_sign_in`.
+- Xoá tài khoản: `M src/app/account/delete-account.tsx` (báo "Đã xoá tài khoản", commit `2b94b17`); `BE src/users/users.service.ts` (`deleteMe`, `gomTepCanDon`, `donTepSauKhiXoa`, `thuHoiAppleSauKhiXoa`).
 - AI: `M src/app/(tabs)/chat/[projectId].tsx` (`batDauGoiYAI`, `moThaoTacTin`); `BE src/chat/chat.service.ts` (`thanhVienChoAi`, `tacGiaChoAi`, chọn nhà cung cấp khoảng dòng 1072–1103); hạn mức `BE src/payments/subscription-entitlements.ts`, `BE src/payments/entitlements.service.ts`.
 - Dự án, thành viên, không gian: `BE src/projects/projects.service.ts`; `BE src/workspaces/workspaces.service.ts`; `FE src/lib/api.ts:1617-1630`; `FE src/views/WorkspaceView.tsx`; `FE src/views/MeetingView.tsx`.
 - Bản kiểm tra sẵn sàng iOS (90 phát hiện, đã bỏ các phát hiện bị bác bỏ): tệp `ios-audit.json` của phiên làm việc này.

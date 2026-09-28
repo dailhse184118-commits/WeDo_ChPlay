@@ -6,7 +6,7 @@ Tài liệu này có ba phần:
 2. Nội dung trang, chia từng khối để bạn đọc duyệt và sao chép. Tệp HTML thật đã làm xong trên nhánh `ios-web` (Phụ lục A).
 3. Phần dành riêng cho chủ dự án: điền gì vào ô Support URL và Marketing URL trong App Store Connect, và những việc phải xong trước khi đăng trang.
 
-Trạng thái: tệp `public/ho-tro.html` **đã làm** trên nhánh `ios-web` (`D:\WEDO_PC\FE_WEDO-ios`, commit `1f6e813` và các commit sửa sau), **chưa đăng**. Kiểm tra ngày 26/09/2026: `https://wedofpt.com.vn/ho-tro.html` còn trả **404**. Trang phải trả **200** trước khi bấm Submit for Review, vì người duyệt của Apple sẽ mở nó, và app mở trang này từ dòng "Hỗ trợ" ở tab Tài khoản. Đăng theo `08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên, Bước B (sau máy chủ).
+Trạng thái (28/09/2026): tệp `public/ho-tro.html` (commit `1f6e813` và các commit sửa sau) **đã đăng** ngày 28/09/2026, `https://wedofpt.com.vn/ho-tro.html` trả **200**. Cùng ngày, tệp ở `D:\WEDO_PC\FE_WEDO-ios\public\ho-tro.html` được sửa thêm cho **Apple và Google trên iPhone** (mục lục, 3.5.1 … 3.5.5, 3.10, 3.11). Mục 3 dưới đây đã chép theo bản sửa đó. **Bản sửa này chưa đăng:** phải đẩy web lại trước khi nộp build có nút Apple. Người duyệt của Apple sẽ mở trang này, và app mở nó từ dòng "Hỗ trợ" ở tab Tài khoản.
 
 Quy ước trong tài liệu:
 
@@ -20,7 +20,7 @@ Quy ước trong tài liệu:
 
 | Việc | Giá trị |
 |---|---|
-| File | `public/ho-tro.html` trên nhánh `ios-web` (`D:\WEDO_PC\FE_WEDO-ios`), đã làm, chưa đăng |
+| File | `public/ho-tro.html` trên nhánh `ios-web` (`D:\WEDO_PC\FE_WEDO-ios`). Đã đăng ngày 28/09/2026; bản sửa cho Apple chưa đăng |
 | Địa chỉ trang | `https://wedofpt.com.vn/ho-tro.html` |
 | Ô Support URL (bắt buộc) | `https://wedofpt.com.vn/ho-tro.html` — 34 ký tự |
 | Ô Marketing URL (không bắt buộc) | **Để trống** ở bản đầu, như `02-thong-tin-app-store.md` (xem mục 4.2) |
@@ -32,7 +32,8 @@ Quy ước trong tài liệu:
 
 ## 1. Các giả định trong tài liệu này
 
-- Đã chốt: ứng dụng trên iPhone **chỉ đăng nhập bằng email và mật khẩu**. Nút Google bị ẩn trên iPhone (đã làm), web và điện thoại khác vẫn có. **Không có Đăng nhập bằng Apple** ở bản này. Trang có mục hướng dẫn người đã đăng ký bằng Google đặt mật khẩu qua "Quên mật khẩu?" (mục 3.5.2). Khối Apple chuyển sang Phụ lục C (Bản sau).
+- Đã chốt ngày 28/09/2026: ứng dụng trên iPhone **đăng nhập bằng Apple, Google, hoặc email và mật khẩu**. Web và Android có email và Google, không có Apple. Trang có mục cho người đã đăng ký bằng Google (3.5.2: bấm nút Google trên iPhone), mục Google (3.5.3) và mục Apple (3.5.4). Phụ lục C cũ (Bản sau) đã bỏ, vì nội dung đã vào mục 3.
+- ⚠ Giới hạn đã biết: thư tới địa chỉ chuyển tiếp của Apple có thể không tới, vì nơi gửi thư của WeDo chưa đăng ký với Apple (`08`, SAU-04). Trang nói thật điều này ở 3.5.4, 3.5.5 và 3.10.
 - Đã chốt: **tuổi tối thiểu 18** (mục 3.4 và 3.13).
 - Đã chốt: email hỗ trợ `wedosupport6886@gmail.com` (mục 0). Tên trang chính sách là **"Chính sách quyền riêng tư"**.
 - Đã làm (`08-sua-code-truoc-khi-nop.md`, IOS-03, IOS-04): **báo cáo**, **chặn**, **bộ lọc từ ngữ** (thay từ bằng `***`) và **khoá tài khoản**. Chữ trên màn hình: nhấn giữ tin nhắn → "Báo cáo tin nhắn", "Chặn người này"; nút ba chấm ở đầu tin nhắn riêng hoặc ở mỗi dòng trong màn Bạn bè → "Báo cáo người này", "Chặn người này"; bỏ chặn ở "Tài khoản → Người đã chặn". Sáu lý do báo cáo.
@@ -44,7 +45,7 @@ Quy ước trong tài liệu:
 - ⚠ Giả định: chỉ phát hành ở **App Store Việt Nam**, miễn phí, chỉ iPhone.
 - ⚠ Giả định: thời gian phản hồi là **2 ngày làm việc** cho câu hỏi thường, **24 giờ** cho báo cáo vi phạm, **20 ngày** cho yêu cầu xoá tài khoản qua email. Yêu cầu dữ liệu khác theo thời hạn ở mục 11 của Chính sách quyền riêng tư mới (`05-chinh-sach-bao-mat.md`). Con số 24 giờ khớp tài liệu Điều khoản.
 - ⚠ Chưa biết: nhà cung cấp AI **đang chạy** trên máy chủ. Mã ưu tiên Gemini, rồi Azure OpenAI, rồi OpenAI, nhưng biến môi trường nằm trên Azure nên chưa ai xác nhận được. Trang hiện nêu cả ba, "mỗi lúc chỉ dùng một".
-- **Mọi điều trên chỉ đúng khi máy chủ mới đã chạy trên production.** Đăng trang này sau Bước A của `08`, mục Thứ tự đưa lên.
+- Mọi điều trên cần máy chủ mới. Máy chủ mới đã chạy trên production từ 28/09/2026, kể cả `POST /auth/apple` và việc thu hồi Apple khi xoá tài khoản.
 
 ---
 
@@ -81,6 +82,9 @@ File HTML ở Phụ lục A đặt sẵn `id` cho từng mục. Ghi chú cho ng�
 | Liên hệ | `https://wedofpt.com.vn/ho-tro.html#lien-he` |
 | Đăng nhập | `https://wedofpt.com.vn/ho-tro.html#dang-nhap` |
 | Đã đăng ký bằng Google, đăng nhập trên iPhone | `https://wedofpt.com.vn/ho-tro.html#google-iphone` |
+| Đăng nhập bằng Google | `https://wedofpt.com.vn/ho-tro.html#dang-nhap-google` |
+| Đăng nhập bằng Apple (iPhone) | `https://wedofpt.com.vn/ho-tro.html#dang-nhap-apple` |
+| Quên mật khẩu | `https://wedofpt.com.vn/ho-tro.html#quen-mat-khau` |
 | Thông báo | `https://wedofpt.com.vn/ho-tro.html#thong-bao` |
 | Gửi ảnh | `https://wedofpt.com.vn/ho-tro.html#gui-anh` |
 | Tạo dự án | `https://wedofpt.com.vn/ho-tro.html#tao-du-an` |
@@ -173,13 +177,13 @@ Không tìm thấy WeDo trên App Store?
 
 #### 3.5.1. Không đăng nhập được bằng email và mật khẩu
 
-Nguồn: câu báo lỗi ở `BE_WEDO\src\auth\auth.service.ts:131,137`. Máy chủ so email **đúng từng chữ**, không đổi chữ hoa về chữ thường (`auth.service.ts:125-128`), và app chỉ cắt khoảng trắng (`src\app\(auth)\login.tsx`). Tài khoản tạo bằng Google nhận một mật khẩu ngẫu nhiên người dùng không biết (`auth.service.ts:81`). Câu báo tài khoản bị khoá ở `BE src\auth\tai-khoan-bi-khoa.ts` (nhánh `ios-backend`).
+Nguồn: câu báo lỗi ở `BE_WEDO\src\auth\auth.service.ts:131,137`. Máy chủ so email **đúng từng chữ**, không đổi chữ hoa về chữ thường (`auth.service.ts:125-128`), và app chỉ cắt khoảng trắng (`src\app\(auth)\login.tsx`). Tài khoản tạo bằng Google hay Apple nhận một mật khẩu ngẫu nhiên người dùng không biết (`BE src\auth\auth.service.ts`, `googleLogin`, `timHoacTaoNguoiDungApple`). Câu báo tài khoản bị khoá ở `BE src\auth\tai-khoan-bi-khoa.ts` (nhánh `ios-backend`).
 
 ```text
 Không đăng nhập được bằng email và mật khẩu
 
 - Báo "Email hoặc mật khẩu không đúng": gõ lại email đúng như lúc đăng ký, kể cả chữ hoa và chữ thường. Mật khẩu có ít nhất 6 ký tự.
-- Nếu lúc đầu bạn tạo tài khoản bằng nút "Tiếp tục với Google", bạn chưa từng đặt mật khẩu cho tài khoản đó. Hãy dùng "Quên mật khẩu?" để đặt mật khẩu (xem mục ngay dưới). Trên web, bạn cũng có thể bấm lại "Tiếp tục với Google".
+- Nếu lúc đầu bạn tạo tài khoản bằng nút "Tiếp tục với Google" hay "Tiếp tục với Apple", bạn chưa từng đặt mật khẩu cho tài khoản đó. Hãy bấm lại đúng nút đó. Nút Google có trên web và trong ứng dụng WeDo trên mọi điện thoại; nút Apple chỉ có trên iPhone. Muốn có mật khẩu, dùng "Quên mật khẩu?" để đặt.
 - Báo "Tài khoản của bạn đã bị khoá vì vi phạm Điều khoản sử dụng": tài khoản bị khoá không đăng nhập được. Nếu bạn cho rằng chúng tôi xử lý nhầm, hãy gửi email cho chúng tôi trong vòng 30 ngày (Điều 11.4 của Điều khoản sử dụng).
 - Kiểm tra Wi-Fi hoặc dữ liệu di động rồi thử lại.
 - Vẫn không được: gửi email cho chúng tôi, ghi rõ câu báo lỗi bạn thấy.
@@ -187,40 +191,62 @@ Không đăng nhập được bằng email và mật khẩu
 
 #### 3.5.2. Đăng ký bằng Google, đăng nhập trên iPhone
 
-Nguồn: ứng dụng iPhone ẩn nút Google (`08-sua-code-truoc-khi-nop.md`, IOS-02). Tài khoản tạo bằng Google có mật khẩu ngẫu nhiên (`BE_WEDO\src\auth\auth.service.ts:81`). "Quên mật khẩu" tìm tài khoản theo email, không phân biệt cách đăng ký (`BE_WEDO\src\auth\password-reset.service.ts:43`), rồi ghi mật khẩu mới (`:123-128`). Đăng nhập bằng email so mật khẩu mới đó (`auth.service.ts:125-140`). Đăng nhập Google trên web vẫn tìm theo email và không đụng mật khẩu (`auth.service.ts:73-101`). Máy chủ so email đúng từng chữ, nên phải gõ đúng Gmail bằng chữ thường. Đã đối chiếu mã ngày 26/09/2026: đường này chạy được, không cần sửa máy chủ.
+Nguồn: từ build iOS 3, iPhone có nút "Tiếp tục với Google" (`08-sua-code-truoc-khi-nop.md`, SAU-03; `src\lib\auth\google-signin.ts`, `coDangNhapGoogle`). Máy chủ tìm tài khoản Google theo email, nên người đã đăng ký bằng Google trên web vào đúng tài khoản cũ (`BE src\auth\auth.service.ts`, `googleLogin`). Đã thử trên iPhone thật ngày 28/09/2026. Nút Apple chỉ gắn vào tài khoản cũ khi email Apple đã xác minh trùng email đó (`timHoacTaoNguoiDungApple`); email ẩn thì tạo tài khoản mới. "Quên mật khẩu" vẫn đặt được mật khẩu cho tài khoản Google (`BE_WEDO\src\auth\password-reset.service.ts:43`, `:123-128`), và máy chủ so email đúng từng chữ, nên phải gõ Gmail bằng chữ thường.
 
 ```text
 Tôi đăng ký bằng Google. Đăng nhập trên iPhone thế nào?
 
-Ứng dụng WeDo trên iPhone chỉ đăng nhập bằng email và mật khẩu. Nếu bạn tạo tài khoản bằng nút "Tiếp tục với Google" trên web WeDo hoặc trên điện thoại khác, tài khoản đó chưa có mật khẩu mà bạn biết. Đặt mật khẩu một lần như sau:
-1. Ở màn Đăng nhập trên iPhone, bấm "Quên mật khẩu?".
-2. Nhập đúng địa chỉ Gmail bạn dùng với Google, viết chữ thường, rồi bấm "Gửi mã".
-3. Mở hộp thư, tìm thư "Mã đặt lại mật khẩu WeDo". Nhớ xem cả thư mục thư rác.
-4. Nhập "Mã 6 số" và "Mật khẩu mới" (ít nhất 6 ký tự), rồi bấm "Đặt lại mật khẩu".
-5. Đăng nhập trên iPhone bằng địa chỉ Gmail đó và mật khẩu mới.
+Ứng dụng WeDo trên iPhone có nút "Tiếp tục với Google", như trên web và trên điện thoại khác. Không cần đặt mật khẩu:
+1. Ở màn Đăng nhập trên iPhone, bấm "Tiếp tục với Google".
+2. Chọn đúng tài khoản Google bạn đã dùng với WeDo.
+3. Bạn vào đúng tài khoản cũ, với đủ dự án và tin nhắn.
 
-Đây vẫn là tài khoản cũ của bạn, với đủ dự án và tin nhắn. Trên web WeDo và trên điện thoại khác, bạn vẫn bấm "Tiếp tục với Google" như trước.
+Nên biết:
+- Không thấy nút Google: cập nhật WeDo lên bản mới nhất trong App Store.
+- Muốn vào tài khoản Google cũ thì bấm nút Google, đừng bấm "Tiếp tục với Apple". Nút Apple chỉ vào đúng tài khoản cũ khi Apple ID của bạn dùng đúng email đó và bạn không ẩn email. Nếu không, WeDo tạo một tài khoản mới, trống.
+- Muốn đăng nhập bằng email và mật khẩu: dùng "Quên mật khẩu?" với đúng địa chỉ Gmail đó, viết chữ thường, để đặt mật khẩu một lần. Sau đó bạn dùng được cả hai cách.
 ```
 
-#### 3.5.3. Đăng nhập bằng Google (trên web)
+#### 3.5.3. Đăng nhập bằng Google
 
-Nguồn: nhãn nút ở `src\components\ui\GoogleButton.tsx:47`; nối tài khoản theo email ở `BE_WEDO\src\auth\auth.service.ts:73-96`; đăng xuất khỏi WeDo cũng đăng xuất Google để hộp chọn tài khoản hiện lại (`src\lib\auth\google-signin.ts`, hàm `signOutFromGoogle`); câu lỗi email chưa xác minh ở `auth.service.ts:253`.
+Nguồn: nhãn nút ở `src\components\ui\GoogleButton.tsx`; nối tài khoản theo email ở `BE src\auth\auth.service.ts` (`googleLogin`); tài khoản mới để trống mốc đồng ý nên gặp màn "Điều khoản sử dụng" một lần (`src\components\auth\CongDieuKhoan.tsx`); đăng xuất khỏi WeDo cũng đăng xuất Google để hộp chọn tài khoản hiện lại (`src\lib\auth\google-signin.ts`, hàm `signOutFromGoogle`); câu lỗi email chưa xác minh ở `auth.service.ts`.
 
-Trang không nhắc tên nền tảng di động khác (xem 2.4), nên viết "trên điện thoại khác".
+> Trang không ghi tên nền tảng khác (mục 2.4, Guideline 2.3.10). Bốn chỗ "ứng dụng Android" của bản sửa đầu đã đổi thành "điện thoại khác" (nhánh `ios-web`, commit `7bbf0c1`). Khung dưới đây chép đúng bản HTML hiện tại.
 
 ```text
-Đăng nhập bằng Google (trên web)
+Đăng nhập bằng Google
 
-- Nút "Tiếp tục với Google" có trên web WeDo và trên ứng dụng WeDo ở điện thoại khác. Ứng dụng trên iPhone chưa có nút này: xem mục ngay trên.
+- Nút "Tiếp tục với Google" có trên web WeDo và trong ứng dụng WeDo trên mọi điện thoại, kể cả iPhone.
 - Bấm "Tiếp tục với Google" rồi chọn tài khoản Google.
 - Email Google trùng với email bạn đã đăng ký WeDo: bạn vào đúng tài khoản cũ.
-- Chưa có tài khoản WeDo: WeDo tạo tài khoản mới, lấy họ tên và ảnh đại diện từ Google.
+- Chưa có tài khoản WeDo: WeDo tạo tài khoản mới, lấy họ tên và ảnh đại diện từ Google. Trong ứng dụng, tài khoản mới cần xác nhận đủ 18 tuổi và đồng ý Điều khoản sử dụng một lần, ở màn hiện ra ngay sau khi đăng nhập.
 - Muốn đổi sang tài khoản Google khác: đăng xuất, rồi bấm lại "Tiếp tục với Google". Hộp chọn tài khoản sẽ hiện ra.
 - Lỡ đóng hộp chọn tài khoản: không sao, bấm lại nút.
 - Báo "Email Google chưa được xác minh": xác minh email trong tài khoản Google trước, rồi thử lại.
 ```
 
-#### 3.5.4. Quên mật khẩu
+#### 3.5.4. Đăng nhập bằng Apple (chỉ trên iPhone)
+
+Nguồn (đọc ngày 28/09/2026): nút gốc của Apple, kiểu "Tiếp tục với Apple", ở màn Đăng nhập và Đăng ký, chỉ vẽ trên iPhone (`src\components\ui\AppleButton.tsx`, `src\lib\auth\apple-signin.ts`, `useCoDangNhapApple`). App xin họ tên và email; người dùng đóng bảng Apple thì không báo lỗi; lỗi khác hiện "Đăng nhập Apple không thành công (mã)…" (`layThongTinApple`). Máy chủ tìm tài khoản theo mã Apple, rồi theo email đã xác minh, chưa có thì tạo mới với tên "Người dùng Apple" khi không có họ tên; email đã gắn Apple ID khác thì báo "Email này đã gắn với một Apple ID khác…" (`BE src\auth\auth.service.ts`, `timHoacTaoNguoiDungApple`). Tài khoản mới gặp màn "Điều khoản sử dụng" một lần. Thư tới địa chỉ chuyển tiếp có thể không tới vì nơi gửi thư của WeDo chưa đăng ký với Apple (`08`, SAU-04). Đã thử trên iPhone thật ngày 28/09/2026 với "Ẩn địa chỉ email".
+
+```text
+Đăng nhập bằng Apple (chỉ trên iPhone)
+
+- Nút "Tiếp tục với Apple" chỉ có trong ứng dụng WeDo trên iPhone, ở màn Đăng nhập và màn Đăng ký. Web WeDo và ứng dụng WeDo trên điện thoại khác không có nút này.
+- Bấm nút, rồi xác nhận theo hướng dẫn của Apple, ví dụ bằng Face ID hoặc mật mã iPhone.
+- Lần đầu, Apple hỏi bạn có chia sẻ họ tên và email với WeDo không. Bạn sửa được họ tên, và có thể chọn ẩn email.
+- Email Apple trùng với email tài khoản WeDo sẵn có, và bạn không ẩn email: bạn vào đúng tài khoản cũ.
+- Chọn ẩn email: Apple đưa WeDo một địa chỉ chuyển tiếp dạng ...@privaterelay.appleid.com. WeDo không nhận ra tài khoản cũ qua địa chỉ này, nên tạo tài khoản mới. Nếu bạn đã có tài khoản WeDo, hãy đăng nhập bằng email và mật khẩu hoặc bằng Google như trước.
+- Tài khoản mới: ứng dụng hiện màn Điều khoản sử dụng một lần. Đánh dấu ô xác nhận đủ 18 tuổi và đồng ý, rồi bấm "Đồng ý và tiếp tục".
+- Không chia sẻ họ tên: tài khoản mang tên "Người dùng Apple". Đổi tên ở Tài khoản → Thông tin cá nhân.
+- Đã ẩn email: thư WeDo gửi tới địa chỉ chuyển tiếp, như mã đặt lại mật khẩu, có thể không tới hộp thư của bạn, vì Apple chỉ chuyển tiếp thư từ bên gửi đã đăng ký với Apple. Hãy tiếp tục đăng nhập bằng nút Apple. Khi cần hỗ trợ, gửi email từ hộp thư bạn đang dùng và ghi rõ địa chỉ chuyển tiếp của tài khoản.
+- Lỡ đóng bảng của Apple: không sao, bấm lại nút.
+- Báo "Email này đã gắn với một Apple ID khác": tài khoản WeDo có email này đã gắn với Apple ID khác. Đăng nhập bằng Apple ID đó, hoặc bằng email và mật khẩu.
+- Báo "Đăng nhập Apple không thành công" kèm một mã trong ngoặc: thử lại, hoặc đăng nhập bằng email và mật khẩu. Vẫn lỗi thì gửi email cho chúng tôi, kèm ảnh chụp màn hình.
+- Xem hoặc gỡ WeDo khỏi danh sách ứng dụng dùng Đăng nhập bằng Apple: mở Cài đặt của iPhone, chạm vào tên bạn ở trên cùng, rồi tìm mục Đăng nhập bằng Apple. Gỡ ở đó không xoá tài khoản WeDo.
+```
+
+#### 3.5.5. Quên mật khẩu
 
 Nguồn: màn `src\app\(auth)\forgot-password.tsx:124-185`; mã sống 10 phút và tối đa 5 lần sai ở `BE_WEDO\src\auth\password-reset.service.ts:8,11`; mã cũ bị huỷ khi xin mã mới ở dòng 56-60; tiêu đề thư ở `BE_WEDO\src\mail\mail.service.ts:99`; không tiết lộ email có tài khoản hay không ở `password-reset.service.ts:13-18,43-54`.
 
@@ -238,6 +264,7 @@ Lưu ý:
 - Nhập sai 5 lần thì phải xin mã mới. Khi bạn xin mã mới, mã cũ hết tác dụng.
 - Gõ nhầm email: bấm "Gõ nhầm email? Nhập lại".
 - Để bảo vệ bạn, WeDo không cho biết một email có tài khoản hay không. Nếu sau vài phút vẫn không có thư, kiểm tra lại email đã gõ và thư mục thư rác.
+- Tài khoản tạo bằng Apple với email bị ẩn có email là địa chỉ chuyển tiếp của Apple. Thư mã có thể không tới địa chỉ đó. Hãy đăng nhập bằng nút "Tiếp tục với Apple" (xem Đăng nhập bằng Apple).
 ```
 
 ### 3.6. Thông báo không tới trên iPhone
@@ -371,11 +398,11 @@ Nếu bạn hoặc người khác đang gặp nguy hiểm, hãy gọi ngay 113 (
 Nguồn:
 
 - Dòng "Xoá tài khoản" gần cuối tab Tài khoản, ngay trên "Đăng xuất": `src\app\(tabs)\account\index.tsx` (nhánh `ios`).
-- Màn xoá: `src\app\account\delete-account.tsx`. Danh sách dữ liệu (có dòng "Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên"), thẻ chuyển quyền sở hữu và hộp xác nhận "Chuyển", từ `XOA`, nút "Xoá tài khoản vĩnh viễn" và hộp xác nhận "Xoá tài khoản". Xoá xong tự đăng xuất. Tải thông tin lỗi thì hiện "Không tải được thông tin tài khoản." cùng nút "Thử lại".
-- Máy chủ xoá hẳn, không có thời gian chờ, rồi xoá tệp trên Azure Blob (`BE src\users\users.service.ts`, nhánh `ios-backend`).
+- Màn xoá: `src\app\account\delete-account.tsx`. Danh sách dữ liệu (có dòng "Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên"), thẻ chuyển quyền sở hữu và hộp xác nhận "Chuyển", từ `XOA`, nút "Xoá tài khoản vĩnh viễn" và hộp xác nhận "Xoá tài khoản". Xoá xong tự đăng xuất, báo "Đã xoá tài khoản" và về màn Đăng nhập (commit `2b94b17`, nhánh `ios`). Tải thông tin lỗi thì hiện "Không tải được thông tin tài khoản." cùng nút "Thử lại".
+- Máy chủ xoá hẳn, không có thời gian chờ, rồi xoá tệp trên Azure Blob và thu hồi Đăng nhập bằng Apple nếu có (`BE src\users\users.service.ts`, `donTepSauKhiXoa`, `thuHoiAppleSauKhiXoa`). Đã thử thu hồi trên iPhone thật ngày 28/09/2026.
 - Web **chưa có** nút xoá tài khoản: thẻ "Bảo mật" trong Cài đặt web chỉ ghi "Chưa khả dụng" (`FE_WEDO\src\views\SettingsView.tsx:317-324`). Hạn xử lý qua email là 20 ngày theo mục 10 của `05-chinh-sach-bao-mat.md`.
 
-> Bản này không có Đăng nhập bằng Apple, nên trang không có khối về thu hồi quyền Apple (khối đó để ở Phụ lục C). Apple không cho bắt người dùng gửi email để xoá tài khoản. Ở đây email chỉ là đường phụ cho người chỉ dùng web, còn app có nút xoá riêng, nên không vướng.
+> Trang có đoạn về thu hồi Đăng nhập bằng Apple và về tài khoản dùng địa chỉ chuyển tiếp. Apple không cho bắt người dùng gửi email để xoá tài khoản. Ở đây email chỉ là đường phụ cho người chỉ dùng web, còn app có nút xoá riêng, nên không vướng.
 
 ```text
 Xoá tài khoản
@@ -388,15 +415,19 @@ Trong ứng dụng WeDo trên iPhone:
 5. Nếu bạn là chủ một không gian làm việc còn thành viên khác, ứng dụng hiện thẻ của không gian đó. Chạm vào người sẽ nhận quyền sở hữu, rồi bấm "Chuyển". Làm như vậy với từng không gian.
 6. Gõ XOA vào ô xác nhận.
 7. Bấm "Xoá tài khoản vĩnh viễn", rồi bấm "Xoá tài khoản" để xác nhận.
-Tài khoản bị xoá ngay và ứng dụng tự đăng xuất. Không có thời gian chờ và không khôi phục được.
+Tài khoản bị xoá ngay. Ứng dụng báo "Đã xoá tài khoản", tự đăng xuất và đưa bạn về màn Đăng nhập. Không có thời gian chờ và không khôi phục được.
 
-Ứng dụng WeDo trên các điện thoại khác cũng có các bước giống hệt.
+Nếu bạn từng đăng nhập bằng Apple, WeDo cũng yêu cầu Apple thu hồi Đăng nhập bằng Apple. Khi Apple nhận yêu cầu, WeDo biến mất khỏi mục Đăng nhập bằng Apple trong Cài đặt của iPhone. Nếu WeDo vẫn còn ở đó, bạn tự gỡ được; tài khoản WeDo thì đã bị xoá.
+
+Ứng dụng WeDo trên các điện thoại khác cũng có các bước giống hệt: tài khoản bị xoá ngay và ứng dụng tự đăng xuất.
 
 Trên web:
 Web WeDo chưa có nút xoá tài khoản. Bạn xoá trong ứng dụng như trên, hoặc gửi email:
 1. Gửi từ chính email của tài khoản tới wedosupport6886@gmail.com.
 2. Tiêu đề: "Yêu cầu xoá tài khoản WeDo".
 3. Chúng tôi xác minh, xoá trong vòng 20 ngày và báo lại cho bạn.
+
+Tài khoản dùng địa chỉ chuyển tiếp của Apple thì không gửi thư từ địa chỉ đó được. Hãy xoá trong ứng dụng trên iPhone. Nếu không được, gửi email từ hộp thư bạn đang dùng và ghi rõ địa chỉ chuyển tiếp. Xoá qua email không tự thu hồi Đăng nhập bằng Apple, nên bạn tự gỡ WeDo ở mục Đăng nhập bằng Apple trong Cài đặt của iPhone.
 
 Không thấy nút xoá: màn Xoá tài khoản cần tải thông tin trước. Nếu thấy "Không tải được thông tin tài khoản", kiểm tra mạng rồi bấm "Thử lại". Vẫn không được thì gửi email cho chúng tôi.
 
@@ -420,6 +451,7 @@ Dữ liệu nào bị xoá khi xoá tài khoản
 
 Bị xoá vĩnh viễn:
 - Hồ sơ: họ tên, email, mật khẩu, số điện thoại, ngày sinh, ảnh đại diện.
+- Mã người dùng Apple và mã làm mới của Apple, nếu bạn từng đăng nhập bằng Apple.
 - Tin nhắn bạn đã gửi trong chat dự án và tin nhắn riêng, cùng ảnh đính kèm và biểu tượng cảm xúc bạn đã thả. Các tin này biến mất khỏi khung chat của mọi người.
 - Danh sách bạn bè, lời mời kết bạn và danh sách người bạn đã chặn.
 - Thông báo của bạn, thông tin thiết bị dùng để gửi thông báo, và phiên đăng nhập.
@@ -510,7 +542,7 @@ Bốn trang pháp lý trên nhánh `ios-web` dùng chung một chân trang có l
 
 ### 4.1. Support URL (bắt buộc)
 
-Chỗ điền: App Store Connect → Apps → chọn app (tên đã chốt `WeDo: Làm việc nhóm`, theo `02-thong-tin-app-store.md`) → mục iOS App, phiên bản **1.0.13** (trạng thái Prepare for Submission) → cùng khung với Promotional Text, Description, Keywords → ô **Support URL**.
+Chỗ điền: App Store Connect → Apps → chọn app (tên đã chốt `WeDo: Làm việc nhóm`, theo `02-thong-tin-app-store.md`) → mục iOS App, phiên bản **1.0.14** (trạng thái Prepare for Submission) → cùng khung với Promotional Text, Description, Keywords → ô **Support URL**.
 
 Apple không ghi giới hạn ký tự cho ô này. Apple chỉ đòi ghi đủ cả giao thức (`https://`), và trang phải dẫn tới thông tin liên hệ thật (trợ giúp App Store Connect, mục "Platform version information", đọc ngày 26/09/2026).
 
@@ -522,11 +554,11 @@ https://wedofpt.com.vn/ho-tro.html
 
 - Trang phải sống (HTTP 200) **trước** khi bấm Submit for Review. Người duyệt mở trang này, và Apple đòi nó dẫn tới thông tin liên hệ thật (Guideline 1.5).
 - Dùng tên miền `wedofpt.com.vn`, không dùng `fe-wedo.vercel.app`. Cùng tên miền với Chính sách quyền riêng tư, và không lộ tên dịch vụ lưu trữ.
-- Trang đã làm xong trên nhánh `ios-web`, nên không cần đường lui. Chỉ cần đăng theo Bước B của `08`. App cũng trỏ tới đúng địa chỉ này, nên trang chưa đăng thì dòng "Hỗ trợ" trong app mở ra trang 404.
+- Trang đã đăng ngày 28/09/2026 và trả 200. App cũng trỏ tới đúng địa chỉ này. Đẩy lại web để trang có mục Apple trước khi nộp.
 
 ### 4.2. Marketing URL (không bắt buộc)
 
-**Khuyên dùng: để trống ở bản 1.0.13**, giống `02-thong-tin-app-store.md`.
+**Khuyên dùng: để trống ở bản 1.0.14**, giống `02-thong-tin-app-store.md`.
 
 Lý do: ứng viên tự nhiên là trang chủ `https://wedofpt.com.vn/` (23 ký tự, đang trả 200). Nhưng trang chủ có nút "Bảng giá" trên thanh menu (`FE_WEDO\src\views\LandingView.tsx:254`) và nhúng nguyên bảng giá có nút đăng ký (dòng 633-639, component `PricingView`). Marketing URL là metadata. Guideline 3.1.1(a) cấm metadata có đường dẫn đưa khách tới cách mua ngoài in-app purchase, ở mọi storefront trừ Mỹ. Guideline 3.1.3(f) chỉ miễn in-app purchase khi không có lời mời mua ở ngoài. Ô này không bắt buộc, nên để trống là an toàn nhất.
 
@@ -553,19 +585,21 @@ Trợ giúp App Store Connect ghi: Support URL phải dẫn tới thông tin li�
 
 ### 5.1. Điều kiện để từng khối đúng
 
-Mọi tính năng trang nhắc tới đã có trong mã trên các nhánh iOS. Nhưng trang chỉ đúng khi máy chủ mới đã chạy, và khi bản iOS nộp duyệt có đủ các tính năng đó.
+Mọi tính năng trang nhắc tới đã có trong mã trên các nhánh iOS. Máy chủ mới đã chạy từ 28/09/2026. Trang chỉ đúng khi bản iOS nộp duyệt có đủ các tính năng đó (build 3 trở lên).
 
 | Khối trên trang | Đúng khi | Trạng thái |
 |---|---|---|
-| Các bước báo cáo, chặn và câu về bộ lọc `***` (mục 3.9) | Máy chủ mới chạy; bản iOS có bảng thao tác và phiếu báo cáo | Mã đã làm. Chờ Bước A của `08` |
-| Mục "Tôi đăng ký bằng Google…" (mục 3.5.2) | Bản iOS đã ẩn nút Google | Đã làm (`08`, IOS-02) |
+| Các bước báo cáo, chặn và câu về bộ lọc `***` (mục 3.9) | Máy chủ mới chạy; bản iOS có bảng thao tác và phiếu báo cáo | Đã làm; máy chủ đang chạy |
+| Mục "Tôi đăng ký bằng Google…" và "Đăng nhập bằng Google" (mục 3.5.2, 3.5.3) | Bản iOS có nút Google (build 3) | Đã làm (`08`, SAU-03). Đã thử 28/09/2026 |
+| Mục "Đăng nhập bằng Apple" (mục 3.5.4), đoạn thu hồi Apple (mục 3.10) | Bản iOS có nút Apple (build 3); máy chủ có `POST /auth/apple` và thu hồi | Đã làm (`08`, SAU-01, SAU-02). Đã thử 28/09/2026 |
+| Câu "Đã xoá tài khoản" (mục 3.10) | Bản iOS có commit `2b94b17` | Đã làm; phát qua OTA iOS hoặc build mới |
 | "chọn Tạo công việc bằng AI" và phần "Bạn kiểm soát" (mục 3.12) | Bản iOS có bảng thao tác, hộp thoại đồng ý và công tắc "Cho phép dùng AI" | Đã làm (`08`, IOS-04, IOS-08) |
-| "Dữ liệu được gửi cho AI … không gửi email" (mục 3.12) | Máy chủ mới chạy | Mã đã làm. Chờ Bước A |
-| "Ảnh và tài liệu bạn đã tải lên được xoá khỏi kho lưu trữ" (mục 3.11) | Máy chủ mới chạy | Mã đã làm. Chờ Bước A |
+| "Dữ liệu được gửi cho AI … không gửi email" (mục 3.12) | Máy chủ mới chạy | Đã làm; máy chủ đang chạy |
+| "Ảnh và tài liệu bạn đã tải lên được xoá khỏi kho lưu trữ" (mục 3.11) | Máy chủ mới chạy | Đã làm; máy chủ đang chạy |
 | Thẻ "Bật thông báo" (mục 3.6) | Bản iOS mới | Đã làm (`08`, IOS-29) |
 | Nút "Mở Cài đặt" khi từ chối máy ảnh (mục 3.7) | Bản iOS mới | Đã làm (`08`, IOS-35) |
 | Nút "Thử lại" ở màn xoá tài khoản (mục 3.10) | Bản iOS mới | Đã làm (`08`, IOS-20) |
-| Dòng Điều khoản sử dụng (mục 3.13) | `dieu-khoan.html` trả 200 | Đăng cùng lúc (`08`, Bước B) |
+| Dòng Điều khoản sử dụng (mục 3.13) | `dieu-khoan.html` trả 200 | Đã đăng ngày 28/09/2026 |
 | Dòng `[LINK APP STORE]` (mục 3.4) | Apple đã duyệt | Bản HTML chưa có dòng này; thêm sau khi có link |
 
 ### 5.2. Việc chỉ bạn làm được
@@ -602,6 +636,8 @@ Mọi tính năng trang nhắc tới đã có trong mã trên các nhánh iOS. N
 | 9 | Bổ sung danh sách trong màn Xoá tài khoản, thêm nút "Thử lại" | **Đã làm** (nhánh `ios`, commit `dd1fa4e`) |
 | 10 | Câu báo khi bị từ chối quyền máy ảnh theo kiểu iPhone | **Đã làm** (nhánh `ios`, commit `0cc5b3b`) |
 | 11 | Không bắt buộc: nút xoá tài khoản trên web | Còn lại. Làm xong thì sửa đoạn "Trên web" ở mục 3.10 |
+| 12 | Mục Apple và Google trên iPhone (3.5.1 … 3.5.5, 3.10, 3.11, mục lục) | **Đã sửa** trong `D:\WEDO_PC\FE_WEDO-ios\public\ho-tro.html` ngày 28/09/2026 (nhánh `ios-web`, commit `3a7920c` … `7bbf0c1`). Còn gộp vào `main` và đẩy web |
+| 13 | Đăng ký nơi gửi thư với Apple, để thư tới được địa chỉ chuyển tiếp. Xong thì sửa các câu "có thể không tới" ở 3.5.4, 3.5.5 | Còn lại (`08`, SAU-04) |
 
 ### 5.5. Kiểm tra sau khi web deploy
 
@@ -616,7 +652,7 @@ Mọi tính năng trang nhắc tới đã có trong mã trên các nhánh iOS. N
    - Chạm vào email thì mở ứng dụng Mail, có sẵn tiêu đề.
    - Chạm từng mục trong phần "Trên trang này" thì nhảy đúng chỗ.
    - Liên kết Facebook, TikTok, Chính sách quyền riêng tư, Điều khoản, Xoá tài khoản đều mở được.
-3. Mở trang trên trình duyệt máy tính, bấm Ctrl+F để tìm trên trang đang hiện. Không được thấy: `[LINK`, `[`, `Android`, `CH Play`, `Bảng giá`, `Nâng cấp`, `pricing`, `checkout`, `Apple ID`, `Đăng nhập bằng Apple`. (Tìm trên trang đang hiện, không tìm trong mã nguồn: chú thích HTML có nhắc vài chữ này để dặn người sửa.)
+3. Mở trang trên trình duyệt máy tính, bấm Ctrl+F để tìm trên trang đang hiện. Không được thấy: `[LINK`, `[`, `CH Play`, `Bảng giá`, `Nâng cấp`, `pricing`, `checkout`. Từ bản sửa ngày 28/09/2026, trang **có** chữ `Apple ID` và `Đăng nhập bằng Apple` (mục 3.5.4, 3.10), đúng như mong đợi. Cũng không được thấy chữ `Android` (mục 2.4). (Tìm trên trang đang hiện, không tìm trong mã nguồn: chú thích HTML có nhắc vài chữ này để dặn người sửa.)
 4. Mở trang khi **chưa đăng nhập** web. Trang phải hiện đủ, không đòi đăng nhập.
 5. Trong app bản TestFlight, bấm dòng "Hỗ trợ" ở tab Tài khoản: trang mở trong trình duyệt trong app.
 
@@ -634,7 +670,7 @@ Kiểu trình bày giống `xoa-tai-khoan.html`: khung rộng 720px, màu chính
 
 ## Phụ lục B. Đã kiểm những gì, ở đâu
 
-Kiểm tra mạng ngày 26/09/2026:
+Kiểm tra mạng ngày 26/09/2026 (hai dòng 404 dưới đây đã thành 200 sau khi web lên production ngày 28/09/2026):
 
 | Địa chỉ | Kết quả |
 |---|---|
@@ -658,7 +694,8 @@ Những điều trên trang được đối chiếu với mã, không lấy từ
 | Câu lỗi đăng nhập, email so đúng từng chữ | `BE_WEDO\src\auth\auth.service.ts:125-137` |
 | Google nối tài khoản theo email, tạo mật khẩu ngẫu nhiên | `BE_WEDO\src\auth\auth.service.ts:73-96` |
 | Tài khoản Google đặt được mật khẩu qua "Quên mật khẩu" rồi đăng nhập bằng email | `BE_WEDO\src\auth\password-reset.service.ts:43,123-128`; `auth.service.ts:125-140` |
-| iPhone ẩn nút Google | `08-sua-code-truoc-khi-nop.md`, IOS-02, đã làm (nhánh `ios`, commit `c013903`, `682916e`, `899c8eb`) |
+| iPhone có nút Google và nút Apple (build 3) | `08-sua-code-truoc-khi-nop.md`, SAU-02, SAU-03 (nhánh `ios`, commit `b016c3f`, `df0c255`); `src\components\ui\AppleButton.tsx`, `src\lib\auth\apple-signin.ts`, `src\lib\auth\google-signin.ts` |
+| Đăng nhập Apple: tìm, gắn, tạo tài khoản; tên "Người dùng Apple"; câu lỗi Apple ID khác; thu hồi khi xoá | `BE src\auth\auth.service.ts` (`timHoacTaoNguoiDungApple`), `BE src\auth\apple-auth.service.ts`, `BE src\users\users.service.ts` (`thuHoiAppleSauKhiXoa`), nhánh `ios-backend`, đang chạy |
 | Nhãn "Tiếp tục với Google" | `src\components\ui\GoogleButton.tsx:47` |
 | Quên mật khẩu: 6 số, 10 phút, 5 lần, huỷ mã cũ | `src\app\(auth)\forgot-password.tsx:124-185`; `BE_WEDO\src\auth\password-reset.service.ts:8,11,56-60`; `BE_WEDO\src\mail\mail.service.ts:99` |
 | Bốn công tắc thông báo | `src\app\account\notification-settings.tsx:30-58` |
@@ -702,97 +739,18 @@ Quy định của Apple đã đối chiếu (đọc ngày 26/09/2026):
 | Không nhắc tên nền tảng di động khác trong app hay metadata | App Review Guidelines 2.3.10 |
 | Không bắt người dùng gửi email để xoá tài khoản | developer.apple.com/support/offering-account-deletion-in-your-app/ |
 | Mức tuổi 18+ khi app đòi tuổi tối thiểu cao hơn mức Apple tính | developer.apple.com/help/app-store-connect/manage-app-information/set-an-app-age-rating/ |
-| (Bản sau) App có Sign in with Apple phải thu hồi token qua REST API; đường dẫn Cài đặt → [tên] → Đăng nhập bằng Apple; đăng ký nguồn thư cho dịch vụ chuyển tiếp email | developer.apple.com/support/offering-account-deletion-in-your-app/; support.apple.com/102571; developer.apple.com/help/account/capabilities/configure-private-email-relay-service/ |
+| App có Sign in with Apple phải thu hồi token qua REST API (đã làm); đường dẫn Cài đặt → [tên] → Đăng nhập bằng Apple; đăng ký nguồn thư cho dịch vụ chuyển tiếp email | developer.apple.com/support/offering-account-deletion-in-your-app/; support.apple.com/102571; developer.apple.com/help/account/capabilities/configure-private-email-relay-service/ |
 
 ---
 
-## Phụ lục C. Bản sau (1.1): các khối về Đăng nhập bằng Apple
+## Phụ lục C. Đăng nhập bằng Apple: đã đưa vào mục 3
 
-Bản iOS đầu tiên không có Đăng nhập bằng Apple (quyết định đã chốt), nên các khối dưới đây **không** nằm trên trang. Giữ lại để dán vào khi làm tính năng đó (`08-sua-code-truoc-khi-nop.md`, SAU-01 … SAU-04). Khi dán: thêm lại liên kết `#dang-nhap-apple` vào mục lục, thêm dòng "Tài khoản tạo bằng Apple: xem mục Đăng nhập bằng Apple để đăng nhập được trên web." vào cuối mục Tạo dự án, và làm thêm việc ở cuối phụ lục này.
+Phụ lục này trước là "Bản sau (1.1)", gồm khối chữ và khối HTML để dán khi có Đăng nhập bằng Apple. Ngày 28/09/2026, bản iPhone có nút Apple và Google, và trang `ho-tro.html` đã được viết lại theo mã thật. Nội dung nằm ở mục 3.5.4 (Đăng nhập bằng Apple), 3.10 (thu hồi khi xoá, tài khoản dùng địa chỉ chuyển tiếp) và 3.11 (mã Apple bị xoá).
 
-Khối chữ (đặt sau mục 3.5.3):
+Khác bản nháp cũ:
 
-#### C.1. Đăng nhập bằng Apple
+- Nút có chữ "Tiếp tục với Apple" (nút gốc của Apple), không phải "Đăng nhập bằng Apple".
+- Bản nháp cũ hứa "Apple chuyển thư của WeDo từ địa chỉ này về hộp thư thật". Câu đó chỉ đúng khi nơi gửi thư của WeDo đã đăng ký với Apple, mà hôm nay **chưa**. Trang nói thật: thư có thể không tới; hãy tiếp tục dùng nút Apple.
+- Bản nháp cũ bảo người dùng tài khoản Apple đặt mật khẩu qua "Quên mật khẩu?" để vào web. Bỏ, vì thư có thể không tới địa chỉ chuyển tiếp.
 
-> ⚠ Giả định: tính năng này chưa có trong mã (không có endpoint Apple ở `BE_WEDO\src\auth\auth.controller.ts`). Khối này viết cho lúc đã làm xong, và dựa trên năm điều kiện:
-> 1. Nút trong app có chữ "Đăng nhập bằng Apple".
-> 2. Họ tên lấy từ lần đăng nhập Apple đầu tiên, sửa được ở Thông tin cá nhân.
-> 3. Web **chưa** có nút Apple (đúng như hiện tại: `FE_WEDO\src\views\LoginView.tsx` chỉ có email và Google).
-> 4. Đã đăng ký email gửi thư của WeDo với dịch vụ chuyển tiếp email của Apple. Chưa đăng ký thì thư đặt lại mật khẩu gửi tới địa chỉ `@privaterelay.appleid.com` sẽ không tới, và gạch đầu dòng cuối cùng sai.
-> 5. Máy chủ gắn tài khoản Apple theo cách `08-sua-code-truoc-khi-nop.md` đề xuất (SAU-01, bước 3): email thật đã xác minh thì gắn vào tài khoản có cùng email, email ẩn thì không gắn.
-
-```text
-Đăng nhập bằng Apple (trên iPhone)
-
-- Bấm "Đăng nhập bằng Apple" rồi xác nhận bằng Face ID, Touch ID hoặc mật khẩu.
-- Lần đầu, Apple hỏi bạn muốn chia sẻ email thật hay ẩn email. Nếu ẩn, WeDo chỉ nhận một địa chỉ có đuôi @privaterelay.appleid.com. Apple chuyển thư của WeDo từ địa chỉ này về hộp thư thật của bạn.
-- Chia sẻ email thật trùng với email bạn đã đăng ký WeDo: bạn vào đúng tài khoản cũ.
-- Tài khoản tạo bằng email ẩn là một tài khoản riêng. Nó không gộp với tài khoản bạn đã tạo bằng email thật hoặc Google. Nếu đã có tài khoản WeDo, hãy đăng nhập đúng cách bạn dùng lần đầu.
-- Apple chỉ gửi họ tên cho WeDo ở lần đầu. Bạn sửa họ tên ở Tài khoản → Thông tin cá nhân.
-- Web WeDo chưa có nút đăng nhập bằng Apple. Muốn dùng tài khoản này trên web: xem email của tài khoản ở tab Tài khoản trong ứng dụng, rồi trên trang đăng nhập của web bấm "Quên mật khẩu?" và nhập đúng email đó để đặt mật khẩu.
-```
-
-Khối chữ cho mục Xoá tài khoản (đặt sau phần "Trên web"):
-
-```text
-Tài khoản đăng nhập bằng Apple:
-- Nếu bạn dùng email ẩn (đuôi @privaterelay.appleid.com), hãy xoá ngay trong ứng dụng như trên. Qua email, chúng tôi không đối chiếu được bạn là chủ tài khoản.
-- Khi tài khoản bị xoá, WeDo cũng thu hồi quyền Đăng nhập bằng Apple đã cấp cho WeDo. Bạn kiểm tra được ở Cài đặt của iPhone → [tên của bạn] → Đăng nhập bằng Apple. Tên mục có thể khác đôi chút tuỳ phiên bản iOS.
-```
-
-Khối HTML tương ứng:
-
-```html
-      <!--
-        ⚠ Giả định: bản iOS có "Đăng nhập bằng Apple"; họ tên sửa được ở Thông tin cá nhân;
-        web chưa có nút Apple; email gửi thư của WeDo đã đăng ký với dịch vụ chuyển tiếp email
-        của Apple; máy chủ gắn email thật đã xác minh vào tài khoản cùng email, không gắn email
-        ẩn. Chưa có tính năng thì XOÁ cả khối này (từ h3 tới hết ul).
-      -->
-      <h3 id="dang-nhap-apple">Đăng nhập bằng Apple (trên iPhone)</h3>
-      <ul>
-        <li>
-          Bấm <strong>Đăng nhập bằng Apple</strong> rồi xác nhận bằng Face ID, Touch ID hoặc mật
-          khẩu.
-        </li>
-        <li>
-          Lần đầu, Apple hỏi bạn muốn chia sẻ email thật hay ẩn email. Nếu ẩn, WeDo chỉ nhận một
-          địa chỉ có đuôi <code>@privaterelay.appleid.com</code>. Apple chuyển thư của WeDo từ địa
-          chỉ này về hộp thư thật của bạn.
-        </li>
-        <li>Chia sẻ email thật trùng với email bạn đã đăng ký WeDo: bạn vào đúng tài khoản cũ.</li>
-        <li>
-          Tài khoản tạo bằng email ẩn là một tài khoản riêng. Nó không gộp với tài khoản bạn đã tạo
-          bằng email thật hoặc Google. Nếu đã có tài khoản WeDo, hãy đăng nhập đúng cách bạn dùng
-          lần đầu.
-        </li>
-        <li>
-          Apple chỉ gửi họ tên cho WeDo ở lần đầu. Bạn sửa họ tên ở
-          <strong>Tài khoản → Thông tin cá nhân</strong>.
-        </li>
-        <li>
-          Web WeDo chưa có nút đăng nhập bằng Apple. Muốn dùng tài khoản này trên web: xem email
-          của tài khoản ở tab <strong>Tài khoản</strong> trong ứng dụng, rồi trên trang đăng nhập
-          của web bấm <strong>Quên mật khẩu?</strong> và nhập đúng email đó để đặt mật khẩu.
-        </li>
-      </ul>
-
-      <!--
-        ⚠ Giả định: máy chủ thu hồi token Apple khi xoá tài khoản. Chưa có Đăng nhập bằng Apple,
-        hoặc chưa thu hồi token, thì XOÁ đoạn này (từ p tới hết ul).
-      -->
-      <p><strong>Tài khoản đăng nhập bằng Apple:</strong></p>
-      <ul>
-        <li>
-          Nếu bạn dùng email ẩn (đuôi <code>@privaterelay.appleid.com</code>), hãy xoá ngay trong
-          ứng dụng như trên. Qua email, chúng tôi không đối chiếu được bạn là chủ tài khoản.
-        </li>
-        <li>
-          Khi tài khoản bị xoá, WeDo cũng thu hồi quyền Đăng nhập bằng Apple đã cấp cho WeDo. Bạn
-          kiểm tra được ở <strong>Cài đặt</strong> của iPhone → [tên của bạn] →
-          <strong>Đăng nhập bằng Apple</strong>. Tên mục có thể khác đôi chút tuỳ phiên bản iOS.
-        </li>
-      </ul>
-```
-
-Việc phải làm cùng lúc: vào Apple Developer → Certificates, Identifiers & Profiles → Services → "Sign in with Apple for Email Communication" → Configure → Email Sources → nút (+). Thêm địa chỉ gửi thư của WeDo: biến `MAIL_FROM` trên Azure, hoặc `MAIL_USER` nếu không đặt `MAIL_FROM` (`BE_WEDO\src\mail\mail.service.ts:57-58`). Nếu thư gửi từ tên miền riêng, thêm cả tên miền, và tên miền đó phải qua được SPF hoặc DKIM. Sau đó thử đặt lại mật khẩu cho một tài khoản dùng email ẩn.
+Việc còn lại để các câu "có thể không tới" thành "tới được": đăng ký nơi gửi thư ở Apple Developer → Certificates, Identifiers & Profiles → Services → "Sign in with Apple for Email Communication" (`01-tai-khoan-va-build.md`, mục B.3; `08`, SAU-04). Rồi thử đặt lại mật khẩu cho một tài khoản dùng email ẩn, và sửa các câu đó ở trang và ở mục 3.

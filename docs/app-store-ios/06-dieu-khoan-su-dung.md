@@ -107,9 +107,9 @@ Nếu bạn dùng EULA riêng thay cho EULA chuẩn, Apple yêu cầu EULA đó 
 - Đã chốt: Điều 2.1 — tuổi tối thiểu **18**, khớp với bản Chính sách quyền riêng tư mới (tài liệu 05, mục 12), trang hỗ trợ (tài liệu 07) và App Store Connect (tài liệu 02, mục 14). Lý do:
   1. Điều khoản Gemini API cấm dùng API trong ứng dụng hướng tới, hoặc có khả năng được truy cập bởi, người dưới 18 tuổi ("likely to be accessed by individuals under the age of 18", https://ai.google.dev/gemini-api/terms, kiểm ngày 26/09/2026). Máy chủ WeDo dùng Gemini trước tiên khi có `GEMINI_API_KEY` (`BE_WEDO\src\chat\chat.service.ts:954-966`).
   2. Nếu điều khoản của ứng dụng đặt tuổi tối thiểu cao hơn mức Apple tự tính, Apple yêu cầu nâng mức tuổi cho khớp (App Store Connect Help, *Set an app age rating*). Với tuổi 18, ở App Store Connect chọn **Override to Higher Age Rating → 18+**, như tài liệu 02 mục 14 đã ghi.
-  3. Chính sách đang đăng hôm nay ghi 13 (`FE_WEDO\public\privacy.html:126-129`). Bản mới ở tài liệu 05 đổi thành 18.
+  3. Chính sách cũ (đăng tới ngày 28/09/2026) ghi 13. Bản mới ở tài liệu 05, đã đăng, ghi 18.
 
-- Đã chốt: Điều 3.1 — ứng dụng trên iPhone **chỉ đăng nhập bằng email và mật khẩu**, nút Google bị ẩn trên iPhone. Web và Android giữ Google. Không có Sign in with Apple ở bản này, nên văn bản không nhắc Apple. Câu "dùng Quên mật khẩu để đặt mật khẩu" đúng với mã máy chủ (tài liệu 08, IOS-02). Khi làm Sign in with Apple ở bản sau, thêm "hoặc bằng Apple (trên iPhone)" vào Điều 3.1 và "hoặc Apple" vào Điều 8.3.
+- Đã chốt ngày 28/09/2026: Điều 3.1 — trên iPhone, người dùng đăng nhập bằng **email và mật khẩu, Google hoặc Apple**; web và Android có email và Google, không có Apple. Điều 3.3 nhắc giữ an toàn cả tài khoản Google hay Apple ID. Điều 3.5 (mới): tài khoản mới vào bằng Google hoặc Apple trong ứng dụng phải xác nhận 18+ và đồng ý Điều khoản trước khi dùng; người ẩn email khi đăng nhập Apple có email là địa chỉ chuyển tiếp, thư WeDo gửi tới đó có thể không tới (tài liệu 08, SAU-04). Điều 8.3 thêm "Đăng nhập bằng Apple". Điều 11.1: xoá trong ứng dụng cũng thu hồi Đăng nhập bằng Apple. Đúng với mã (tài liệu 08, SAU-01 … SAU-03).
 - Đã làm: Điều 5.4 — bộ lọc từ ngữ tiếng Việt và tiếng Anh cho tin nhắn và tên hiển thị **thay từ phản cảm bằng `***`**, không từ chối cả tin (tài liệu 08, IOS-03). Văn bản nói đúng như vậy. Đăng điều khoản khi máy chủ mới đã chạy.
 - ⚠ Giả định: Điều 4.3 — tệp bài nộp vẫn mở được bằng đường dẫn công khai, khó đoán (`BE_WEDO\src\tasks\task-submission-files.controller.ts:8-27`, route không cần đăng nhập). Nếu máy chủ thêm bước kiểm tra đăng nhập, bỏ câu về đường dẫn tệp bài nộp.
 - Đã làm: Điều 6 — công cụ **báo cáo** và **chặn** (tài liệu 08, IOS-03, IOS-04). Chữ trên màn hình: nhấn giữ tin của người khác (trò chuyện dự án và tin nhắn riêng) có "Báo cáo tin nhắn" và "Chặn người này"; nút ba chấm ở đầu cuộc trò chuyện riêng và nút ba chấm ở mỗi dòng trong màn Bạn bè (bạn bè, lời mời đến, lời mời đã gửi, kết quả tìm) có "Báo cáo người này" và "Chặn người này"; bỏ chặn ở "Tài khoản → Người đã chặn". Phiếu báo cáo có sáu lý do. Văn bản Điều 6 đã sửa cho khớp.
@@ -122,7 +122,7 @@ Nếu bạn dùng EULA riêng thay cho EULA chuẩn, Apple yêu cầu EULA đó 
 - ⚠ Giả định: Điều 9.1 — ứng dụng trên điện thoại **miễn phí**, **không có mua hàng trong ứng dụng**, không có lời mời mua ở nơi khác. Văn bản cố ý **không** nhắc tới gói trả phí trên web (xem mục 5).
 - ⚠ Giả định: Điều 9.3, 11.4 — báo trước **30 ngày** nếu ngừng toàn bộ dịch vụ; người bị khoá có **30 ngày** để khiếu nại.
 - ⚠ Giả định: Điều 13.2 — mức trần trách nhiệm là số lớn hơn giữa tiền đã trả trong 12 tháng và **500.000 đồng**. Đây là con số đề xuất, nên hỏi người có chuyên môn pháp lý.
-- Điều 1.4, 4.3 — Chính sách quyền riêng tư mới (tài liệu 05) đã làm trên nhánh `ios-web` (commit `c4b98c2`). Bản đang sống, tên cũ "Chính sách bảo mật", chỉ ghi "web WeDo và ứng dụng Android" và mô tả sai phần AI. Đăng hai trang cùng lúc, không đăng điều khoản trước chính sách mới.
+- Điều 1.4, 4.3 — Chính sách quyền riêng tư mới (tài liệu 05) và Điều khoản này đã đăng cùng ngày 28/09/2026. Bản sửa cho Apple và Google của hai trang cũng phải đăng cùng lúc, không đăng điều khoản trước chính sách.
 
 ### 4.2. Văn bản để sao chép
 
@@ -161,13 +161,15 @@ WeDo KHÔNG KHOAN NHƯỢNG với nội dung phản cảm và với người dù
 
 3. TÀI KHOẢN
 
-3.1. Bạn có thể tạo tài khoản bằng email và mật khẩu. Trên web WeDo và ứng dụng Android, bạn cũng có thể đăng nhập bằng Google. Ứng dụng trên iPhone chỉ đăng nhập bằng email và mật khẩu; nếu bạn đã tạo tài khoản bằng Google, hãy dùng "Quên mật khẩu" để đặt mật khẩu.
+3.1. Bạn có thể tạo tài khoản bằng email và mật khẩu. Bạn cũng có thể đăng nhập bằng Google trên web WeDo, ứng dụng Android và ứng dụng iPhone. Riêng trên iPhone, bạn còn có thể đăng nhập bằng Apple; web và ứng dụng Android không có cách này.
 
 3.2. Thông tin bạn cung cấp phải đúng. Hãy dùng tên mà nhóm của bạn nhận ra được. Không mạo danh người khác.
 
-3.3. Hãy giữ mật khẩu an toàn. Bạn chịu trách nhiệm về mọi hoạt động diễn ra dưới tài khoản của mình. Nếu thấy tài khoản bị dùng trái phép, hãy báo ngay cho chúng tôi qua email ở Điều 1.3.
+3.3. Hãy giữ an toàn mật khẩu WeDo, và cả tài khoản Google hay Apple ID bạn dùng để đăng nhập. Bạn chịu trách nhiệm về mọi hoạt động diễn ra dưới tài khoản của mình. Nếu thấy tài khoản bị dùng trái phép, hãy báo ngay cho chúng tôi qua email ở Điều 1.3.
 
 3.4. Tài khoản là của riêng bạn. Không bán, cho mượn hay chuyển tài khoản cho người khác.
+
+3.5. Lần đầu vào WeDo bằng Google hoặc Apple trong ứng dụng, bạn phải xác nhận đủ 18 tuổi và đồng ý với Điều khoản này trước khi dùng. Nếu bạn chọn ẩn email khi đăng nhập bằng Apple, email của tài khoản là địa chỉ chuyển tiếp của Apple. Thư WeDo gửi tới địa chỉ đó có thể không tới bạn, nên hãy tiếp tục đăng nhập bằng Apple (xem mục 3.1 của Chính sách quyền riêng tư).
 
 
 4. NỘI DUNG CỦA BẠN
@@ -264,7 +266,7 @@ Tài khoản bị khoá không đăng nhập được, và mọi phiên đăng n
 
 8.2. Nếu nhóm bật chức năng ghi biên bản, lời nói trong cuộc họp được Daily.co chuyển thành văn bản. Bản ghi lời thoại này có thể được gửi cho AI để tóm tắt (Điều 7). Người bật chức năng này phải báo cho mọi người trong cuộc họp biết trước.
 
-8.3. WeDo dùng một số dịch vụ của bên thứ ba, như đăng nhập bằng Google, dịch vụ gửi thông báo đẩy, dịch vụ lưu trữ và dịch vụ họp video. Khi dùng các dịch vụ này qua WeDo, bạn cũng phải tuân thủ điều khoản của họ. Chúng tôi không chịu trách nhiệm về nội dung hay hoạt động của dịch vụ bên thứ ba.
+8.3. WeDo dùng một số dịch vụ của bên thứ ba, như đăng nhập bằng Google, Đăng nhập bằng Apple, dịch vụ gửi thông báo đẩy, dịch vụ lưu trữ và dịch vụ họp video. Khi dùng các dịch vụ này qua WeDo, bạn cũng phải tuân thủ điều khoản của họ. Chúng tôi không chịu trách nhiệm về nội dung hay hoạt động của dịch vụ bên thứ ba.
 
 
 9. DỊCH VỤ, THAY ĐỔI VÀ GIÁN ĐOẠN
@@ -293,7 +295,7 @@ Tài khoản bị khoá không đăng nhập được, và mọi phiên đăng n
 
 11. CHẤM DỨT
 
-11.1. Bạn có thể ngừng dùng WeDo bất cứ lúc nào. Để xoá tài khoản, vào Tài khoản → Xoá tài khoản trong ứng dụng, hoặc làm theo hướng dẫn tại https://wedofpt.com.vn/xoa-tai-khoan.html. Nếu bạn là chủ một không gian làm việc còn thành viên khác, bạn cần chuyển quyền chủ trước khi xoá. Dữ liệu sau khi xoá được xử lý theo Chính sách quyền riêng tư.
+11.1. Bạn có thể ngừng dùng WeDo bất cứ lúc nào. Để xoá tài khoản, vào Tài khoản → Xoá tài khoản trong ứng dụng, hoặc làm theo hướng dẫn tại https://wedofpt.com.vn/xoa-tai-khoan.html. Nếu bạn là chủ một không gian làm việc còn thành viên khác, bạn cần chuyển quyền chủ trước khi xoá. Nếu bạn từng đăng nhập bằng Apple, việc xoá trong ứng dụng cũng thu hồi Đăng nhập bằng Apple của WeDo. Dữ liệu sau khi xoá được xử lý theo Chính sách quyền riêng tư.
 
 11.2. Chúng tôi có thể tạm khoá hoặc chấm dứt tài khoản của bạn, và gỡ Nội dung của bạn, nếu:
 a) bạn vi phạm Điều khoản này, đặc biệt là Điều 5;
@@ -398,7 +400,7 @@ Số ký tự của văn bản trên: **21.436** ký tự (27.941 byte UTF-8; đ
 
 ## 5. Đăng trang web
 
-- Đã làm: tệp `public/dieu-khoan.html` trên nhánh `ios-web` (commit `f6052b3`), cùng kiểu trình bày với các trang pháp lý khác. Vite chép nguyên thư mục `public` vào bản build, nên sau khi gộp vào `main` trang sẽ có ở:
+- Đã làm: tệp `public/dieu-khoan.html` trên nhánh `ios-web` (commit `f6052b3`), cùng kiểu trình bày với các trang pháp lý khác. Đã đăng ngày 28/09/2026. Cùng ngày, tệp được sửa thêm Điều 3.1, 3.3, 3.5, 8.3, 11.1 cho Apple và Google trên iPhone (commit `784d163`); bản sửa này **chưa đăng**, phải đẩy web lại trước khi nộp. Trang có ở:
   - `https://wedofpt.com.vn/dieu-khoan.html`
   - `https://fe-wedo.vercel.app/dieu-khoan.html`
 - Đường dẫn chính thức là `https://wedofpt.com.vn/dieu-khoan.html`. App đã dùng đúng đường dẫn này (`M src/lib/legal-links.ts`, `TERMS_URL`), App Review Notes cũng vậy.
@@ -410,7 +412,7 @@ Số ký tự của văn bản trên: **21.436** ký tự (27.941 byte UTF-8; đ
 
 ## 6. Chỗ đồng ý Điều khoản trong ứng dụng (đã làm)
 
-Đã chốt: trên iPhone, màn đăng nhập và màn đăng ký **chỉ có email và mật khẩu** (nút Google bị ẩn, tài liệu 08, IOS-02). Android và web vẫn có nút Google. Không có nút Sign in with Apple ở bản này.
+Đã chốt ngày 28/09/2026: trên iPhone, màn đăng nhập và màn đăng ký có ô email, mật khẩu, nút "Tiếp tục với Apple" và nút "Tiếp tục với Google" (tài liệu 08, SAU-02, SAU-03). Android và web có nút Google, không có nút Apple.
 
 Mọi chỗ dưới đây đã có trên nhánh `ios` (commit `899c8eb`, `dff8821`, `43ad40d`, `dd1fa4e`) và nhánh `ios-backend` (commit `3386c52`).
 
@@ -440,15 +442,15 @@ Câu báo lỗi dự phòng:
 Bạn cần xác nhận đủ 18 tuổi và đồng ý với Điều khoản sử dụng để tạo tài khoản.
 ```
 
-Trên Android, nút Google ở màn đăng ký không đòi đánh dấu ô. Tài khoản Google mới gặp màn đồng ý một lần ngay sau khi vào.
+Nút Google (Android, iPhone) và nút Apple (iPhone) ở màn đăng ký không đòi đánh dấu ô. Tài khoản mới tạo bằng hai nút này gặp màn đồng ý một lần ngay sau khi vào (Điều 3.5), nên không ai dùng app mà chưa đồng ý. Đã thấy trên iPhone thật ngày 28/09/2026 với một tài khoản Apple mới.
 
 ### 6.3. Chỗ 2 — Màn đăng nhập (không làm)
 
-Bản nháp trước đề xuất một dòng chữ nhỏ dưới nút Google. Dòng này **không làm**: nó chỉ để báo trước, không thay được bước đồng ý thật, và màn đồng ý một lần ở 6.4 đã bắt mọi đường vào. Trên iPhone không có nút Google nên không cần dòng này.
+Bản nháp trước đề xuất một dòng chữ nhỏ dưới nút Google. Dòng này **không làm**: nó chỉ để báo trước, không thay được bước đồng ý thật, và màn đồng ý một lần ở 6.4 đã bắt mọi đường vào, kể cả nút Apple và Google trên iPhone.
 
 ### 6.4. Chỗ 3 — Màn đồng ý một lần sau khi đăng nhập
 
-Đây là lưới an toàn cho mọi đường vào: tài khoản tạo bằng Google (Android, web), tài khoản tạo trên web, và tài khoản cũ đã đăng ký trước khi có ô đồng ý.
+Đây là lưới an toàn cho mọi đường vào: tài khoản tạo bằng Google (Android, iPhone, web), tài khoản tạo bằng Apple (iPhone), tài khoản tạo trên web, và tài khoản cũ đã đăng ký trước khi có ô đồng ý. Máy chủ để trống hai mốc đồng ý khi tạo tài khoản bằng Apple hay Google (`BE src/auth/auth.service.ts`).
 
 - `M src/components/auth/CongDieuKhoan.tsx` bọc toàn bộ ứng dụng. Người đã đăng nhập mà `termsAcceptedAt` là rỗng không vào được màn nào, kể cả màn mở từ thông báo.
 - Không hỏi thêm tên hay email ở màn này.
@@ -492,7 +494,7 @@ Khi nộp, chụp sẵn màn đăng ký có ô đồng ý và màn đồng ý m�
 
 Điều 6.3 là một cam kết. Người duyệt có thể bấm thử báo cáo và chặn trên tài khoản demo, và Apple có thể hỏi lại quy trình xử lý bất cứ lúc nào.
 
-Đã có trong mã (chưa lên production):
+Đã có trong mã (máy chủ và web đã lên production ngày 28/09/2026):
 
 - **Nơi nhận báo cáo:** mỗi báo cáo tạo một dòng `ContentReport` trên máy chủ, kèm bản chụp nội dung, và gửi một thư tới hộp thư ở biến `REPORT_NOTIFY_EMAIL` (`BE src/moderation/reports.service.ts`). Biến trống thì không gửi thư.
 - **Công cụ xử lý:** trang quản trị "Báo cáo vi phạm" (`#/admin/moderation`, nhánh `ios-web`) cho xem báo cáo, **Gỡ nội dung**, **Khoá tài khoản**, **Gỡ nội dung và khoá**, **Bỏ qua**, **Mở khoá**, kèm ô ghi chú. Báo cáo chờ quá 24 giờ có nhãn "Quá hạn".
@@ -535,7 +537,7 @@ Trước khi đăng:
 
 ## 9. Đoạn tiếng Anh về Guideline 1.2 (bản đầy đủ)
 
-**Không dán đoạn này vào ô Notes.** Tài liệu 04 (mục 6.2) đã gộp một bản ngắn hơn của đoạn này vào khối Notes (3.674 ký tự, 3.850/4.000 byte). Dán thêm sẽ trùng ý và vượt giới hạn 4.000 byte của ô Notes.
+**Không dán đoạn này vào ô Notes.** Tài liệu 04 (mục 6.2) đã gộp một bản ngắn hơn của đoạn này vào khối Notes (3.716 ký tự, 3.905/4.000 byte). Dán thêm sẽ trùng ý và vượt giới hạn 4.000 byte của ô Notes.
 
 Dùng đoạn này khi:
 
@@ -546,7 +548,7 @@ Tên nút và chỗ đặt nút dưới đây đúng với mã trên nhánh `ios
 
 ```text
 User-generated content (Guideline 1.2)
-- Terms: every user must accept the WeDo Terms of Use. New users tick the required box "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" (I am 18 or older and agree to the Terms of Use and Privacy Policy) on the Đăng ký (Sign up) screen; the Sign up button stays disabled until then. Accounts that have not agreed yet see a one-time Terms screen and must tap "Đồng ý và tiếp tục" (Agree and continue). The Terms (in Vietnamese) state zero tolerance for objectionable content and abusive users in the opening section and in Articles 5 and 6: https://wedofpt.com.vn/dieu-khoan.html
+- Terms: every user must accept the WeDo Terms of Use. New users tick the required box "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" (I am 18 or older and agree to the Terms of Use and Privacy Policy) on the Đăng ký (Sign up) screen; the Sign up button stays disabled until then. Accounts that have not agreed yet, including new Sign in with Apple and Google accounts, see a one-time Terms screen and must tap "Đồng ý và tiếp tục" (Agree and continue). The Terms (in Vietnamese) state zero tolerance for objectionable content and abusive users in the opening section and in Articles 5 and 6: https://wedofpt.com.vn/dieu-khoan.html
 - Filter: objectionable Vietnamese and English words in messages and display names are replaced with *** automatically.
 - Report: long-press another user's message in a project chat or a direct message and tap "Báo cáo tin nhắn" (Report message), then pick one of six reasons. To report a person, tap the ⋯ button at the top of a direct message or the ⋮ button on any row of the "Bạn bè" (Friends) screen, friend requests included, then "Báo cáo người này" (Report user).
 - Block: the same menus, then "Chặn người này" (Block this user). Blocking takes effect immediately: neither user can message the other or send friend requests, they cannot find each other in search, and the blocked user's messages are hidden. Unblock in "Tài khoản" (Account) > "Người đã chặn" (Blocked users).
@@ -554,13 +556,13 @@ User-generated content (Guideline 1.2)
 - Contact: wedosupport6886@gmail.com
 ```
 
-Số ký tự: **1.695/4.000** (1.769 byte UTF-8). đã điền email hỗ trợ. Nếu dùng đoạn này trong ô Notes thay cho khối của tài liệu 04. phần ghi chú còn lại chỉ được dùng tối đa 2.231 byte.
+Số ký tự: **1.750/4.000** (1.824 byte UTF-8), đã điền email hỗ trợ. Nếu dùng đoạn này trong ô Notes thay cho khối của tài liệu 04, phần ghi chú còn lại chỉ được dùng tối đa 2.176 byte.
 
 Bản dịch tiếng Việt (để bạn đối chiếu, không dán):
 
 ```text
 Nội dung do người dùng tạo (Guideline 1.2)
-- Điều khoản: mọi người dùng phải chấp nhận Điều khoản sử dụng WeDo. Người dùng mới đánh dấu ô bắt buộc "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" ở màn Đăng ký; nút Đăng ký tắt cho tới lúc đó. Tài khoản chưa đồng ý sẽ thấy màn Điều khoản một lần và phải bấm "Đồng ý và tiếp tục". Điều khoản (tiếng Việt) nói rõ không khoan nhượng với nội dung phản cảm và người dùng lạm dụng, ở phần mở đầu và ở Điều 5, Điều 6: https://wedofpt.com.vn/dieu-khoan.html
+- Điều khoản: mọi người dùng phải chấp nhận Điều khoản sử dụng WeDo. Người dùng mới đánh dấu ô bắt buộc "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" ở màn Đăng ký; nút Đăng ký tắt cho tới lúc đó. Tài khoản chưa đồng ý, kể cả tài khoản mới tạo bằng Apple hay Google, sẽ thấy màn Điều khoản một lần và phải bấm "Đồng ý và tiếp tục". Điều khoản (tiếng Việt) nói rõ không khoan nhượng với nội dung phản cảm và người dùng lạm dụng, ở phần mở đầu và ở Điều 5, Điều 6: https://wedofpt.com.vn/dieu-khoan.html
 - Bộ lọc: từ ngữ phản cảm tiếng Việt và tiếng Anh trong tin nhắn và tên hiển thị tự động bị thay bằng ***.
 - Báo cáo: nhấn giữ tin nhắn của người khác trong trò chuyện dự án hoặc tin nhắn riêng, bấm "Báo cáo tin nhắn", rồi chọn một trong sáu lý do. Để báo cáo một người, bấm nút ⋯ ở đầu tin nhắn riêng, hoặc nút ⋮ ở bất kỳ dòng nào trong màn "Bạn bè", kể cả lời mời kết bạn, rồi bấm "Báo cáo người này".
 - Chặn: cùng các trình đơn đó, bấm "Chặn người này". Việc chặn có tác dụng ngay: hai bên không nhắn tin hay gửi lời mời kết bạn cho nhau được, không tìm thấy nhau, và tin nhắn của người bị chặn bị ẩn. Bỏ chặn trong "Tài khoản" > "Người đã chặn".

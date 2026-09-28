@@ -3,7 +3,7 @@
 Tài liệu này dẫn từ con số 0 tới lúc bấm **Submit for Review** cho bản iOS đầu tiên của WeDo.
 
 - Viết cho chủ dự án dùng **Windows** và có **iPhone**, **không có Mac**. Mọi build iOS chạy trên máy chủ EAS của Expo, nên không cần Mac.
-- Viết ngày 26/09/2026. Giao diện của Apple, Google và Expo có thể đổi chữ theo thời gian. Thứ tự các bước thì giữ nguyên.
+- Viết ngày 26/09/2026, cập nhật ngày 28/09/2026 (tài khoản Apple đã duyệt, đăng nhập Apple và Google trên iPhone, build iOS 3). Giao diện của Apple, Google và Expo có thể đổi chữ theo thời gian. Thứ tự các bước thì giữ nguyên.
 - Lệnh đều viết cho **PowerShell**. Không dùng `&&`. Muốn chạy hai lệnh liền nhau thì xuống dòng hoặc dùng `;`.
 - Nội dung trang App Store (mô tả, từ khoá, nhãn quyền riêng tư, ghi chú cho người duyệt…) nằm ở các tài liệu khác trong thư mục `docs/app-store-ios/`. Tài liệu này chỉ lo tài khoản, build và quy trình.
 
@@ -16,9 +16,9 @@ Hai vai trong tài liệu:
 
 ## Các quyết định đã chốt
 
-Chủ dự án chốt ngày 26/09/2026:
+Chủ dự án chốt ngày 26/09/2026, sửa điểm đầu ngày 28/09/2026:
 
-- **Đăng nhập trên iPhone: chỉ email và mật khẩu.** Nút Google bị ẩn trên iPhone. Android và web giữ Google. Vì vậy bản này **không cần Đăng nhập bằng Apple** (Guideline 4.8 chỉ áp dụng khi app có đăng nhập bên thứ ba), và cũng không cần OAuth client iOS của Google. Các bước cho hai việc đó dồn về mục [Bản sau (1.1)](#bản-sau-11) ở cuối tài liệu.
+- **Đăng nhập trên iPhone: Apple, Google, hoặc email và mật khẩu.** Màn Đăng nhập và Đăng ký có nút "Tiếp tục với Apple" (nút gốc của Apple, chỉ trên iPhone) và "Tiếp tục với Google". Android và web có email và Google. App có Google nên Guideline 4.8 áp dụng, và Sign in with Apple đáp ứng điều đó. Phần tài khoản (khoá Apple, client iOS của Google, biến Azure) ở mục [Sign in with Apple và Google trên iPhone](#sign-in-with-apple-và-google-trên-iphone-đã-làm-ngày-28092026) cuối tài liệu.
 - **Tuổi tối thiểu 18.** Ở App Store Connect, bước Age Rating chọn Override to Higher Age Rating → 18+ (cách làm ở `02-thong-tin-app-store.md` mục 14).
 - **DSA của EU: This is not a trader account**, vì chỉ phát hành ở **App Store Việt Nam** (Bước 2.3).
 - **Email hỗ trợ và liên hệ: `wedosupport6886@gmail.com`.**
@@ -34,15 +34,15 @@ Chủ dự án chốt ngày 26/09/2026:
 
 Các dòng dưới đây còn là giả định. Đổi dòng nào thì sửa theo ở các bước liên quan.
 
-> ⚠ Giả định: Đăng ký Apple Developer Program dạng **Cá nhân (Individual)**. Người bán trên App Store là tên pháp lý của chủ dự án, **Lê Hữu Đại**. Phí **99 USD/năm**. Không có công ty đăng ký.
+> Đã xong: Apple Developer Program dạng **Cá nhân (Individual)**, Apple duyệt ngày 28/09/2026. Người bán trên App Store là **Lê Hữu Đại**. Team ID `LR53W8386S`. Phí **99 USD/năm**. Không có công ty đăng ký.
 >
-> ⚠ Giả định: Bundle ID là **`vn.wedo.app`** (trùng tên gói Android). Phiên bản **1.0.13**, build iOS đầu tiên số **1**.
+> Đã chốt: Bundle ID **`vn.wedo.app`** (trùng tên gói Android). Phiên bản **1.0.14**. Build iOS mới nhất số **3**, có nút Apple và Google.
 >
 > ⚠ Giả định: Giá **miễn phí**. **Chỉ iPhone** (`supportsTablet: false`). Ngôn ngữ chính **tiếng Việt**.
 >
 > ⚠ Giả định: **Không có mua trong ứng dụng (IAP)**. App iOS là bản đồng hành miễn phí của dịch vụ web. App không có giao diện mua và không kêu gọi mua ở nơi khác (Guideline 3.1.3(f)).
 
-Đã làm trên nhánh `ios` (chi tiết ở `08-sua-code-truoc-khi-nop.md`, mục Đã làm): **hộp thoại xin đồng ý** trước lần đầu dùng AI (Guideline 5.1.2(i)), báo cáo, chặn, bộ lọc từ ngữ, ô 18+ và màn đồng ý điều khoản, trang pháp lý trên web. Tên trang chính sách là **"Chính sách quyền riêng tư"** ở mọi nơi.
+Đã làm trên nhánh `ios` (chi tiết ở `08-sua-code-truoc-khi-nop.md`, mục Đã làm): **Sign in with Apple và Google trên iPhone**, thu hồi token Apple khi xoá tài khoản, **hộp thoại xin đồng ý** trước lần đầu dùng AI (Guideline 5.1.2(i)), báo cáo, chặn, bộ lọc từ ngữ, ô 18+ và màn đồng ý điều khoản, trang pháp lý trên web. Tên trang chính sách là **"Chính sách quyền riêng tư"** ở mọi nơi.
 
 ---
 
@@ -53,7 +53,7 @@ Các dòng dưới đây còn là giả định. Đổi dòng nào thì sửa th
 | 1 | Bật xác thực hai yếu tố, đăng ký Apple Developer Program | CDA | iPhone, giấy tờ, thẻ Visa/Mastercard |
 | 2 | Kiểm tra thoả thuận, khai trạng thái DSA | CDA | Bước 1 được duyệt |
 | 3 | Đăng ký Bundle ID `vn.wedo.app` | EAS tự làm, hoặc CDA | Bước 1 |
-| 4 | Google trên iPhone: bản này ẩn nút, không phải tạo gì | LTV | — |
+| 4 | Apple và Google trên iPhone: khoá Sign in with Apple, client iOS của Google, biến Azure (đã xong) | CDA, LTV | Bước 1 |
 | 5 | Kiểm tra biến môi trường EAS | CDA hoặc LTV | Bước 1 |
 | 6 | Build iOS trên EAS | CDA hoặc LTV | Bước 3, 5 |
 | 7 | Tạo app trên App Store Connect, đẩy build lên | CDA | Bước 3, 6 |
@@ -61,11 +61,14 @@ Các dòng dưới đây còn là giả định. Đổi dòng nào thì sửa th
 | 9 | Chụp ảnh màn hình | CDA | Bước 8 |
 | 10 | Nộp duyệt, phát hành, cập nhật OTA | CDA | Mọi bước trên, cộng nội dung ở các tài liệu khác |
 
+**Trạng thái ngày 28/09/2026:** bước 1 đến 7 đã xong, trừ việc xem biến `EXPO_PUBLIC_PRIVACY_URL` ở bước 5 (tài khoản Apple đã duyệt, bản ghi App Store Connect đã tạo, build 1 và build 3 đã lên TestFlight). Đang ở bước 8: thử build 3 trên iPhone thật. Còn bước 9 và 10.
+
 Kế hoạch build:
 
-- **Trước mọi build: đưa máy chủ `ios-backend` rồi web `ios-web` lên production** (`08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên). Mã trên nhánh `ios` gửi trường mới khi đăng ký và gọi đường API mới. Máy chủ cũ từ chối cả yêu cầu đăng ký, nên build nối máy chủ cũ không đăng ký được.
-- **Build 1 — thử nội bộ.** Phần mã bắt buộc đã xong trên nhánh `ios`, nên build đầu tiên đã có đủ tính năng nộp duyệt. Thử kỹ qua TestFlight theo Bước 8.
-- **Build 2 trở đi — sửa lỗi.** Mỗi lỗi iPhone tìm được ở Build 1 cần build mới (tăng `buildNumber`). Bản đã qua TestFlight sạch lỗi mới bấm Submit for Review.
+- **Đã xong: máy chủ rồi web lên production** ngày 28/09/2026 (`08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên). Máy chủ `backend` = `3d24e39` đã có `POST /auth/apple`.
+- **Build 1 (1.0.14):** đã lên TestFlight ngày 28/09/2026. Chưa có nút Apple và Google.
+- **Build 3:** có nút "Tiếp tục với Apple" và "Tiếp tục với Google". Đã thử trên iPhone thật ngày 28/09/2026. Build này được build trước commit `2b94b17` (xoá tài khoản xong báo "Đã xoá tài khoản" và về màn Đăng nhập). OTA chỉ áp dụng từ lần mở app sau, nên người duyệt mở build 3 lần đầu vẫn gặp mã cũ. Nên nộp build 4, build từ `2b94b17` hoặc mới hơn.
+- **Build sau — sửa lỗi.** Lỗi native cần build mới (tăng `buildNumber`: 3 → 4 …). Lỗi JavaScript phát OTA cho iOS (Bước 10.4), nhưng không phát trong lúc Apple đang duyệt.
 
 ---
 
@@ -76,11 +79,13 @@ Ghi mỗi giá trị vào một chỗ an toàn (ví dụ trình quản lý mật
 | Giá trị | Ví dụ hình dạng | Lấy ở đâu | Dùng ở đâu |
 |---|---|---|---|
 | Apple Account (email) | `ten@...` | Tài khoản Apple của CDA | Đăng nhập App Store Connect, EAS CLI |
-| Team ID | 10 ký tự, ví dụ `AB12CD34EF` | developer.apple.com/account → Membership details | `eas.json` (`appleTeamId`) |
+| Team ID | `LR53W8386S` | developer.apple.com/account → Membership details | `eas.json` (`appleTeamId`), biến Azure `APPLE_TEAM_ID` |
 | Bundle ID | `vn.wedo.app` | `app.json` → `expo.ios.bundleIdentifier` | Apple Developer, App Store Connect, Google Cloud |
 | Tài khoản Expo | tên người dùng Expo | `npx eas-cli whoami` | Mọi lệnh EAS |
 | EAS project ID | `69dcbb1c-23f5-47ea-9f56-4a555d4f5a23` | `app.json` → `extra.eas.projectId` | Đã gắn sẵn, không cần làm gì |
-| Apple ID của app (ascAppId) | dãy khoảng 10 chữ số | App Store Connect → app → App Information → Apple ID | `eas.json` → `submit.production.ios.ascAppId` |
+| Apple ID của app (ascAppId) | `6816878767` | App Store Connect → app → App Information → Apple ID | `eas.json` → `submit.production.ios.ascAppId` |
+| Key ID của khoá Sign in with Apple | `U9G7RAS2LZ` | developer.apple.com → Keys | Biến Azure `APPLE_KEY_ID`. Tệp `.p8` chủ dự án giữ riêng, chỉ dán vào biến Azure `APPLE_PRIVATE_KEY` |
+| Client ID iOS của Google | `108450458549-….apps.googleusercontent.com` (không phải bí mật) | Google Cloud, project `alert-rush-501204-b6` | `src/lib/auth/google-signin.ts`, `iosUrlScheme` trong `app.json`, biến Azure `GOOGLE_IOS_CLIENT_ID` |
 | Chứng chỉ phân phối, hồ sơ cấp phép, khoá APNs | — | EAS tự tạo ở Bước 6 | Lưu trên EAS, xem bằng `npx eas-cli credentials --platform ios` |
 | Khoá App Store Connect API | — | EAS tự tạo ở Bước 7 | Lưu trên EAS, dùng cho `eas submit` |
 
@@ -88,14 +93,15 @@ Tài khoản Expo đang sở hữu project **có thể** là `huudai` (đoán t�
 
 ---
 
-## Tình trạng cấu hình lúc viết (26/09/2026)
+## Tình trạng cấu hình (cập nhật 28/09/2026)
 
 Cấu hình iOS **đã commit** (commit `dbbd5f0`) trên **nhánh riêng `ios`**, mở sẵn ở thư mục **`D:\WeDo_ChPlay-ios`** (một git worktree của cùng repo). Nhánh `main` ở `D:\WeDo_ChPlay` **không có** các thay đổi này: `app.json` trên `main` vẫn chỉ có `"ios": { "icon": "./assets/expo.icon" }` (logo mẫu của Expo, không có Bundle ID). Vì vậy mọi lệnh build, submit và OTA cho iOS đều chạy trong `D:\WeDo_ChPlay-ios`. Lý do tách nhánh nằm ở Bước 6.1.
 
 **Đã có** trên nhánh `ios`, trong `app.json`, khối `expo.ios`:
 
 - `bundleIdentifier: "vn.wedo.app"`
-- `buildNumber: "1"`
+- `buildNumber: "3"` (phiên bản chung `1.0.14`)
+- `usesAppleSignIn: true` (commit `a5cfb2e`), kèm plugin `expo-apple-authentication`, và `iosUrlScheme` cho plugin Google Sign-In (commit `df0c255`)
 - `supportsTablet: false`
 - `icon: "./assets/images/icon.png"` (logo WeDo, không còn logo mẫu của Expo)
 - `config.usesNonExemptEncryption: false` (khỏi phải khai mã hoá bằng tay cho từng build)
@@ -107,15 +113,15 @@ Cùng commit đó còn có:
 - Plugin `expo-secure-store` đặt `faceIDPermission: false`, bỏ câu xin quyền Face ID tiếng Anh mà app không dùng.
 - Câu xin quyền thư viện ảnh nói rõ cả việc chọn ảnh đại diện.
 
-**Mã đã làm** trên nhánh `ios` (26 commit, từ `dbbd5f0` tới `226fc9b`), cùng nhánh `ios-backend` và `ios-web`: ẩn nút Google trên iPhone, báo cáo, chặn, bộ lọc từ ngữ, ô 18+, màn đồng ý điều khoản một lần, hộp thoại đồng ý AI, bốn dòng pháp lý và liên hệ ở tab Tài khoản, kiểm tra phiên bản theo nền tảng (iPhone mở App Store), ảnh HEIC đổi sang JPEG, câu từ chối máy ảnh kiểu iPhone, không hỏi quyền thông báo lúc đăng nhập, ẩn thông báo gói và thanh toán trên iPhone, bàn phím ở màn tạo việc, đăng ký, quên mật khẩu. Bảng đầy đủ ở `08-sua-code-truoc-khi-nop.md`, mục Bảng trạng thái.
+**Mã đã làm** trên nhánh `ios` (từ `dbbd5f0` tới `2b94b17`), cùng nhánh `ios-backend` và `ios-web` (đã lên production): nút Apple và Google trên iPhone, thu hồi token Apple khi xoá tài khoản, xoá xong về màn Đăng nhập với câu "Đã xoá tài khoản", báo cáo, chặn, bộ lọc từ ngữ, ô 18+, màn đồng ý điều khoản một lần, hộp thoại đồng ý AI, bốn dòng pháp lý và liên hệ ở tab Tài khoản, kiểm tra phiên bản theo nền tảng (iPhone mở App Store), ảnh HEIC đổi sang JPEG, câu từ chối máy ảnh kiểu iPhone, không hỏi quyền thông báo lúc đăng nhập, ẩn thông báo gói và thanh toán trên iPhone, bàn phím ở màn tạo việc, đăng ký, quên mật khẩu. Bảng đầy đủ ở `08-sua-code-truoc-khi-nop.md`, mục Bảng trạng thái.
 
 **Còn lại** — việc của LTV. Cột cuối nói việc đó phải xong trước build nào.
 
 | Việc | Chỗ trong code | Cần trước |
 |---|---|---|
-| Khối `submit` trong `eas.json` có `ascAppId` và `appleTeamId` (IOS-16) | `eas.json` trên nhánh `ios` | Lần `eas submit` đầu tiên (cần Bước 7.2) |
-| `fingerprint.config.js` bỏ trường số phiên bản khỏi vân tay (Bước 6.1) | gốc repo, nhánh `ios` | Build 1, nếu build Play 18 cùng lúc |
-| Tăng `android.versionCode` từ 17 lên 18, nếu build Play cùng commit | `app.json` | Build Play 18 |
+| Khối `submit` trong `eas.json` có `ascAppId` và `appleTeamId` (IOS-16) | `eas.json` trên nhánh `ios` | **Đã làm** (`962517f`) |
+| `fingerprint.config.js` bỏ trường số phiên bản khỏi vân tay (Bước 6.1) | gốc repo, nhánh `ios` | **Đã làm** (`962517f`, `801c266`) |
+| Tăng `android.versionCode` | `app.json` | **Đã làm**: hiện ghi 19 |
 | Bàn phím che ô nhập ở năm màn còn lại (IOS-18) | `meetings/new.tsx`, `account/feedback.tsx`, `account/profile.tsx`, `CreateWorkspaceForm.tsx`, `RejectTaskSheet.tsx` | Nên có trước build nộp duyệt |
 | Tuỳ chọn: xoá thư mục `assets/expo.icon`, gỡ module không dùng (IOS-25) | `assets/`, `package.json` | Cùng lần đổi cấu hình |
 
@@ -245,11 +251,10 @@ Muốn đổi trạng thái cho riêng một app: **Apps** → chọn app → **
 
 Bundle ID là tên định danh của app trên hệ Apple. Sau khi đã tải build lên App Store Connect thì **không đổi được nữa**.
 
-App cần một năng lực (capability):
+App cần hai năng lực (capability):
 
 - **Push Notifications**: để nhận thông báo đẩy. Plugin `expo-notifications` tự thêm quyền `aps-environment` vào app.
-
-Bản này **không** cần **Sign In with Apple**, vì iPhone chỉ đăng nhập bằng email và mật khẩu. Khi nào làm, xem mục [Bản sau (1.1)](#bản-sau-11).
+- **Sign In with Apple**: cho nút "Tiếp tục với Apple". `app.json` có `ios.usesAppleSignIn: true`, nên EAS tự bật. **Đã bật** ngày 28/09/2026.
 
 ### Cách A — để EAS tự làm (khuyên dùng)
 
@@ -269,36 +274,36 @@ Dùng khi muốn giữ chỗ Bundle ID ngay, trước khi build.
 3. Chọn **App IDs**, bấm **Continue**. Chọn **App**, bấm **Continue**.
 4. **Description**: `WeDo`. Ô này chỉ nhận chữ, số và khoảng trắng.
 5. **Bundle ID**: chọn **Explicit**, nhập `vn.wedo.app`.
-6. Trong danh sách **Capabilities**, đánh dấu **Push Notifications**. Không đánh dấu thêm gì: năng lực nào app không khai thì lần build sau EAS cũng tắt đi.
+6. Trong danh sách **Capabilities**, đánh dấu **Push Notifications** và **Sign In with Apple**. Không đánh dấu thêm gì: năng lực nào app không khai thì lần build sau EAS cũng tắt đi.
 7. Bấm **Continue**, rồi **Register**.
 
 Nếu Apple báo `vn.wedo.app` không dùng được (đã có người đăng ký):
 
 - Chọn tên khác, ví dụ `vn.wedofpt.app`.
 - Báo LTV sửa `expo.ios.bundleIdentifier` trong `app.json`.
-- Dùng tên mới ở mọi chỗ: bản ghi App Store Connect (Bước 7), và các việc ở mục Bản sau (1.1) nếu làm.
+- Dùng tên mới ở mọi chỗ: bản ghi App Store Connect (Bước 7), khoá Sign in with Apple, client iOS của Google và biến `APPLE_CLIENT_ID` trên Azure.
 - Tên gói Android vẫn giữ `vn.wedo.app`.
 
 ---
 
-## Bước 4. Google trên iPhone: ẩn ở bản này
+## Bước 4. Google và Apple trên iPhone: đã bật ở build 3
 
-Đã chốt: bản iPhone đầu tiên **không có** nút **Tiếp tục với Google**. Đã làm trên nhánh `ios` (commit `c013903`, `682916e`, `899c8eb`): nút và dòng "hoặc" ẩn trên iPhone, và app không gọi SDK Google trên iPhone (`08-sua-code-truoc-khi-nop.md`, IOS-02). Android và web vẫn giữ Google.
+Đã chốt ngày 28/09/2026: iPhone có nút **Tiếp tục với Google** và nút **Tiếp tục với Apple**. Build iOS 1 còn ẩn nút Google; từ build 3 cả hai nút đều có (`08-sua-code-truoc-khi-nop.md`, SAU-01 … SAU-03).
 
-Vì vậy ở bản này anh **không** phải:
+Đã làm:
 
-- tạo OAuth client iOS trên Google Cloud;
-- khai biến `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`;
-- sửa dòng plugin Google Sign-In trong `app.json`.
+- Tạo OAuth client iOS trên Google Cloud, đưa client ID vào mã và `iosUrlScheme` vào `app.json` (commit `2d1606f`, `336cebb`, `df0c255`).
+- Bật Sign In with Apple, tạo khoá cho máy chủ, đặt biến Azure (mục cuối tài liệu này).
+- Máy chủ nhận ID token Google của client iOS và có `POST /auth/apple` (đang chạy trên production).
 
-Lý do chọn cách này:
+Lý do phải có cả hai:
 
-- Guideline 4.8 chỉ áp dụng khi app có đăng nhập bằng dịch vụ bên thứ ba. App iPhone chỉ còn email và mật khẩu của WeDo, nên không cần Đăng nhập bằng Apple.
-- Nếu để nút Google mà chưa có client iOS, nút sẽ **hỏng trên mọi iPhone** (thư viện báo lỗi khi thiếu cả `GoogleService-Info.plist` lẫn `iosClientId`), và người duyệt bấm là thấy lỗi.
+- Guideline 4.8: app có đăng nhập bằng dịch vụ bên thứ ba (Google) thì phải có thêm một cách đăng nhập chỉ lấy tên và email, cho giữ kín email, không dùng để quảng cáo. Sign in with Apple đáp ứng điều đó.
+- Nút Google trên iPhone cần client iOS và `iosUrlScheme`. Thiếu một trong hai thì bấm nút là hỏng, người duyệt thấy lỗi.
 
-**Người đã đăng ký bằng Google trên web hoặc Android** vẫn dùng được iPhone. Trên màn Đăng nhập, họ bấm **Quên mật khẩu?**, nhập đúng địa chỉ Gmail, nhận mã 6 số qua email và đặt mật khẩu mới. Sau đó đăng nhập bằng email và mật khẩu đó. Máy chủ tìm tài khoản theo email, không phân biệt cách đăng ký, nên đường này chạy được mà không phải sửa máy chủ (đã đối chiếu mã, xem IOS-02). Trên web và Android, họ vẫn bấm Google như cũ.
+**Người đã đăng ký bằng Google trên web hoặc Android** bấm **Tiếp tục với Google** trên iPhone là vào đúng tài khoản cũ. Máy chủ tìm tài khoản theo email. Đã thử trên iPhone thật ngày 28/09/2026.
 
-Khi muốn bật lại Google trên iPhone: làm theo mục [Bản sau (1.1)](#bản-sau-11), và phải làm Đăng nhập bằng Apple trong cùng bản.
+Chi tiết từng màn hình của Apple và Google Cloud: mục [Sign in with Apple và Google trên iPhone](#sign-in-with-apple-và-google-trên-iphone-đã-làm-ngày-28092026) cuối tài liệu.
 
 ---
 
@@ -331,10 +336,10 @@ Lệnh `env:list` mặc định chỉ liệt kê biến cấp project. Nếu có
 | `EXPO_PUBLIC_PRIVACY_URL` | Không bắt buộc nữa | Trên nhánh `ios`, mã dùng địa chỉ dự phòng `https://wedofpt.com.vn/privacy.html` (`src/lib/legal-links.ts`), nên dòng "Chính sách quyền riêng tư" luôn hiện. Nếu biến có trên EAS thì biến thắng, nên đặt đúng `https://wedofpt.com.vn/privacy.html` |
 | `EXPO_PUBLIC_WEB_URL` | Không cần cho iPhone | Chỉ dùng cho nút "Xem đầy đủ trên web" ở Bảng đóng góp, mà nút này đã ẩn trên iPhone. Android vẫn dùng |
 | `EXPO_PUBLIC_SENTRY_DSN` | Nên có | App vẫn chạy, nhưng lỗi trên iPhone không gửi về Sentry |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Không | Code dùng giá trị dự phòng có sẵn (`google-signin.ts:29`). Chỉ Android dùng, vì nút Google ẩn trên iPhone |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Không | Code dùng giá trị dự phòng có sẵn (`google-signin.ts`). Android và iPhone đều dùng (`webClientId`). Client iOS của Google nằm cứng trong mã, không cần biến EAS |
 | `GOOGLE_SERVICES_JSON` | Chỉ Android | iOS không dùng |
 
-Các biến này đã chạy cho các build Android production, nên nhiều khả năng đã có sẵn. Bản iOS này **không cần biến EAS mới**. Điều khoản sử dụng và trang hỗ trợ dùng đường dẫn cố định trong mã. Biến `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` chỉ cần khi bật lại Google trên iPhone (mục Bản sau). Biến mới của máy chủ (`REPORT_NOTIFY_EMAIL`, `MOBILE_IOS_*`) đặt trên Azure, không phải EAS (`08`, Bước A2).
+Các biến này đã chạy cho các build Android production, nên nhiều khả năng đã có sẵn. Bản iOS này **không cần biến EAS mới**. Điều khoản sử dụng và trang hỗ trợ dùng đường dẫn cố định trong mã. Biến mới của máy chủ (`REPORT_NOTIFY_EMAIL`, `MOBILE_IOS_*`, `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_IOS_CLIENT_ID`) đặt trên Azure, không phải EAS (`08`, Bước A2).
 
 ### 5.3 Thêm biến còn thiếu
 
@@ -354,11 +359,11 @@ Tệp `.env` trên máy LTV hiện đặt `EXPO_PUBLIC_PRIVACY_URL` là `https:/
 
 ### 6.1 Trước khi build
 
-- [ ] Máy chủ `ios-backend` và web `ios-web` **đã chạy trên production** (`08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên). Chưa thì dừng, không build.
+- [x] Máy chủ và web mới **đã chạy trên production** (28/09/2026; `08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên).
 - [ ] `app.json` có đủ khối `expo.ios` như mục "Tình trạng cấu hình" ở trên.
 - [ ] Biến môi trường đủ (Bước 5).
 - [ ] Các việc ở bảng "Còn lại" cần cho build này đã xong.
-- [ ] Nếu là build thứ hai trở đi: **tăng `expo.ios.buildNumber`** trong `app.json` (`"1"` → `"2"` → …). App Store Connect từ chối build trùng cặp phiên bản 1.0.13 + số build.
+- [ ] Nếu là build thứ hai trở đi: **tăng `expo.ios.buildNumber`** trong `app.json` (hiện là `"3"`, lần sau `"4"` …). App Store Connect từ chối build trùng cặp phiên bản 1.0.14 + số build.
 
 **⚠ Cảnh báo vân tay OTA — đọc kỹ, ảnh hưởng cả bản Android đang chạy.**
 
@@ -566,7 +571,7 @@ npx eas-cli build --platform ios --profile production --auto-submit
 ### 7.4 Sau khi đẩy lên
 
 - Apple xử lý build, thường **10–15 phút**, có khi tới khoảng một giờ (ước lượng). Apple gửi email khi xong.
-- Build hiện ở tab **TestFlight**, nhóm phiên bản **1.0.13**, số build **1**.
+- Build hiện ở tab **TestFlight**, nhóm phiên bản **1.0.14**, số build **1**, **3** …
 - Vì `app.json` đã khai `usesNonExemptEncryption: false`, build sẽ **không** kẹt ở trạng thái **Missing Compliance**. Nếu vẫn kẹt: bấm **Manage** cạnh build, chọn **None of the algorithms mentioned above**, bấm **Save**. App chỉ dùng HTTPS/WSS qua hệ điều hành, nên thuộc diện miễn.
 - Mặc định `eas submit` cố tạo sẵn một nhóm thử nội bộ trên TestFlight, kể cả khi đã có `ascAppId` (tắt được bằng `--no-auto-testflight-setup`). Nếu không thấy nhóm nào, tạo tay ở Bước 8.
 
@@ -581,7 +586,7 @@ Thử nội bộ **không cần Apple duyệt**. Tối đa 100 người, và ai 
 1. App Store Connect → app → tab **TestFlight**.
 2. Nếu chưa có nhóm nội bộ: bấm **+** cạnh **Internal Testing**, đặt tên `Nhóm WeDo`, bấm **Create**. Nên đánh dấu **Enable automatic distribution** để build mới tự đến tay người thử.
 3. Chọn nhóm, bấm **Invite Testers**, đánh dấu tên mình và các thành viên, bấm **Add**.
-4. Nếu không bật phân phối tự động: chọn nhóm, bấm **Add Builds**, chọn build 1, bấm **Next**, điền **What to Test** (tuỳ chọn), bấm **Add**.
+4. Nếu không bật phân phối tự động: chọn nhóm, bấm **Add Builds**, chọn build mới nhất, bấm **Next**, điền **What to Test** (tuỳ chọn), bấm **Add**.
 5. Trên iPhone: cài ứng dụng **TestFlight** từ App Store. Mở email mời, bấm **View in TestFlight**. Hoặc mở TestFlight bằng cùng Apple Account là thấy app. Bấm **Install**.
 
 Mỗi build thử được **90 ngày**. iPhone cần iOS 16.4 trở lên (mức tối thiểu của Expo SDK 57).
@@ -589,13 +594,13 @@ Mỗi build thử được **90 ngày**. iPhone cần iOS 16.4 trở lên (mức
 Tuỳ chọn: ô **What to Test** của build (giới hạn 4000 ký tự) hiện trên TestFlight cho người thử. Có thể dán:
 
 ```text
-Bản iOS đầu tiên của WeDo. Nhờ thử kỹ: đăng nhập bằng email (tài khoản tạo bằng Google thì đặt mật khẩu qua Quên mật khẩu), gửi ảnh từ thư viện, các ô nhập khi bàn phím bật lên, thông báo đẩy và chạm vào thông báo, báo cáo và chặn, xoá tài khoản bằng tài khoản phụ. Gặp lỗi thì chụp màn hình rồi gửi phản hồi cho bản thử qua TestFlight.
+Bản iOS đầu tiên của WeDo. Nhờ thử kỹ: đăng nhập bằng email, bằng nút Tiếp tục với Apple và Tiếp tục với Google, gửi ảnh từ thư viện, các ô nhập khi bàn phím bật lên, thông báo đẩy và chạm vào thông báo, báo cáo và chặn, xoá tài khoản bằng tài khoản phụ. Gặp lỗi thì chụp màn hình rồi gửi phản hồi cho bản thử qua TestFlight.
 ```
-(336/4000 ký tự)
+(325/4000 ký tự)
 
 ### 8.2 Danh sách thử trên iPhone thật
 
-Dùng **tài khoản demo** có dữ liệu mẫu, không dùng tài khoản thật của người khác. Đánh dấu từng ô khi xong. Các dòng dưới đây đã có mã trên nhánh `ios` nhưng chưa ai thử trên iPhone thật. Dòng có ghi "đã biết" là chỗ mã chưa sửa; thử để xác nhận, rồi báo LTV. Danh sách đầy đủ hơn ở `08-sua-code-truoc-khi-nop.md`, mục Chưa kiểm chứng.
+Dùng **tài khoản demo** có dữ liệu mẫu, không dùng tài khoản thật của người khác. Đánh dấu từng ô khi xong. Các dòng dưới đây đã có mã trên nhánh `ios`. Dòng đã đánh dấu [x] là đã thử trên iPhone thật ngày 28/09/2026; các dòng khác chưa ai thử. Dòng có ghi "đã biết" là chỗ mã chưa sửa; thử để xác nhận, rồi báo LTV. Danh sách đầy đủ hơn ở `08-sua-code-truoc-khi-nop.md`, mục Chưa kiểm chứng.
 
 **Cài đặt và mở app**
 
@@ -606,12 +611,16 @@ Dùng **tài khoản demo** có dữ liệu mẫu, không dùng tài khoản th�
 
 **Đăng nhập**
 
-- [ ] Màn Đăng nhập và Đăng ký **không có** nút **Tiếp tục với Google** và dòng "hoặc" (Bước 4).
+- [x] Màn Đăng nhập có dòng "hoặc", nút **Tiếp tục với Apple** (nút đen của Apple) rồi nút **Tiếp tục với Google**, cùng cỡ (build 3).
+- [ ] Màn Đăng ký cũng có hai nút đó. Android không có nút Apple.
+- [x] **Tiếp tục với Google** bằng tài khoản Google đã có trên web: vào đúng tài khoản cũ, thấy dự án cũ.
+- [x] **Tiếp tục với Apple**, chọn **Ẩn địa chỉ email**: tạo tài khoản mới có email `…@privaterelay.appleid.com`, gặp màn **Điều khoản sử dụng** (ô 18+), rồi màn **Tạo không gian làm việc**. Tên gõ ở màn đó (lần thử ngày 28/09/2026 là "Tốt Nghiệp Drone 9+") hiện dưới email ở tab Tài khoản.
+- [ ] Bấm **Tiếp tục với Apple** rồi đóng bảng Apple: app không báo lỗi. Đăng xuất rồi đăng nhập Apple lần hai: vào đúng tài khoản cũ.
 - [ ] Đăng ký bằng email + mật khẩu. Chưa đánh dấu ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" thì nút **Đăng ký** tắt. Đánh dấu rồi thì đăng ký được. Hai cụm tên văn bản mở đúng trang trong trình duyệt trong app.
 - [ ] Đăng nhập bằng email + mật khẩu.
 - [ ] Đăng nhập bằng một tài khoản tạo trên web: gặp màn **Điều khoản sử dụng** một lần. Đánh dấu ô, bấm **Đồng ý và tiếp tục**, vào thẳng Trò chuyện. Bấm **Đăng xuất** ở màn đó cũng thoát được.
 - [ ] Quên mật khẩu: nhận mã 6 số qua email, đặt lại được.
-- [ ] Tài khoản đã tạo bằng Google trên web: bấm **Quên mật khẩu?**, nhập đúng Gmail, đặt mật khẩu mới, rồi đăng nhập được trên iPhone. Sau đó trên web vẫn đăng nhập Google được.
+- [ ] Tài khoản Apple ẩn email bấm **Quên mật khẩu?**: hiện có thể **không** nhận được thư, vì chưa đăng ký nơi gửi với Apple (mục B.3 cuối tài liệu). Ghi lại kết quả.
 - [ ] Đăng xuất rồi đăng nhập lại.
 - [ ] Gỡ app, cài lại từ TestFlight. Xem app có **tự đăng nhập lại** không. Keychain của iPhone giữ token qua lần gỡ app; đây là hành vi đã biết. Ghi lại để quyết định có xử lý không.
 
@@ -660,7 +669,9 @@ Dùng **tài khoản demo** có dữ liệu mẫu, không dùng tài khoản th�
 
 **Xoá tài khoản**
 
-- [ ] Dùng **tài khoản phụ** (không dùng tài khoản demo cho người duyệt), có gửi ảnh và nộp tệp trước: Tài khoản → Xoá tài khoản → gõ `XOA` → **Xoá tài khoản vĩnh viễn** → xác nhận. Sau đó không đăng nhập lại được bằng tài khoản đó. Nhờ LTV xem log máy chủ: không có lỗi xoá tệp trên Azure Blob.
+- [ ] Dùng **tài khoản phụ** (không dùng tài khoản demo cho người duyệt), có gửi ảnh và nộp tệp trước: Tài khoản → Xoá tài khoản → gõ `XOA` → **Xoá tài khoản vĩnh viễn** → xác nhận. App phải báo **"Đã xoá tài khoản"** rồi về màn Đăng nhập (commit `2b94b17`). Sau đó không đăng nhập lại được bằng tài khoản đó. Nhờ LTV xem log máy chủ: không có lỗi xoá tệp trên Azure Blob.
+- [x] Tài khoản tạo bằng **Tiếp tục với Apple**: xoá xong, mở **Cài đặt → [tên] → Đăng nhập & Bảo mật → Đăng nhập bằng Apple**, WeDo không còn trong danh sách (chờ 1–2 phút nếu chưa mất). Đã thử ngày 28/09/2026.
+- [x] Tài khoản email tạm: xoá xong, đăng nhập lại báo sai email hoặc mật khẩu. Đã thử ngày 28/09/2026.
 
 **iPad (không bắt buộc)**
 
@@ -749,12 +760,12 @@ Mọi thứ dưới đây nằm trong App Store Connect. Nội dung chữ để 
 
 **Trang phiên bản** (cột trái, mục **iOS App**, phiên bản ở trạng thái **Prepare for Submission**):
 
-- [ ] Số phiên bản phải là **`1.0.13`**, khớp với build. App mới tạo thường mang sẵn số `1.0`; nếu vậy thì sửa thành `1.0.13` rồi bấm **Save**. Hai số lệch nhau thì không gắn được build.
+- [ ] Số phiên bản phải là **`1.0.14`**, khớp với build. App mới tạo thường mang sẵn số `1.0`; nếu vậy thì sửa thành `1.0.14` rồi bấm **Save**. Hai số lệch nhau thì không gắn được build.
 - [ ] Ảnh chụp màn hình bộ 6,9 inch (Bước 9).
 - [ ] Promotional Text, Description, Keywords, Support URL, Marketing URL (tuỳ chọn), Copyright.
-  - **Support URL** là bắt buộc: `https://wedofpt.com.vn/ho-tro.html`. Trang đã có trên nhánh `ios-web` (commit `1f6e813`), nhưng kiểm ngày 26/09/2026 địa chỉ này **còn trả lỗi 404** vì chưa đăng. Phải đăng (`08-sua-code-truoc-khi-nop.md`, Bước B) trước khi nộp.
+  - **Support URL** là bắt buộc: `https://wedofpt.com.vn/ho-tro.html`. Trang đã đăng ngày 28/09/2026 và trả 200. Đẩy lại web khi trang có đoạn về Apple (`07-trang-ho-tro.md`).
   - ⚠ Giả định: Copyright ghi `2026 Lê Hữu Đại`, cho khớp tên người bán.
-- [ ] Mục **Build**: bấm **Add Build**, chọn **1.0.13 (số build nộp duyệt)**, bấm **Done**.
+- [ ] Mục **Build**: bấm **Add Build**, chọn **1.0.14 (3)** hoặc build mới hơn đã thử sạch lỗi, bấm **Done**. Không chọn build 1: build đó chưa có nút Apple và Google.
 - [ ] Mục **App Review Information** (chi tiết ở `04-thong-tin-cho-reviewer.md`):
   - Đánh dấu **Sign-in required**. Điền tài khoản demo: [EMAIL TÀI KHOẢN DEMO] / [MẬT KHẨU TÀI KHOẢN DEMO].
   - Contact: tên `Lê Hữu Đại`, email `wedosupport6886@gmail.com` (email hỗ trợ đã chốt, cũng là địa chỉ trên trang Chính sách quyền riêng tư), số điện thoại [SỐ ĐIỆN THOẠI DẠNG +84…, CDA tự điền].
@@ -770,7 +781,7 @@ Mọi thứ dưới đây nằm trong App Store Connect. Nội dung chữ để 
 
 **App Privacy** (cột trái):
 
-- [ ] Privacy Policy URL: `https://wedofpt.com.vn/privacy.html`. Trang đang sống còn ghi "Áp dụng cho cả web WeDo và ứng dụng Android WeDo". Bản mới "Chính sách quyền riêng tư" (phủ cả iPhone) đã có trên nhánh `ios-web` (commit `c4b98c2`). Phải đăng trước khi nộp.
+- [ ] Privacy Policy URL: `https://wedofpt.com.vn/privacy.html`. Bản "Chính sách quyền riêng tư" phủ cả iPhone đã đăng ngày 28/09/2026. Bản có đoạn về Sign in with Apple và Google trên iPhone phải được đẩy lên trước khi nộp (`05-chinh-sach-bao-mat.md`).
 - [ ] Khai nhãn dữ liệu theo `03-app-privacy.md`, rồi bấm **Publish**.
 
 **Pricing and Availability** (cột trái):
@@ -791,7 +802,7 @@ Mọi thứ dưới đây nằm trong App Store Connect. Nội dung chữ để 
 
 ### 10.2 Bấm nộp
 
-1. Ở trang phiên bản 1.0.13, bấm **Add for Review** ở góc trên bên phải.
+1. Ở trang phiên bản 1.0.14, bấm **Add for Review** ở góc trên bên phải.
 2. Nếu App Store Connect báo còn thiếu mục nào, sửa rồi bấm lại.
 3. Trong bảng nháp hiện ra, bấm **Submit to App Review**.
 4. Trạng thái chuyển sang **Waiting for Review**, rồi **In Review**.
@@ -806,7 +817,7 @@ Nếu bị từ chối: đọc lý do ở **App Review** trong App Store Connect
 - Bấm **Release This Version** khi sẵn sàng. App có thể mất tới 24 giờ mới tìm thấy được trên App Store Việt Nam.
 - Kiểm tra lại trên iPhone: tìm tên app trên App Store, cài bản chính thức (không qua TestFlight), đăng nhập, gửi một tin nhắn.
 - **Phát hành theo giai đoạn** (Phased Release, 7 ngày) chỉ áp cho các bản cập nhật sau, không áp cho bản đầu.
-- Phiên bản iOS sau phải có số lớn hơn `1.0.13`, ví dụ `1.0.14`.
+- Phiên bản iOS sau phải có số lớn hơn `1.0.14`, ví dụ `1.0.15`.
 
 ### 10.4 Cập nhật OTA (EAS Update) trên iOS
 
@@ -832,7 +843,8 @@ Cách hoạt động:
 - Đổi thứ gì native (thêm gói native, sửa plugin, sửa `app.json`, đổi biểu tượng) thì vân tay đổi. Khi đó phải **build mới và nộp duyệt lại**. OTA không tới được build cũ.
 - Gói Free của EAS Update phục vụ tối đa **1.000 người dùng hoạt động mỗi tháng** (MAU).
 - Máy chủ mới (nhánh `ios-backend`) trả bộ số riêng cho iPhone khi app gọi `/app-version?platform=ios`: `MOBILE_IOS_LATEST_VERSION`, `MOBILE_IOS_MINIMUM_VERSION`, `MOBILE_IOS_UPDATE_NOTES`, `MOBILE_IOS_STORE_URL`. Nâng số cho Android không còn ảnh hưởng iPhone. Chỉ nâng các biến `_IOS` sau khi bản iOS tương ứng đã lên App Store. Máy chủ cũ đang chạy vẫn trả một cặp chung, nên phải đưa máy chủ mới lên trước khi phát hành iOS.
-- **Không phát OTA từ nhánh `ios` trước khi máy chủ mới chạy trên production.** Mã trên nhánh này cần máy chủ mới (`08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên).
+- Máy chủ mới đã chạy trên production từ 28/09/2026, nên phát OTA từ nhánh `ios` được.
+- Từ commit `a5cfb2e`, nhánh `ios` có thêm `expo-apple-authentication` và `usesAppleSignIn`, nên vân tay native đổi. OTA từ `D:\WeDo_ChPlay-ios` luôn kèm `--platform ios`. Trước khi phát cho Android từ bất kỳ nhánh nào, chạy `npx expo-updates fingerprint:generate --platform android` và so với vân tay của bản Android đang chạy.
 
 ### 10.5 Giới hạn của Apple với OTA (Guideline 2.5.2)
 
@@ -845,7 +857,7 @@ Guideline 2.5.2 cấm app tải về và chạy mã làm **thêm hoặc đổi t
   - Tính năng lớn mới mà người duyệt chưa thấy.
   - Bất kỳ giao diện mua, bảng giá, nút nâng cấp hay liên kết tới trang thanh toán. Làm vậy vi phạm cả 3.1.3(f) lẫn 2.5.2.
   - Gỡ bỏ những thứ Apple bắt phải có: báo cáo, chặn, bộ lọc từ ngữ, ô đồng ý điều khoản, hộp thoại đồng ý AI, xoá tài khoản, liên kết Chính sách quyền riêng tư và liên hệ hỗ trợ.
-  - Hiện lại nút Google trên iPhone. Việc đó kéo theo Guideline 4.8 và cần Đăng nhập bằng Apple (mục Bản sau), nên phải đi bằng build mới.
+  - Gỡ hay ẩn nút "Tiếp tục với Apple" khi iPhone vẫn còn nút Google (vi phạm Guideline 4.8).
 - Mỗi bản OTA phải hợp lệ như thể nó được nộp duyệt. Apple có thể gỡ app nếu phát hiện OTA lách quy định.
 
 ---
@@ -905,78 +917,58 @@ Tổng: khoảng **1–2 tuần** từ lúc đăng ký tới lúc lên kệ, n�
 - Expo — Pricing: https://expo.dev/pricing
 - Mã nguồn `eas-cli` 24.7.0 (bản lưu tạm trong npm cache của máy): câu hỏi lúc build, cách `eas submit` tự tạo app khi thiếu `ascAppId`, cách tạo khoá App Store Connect API, nhóm TestFlight tự tạo, các lệnh `env:set` / `env:list`.
 - Mã nguồn `@expo/fingerprint` 0.20.6 trong `node_modules`: cách vân tay băm cấu hình Expo. Vân tay ở Bước 6.1 được tính lại bằng `npx expo-updates fingerprint:generate` ngày 26/09/2026 trên commit `dbbd5f0` (nay là nhánh `ios`).
-- Plugin `@react-native-google-signin/google-signin` 16.1.4 (`plugin/build/withGoogleSignIn.js`): để dòng plugin dạng chuỗi trần thì phần iOS chỉ đọc `ios.googleServicesFile`, mà app không khai, nên build iOS không lỗi dù nút Google bị ẩn. `@expo/prebuild-config` (`withDefaultPlugins.js:150-161`): thêm `iosUrlScheme` sau này không làm mất cấu hình `google-services` của Android.
-- Mã máy chủ `BE_WEDO/src/auth/password-reset.service.ts` và `auth.service.ts`: "Quên mật khẩu" tìm tài khoản theo email, không phân biệt cách đăng ký, nên tài khoản tạo bằng Google đặt được mật khẩu.
+- Plugin `@react-native-google-signin/google-signin` 16.1.4 (`plugin/build/withGoogleSignIn.js`): để dòng plugin dạng chuỗi trần thì phần iOS chỉ đọc `ios.googleServicesFile`; từ commit `df0c255`, dòng plugin có `iosUrlScheme` cho nút Google trên iPhone. `@expo/prebuild-config` (`withDefaultPlugins.js:150-161`): thêm `iosUrlScheme` không làm mất cấu hình `google-services` của Android.
+- Mã máy chủ `BE_WEDO/src/auth/password-reset.service.ts` và `auth.service.ts`: "Quên mật khẩu" tìm tài khoản theo email, không phân biệt cách đăng ký, nên tài khoản tạo bằng Google hay Apple đặt được mật khẩu nếu nhận được thư.
+- Mã đăng nhập Apple và Google trên iPhone (đọc ngày 28/09/2026): `src/lib/auth/apple-signin.ts`, `src/components/ui/AppleButton.tsx`, `src/lib/auth/google-signin.ts` trên nhánh `ios`; `src/auth/apple-auth.service.ts`, `src/auth/auth.service.ts`, `src/users/users.service.ts` trên `BE_WEDO-ios`.
 - Apple — Updated age ratings in App Store Connect (24/07/2025, thêm 13+, 16+, 18+ và cho đặt mức cao hơn theo tuổi tối thiểu của app): https://developer.apple.com/news/?id=ks775ehf
 
 ---
 
-## Bản sau (1.1)
+## Sign in with Apple và Google trên iPhone (đã làm ngày 28/09/2026)
 
-Mục này gom các việc **không làm cho bản đầu**, vì iPhone chỉ đăng nhập bằng email và mật khẩu. Làm khi muốn có Google trên iPhone. Luật đi kèm: hiện lại nút Google trên iPhone thì phải có **Đăng nhập bằng Apple trong cùng bản** (Guideline 4.8). Việc mã tương ứng nằm ở `08-sua-code-truoc-khi-nop.md`, SAU-01 … SAU-04. Mọi thay đổi `app.json` ở đây đổi vân tay của cả hai nền tảng, nên cần build mới.
+Mục này trước tên là "Bản sau (1.1)". Ngày 28/09/2026, chủ dự án chốt đưa Google lên iPhone ngay bản đầu, kèm **Sign in with Apple** trong cùng bản (Guideline 4.8). Việc mã nằm ở `08-sua-code-truoc-khi-nop.md`, SAU-01 … SAU-04. Phần tài khoản dưới đây **đã làm xong**, trừ mục email chuyển tiếp. Các bước giữ lại để tra hoặc làm lại (ví dụ khi phải thay khoá).
 
-### B.1 Bật năng lực Sign In with Apple
+### B.1 Năng lực Sign In with Apple · Đã làm
 
-- Cách A (khuyên dùng): khi LTV đặt `"usesAppleSignIn": true` trong `expo.ios` của `app.json`, lần `eas build` kế tiếp tự bật **Sign In with Apple** cho App ID `vn.wedo.app` và tự làm lại hồ sơ cấp phép.
-- Cách B: vào **Certificates, IDs & Profiles** → **Identifiers** → `vn.wedo.app`. Đánh dấu **Sign In with Apple**, bấm **Edit** cạnh nó, chọn **Enable as a primary App ID**, bấm **Save**. Nếu build kế tiếp chưa có tính năng này, EAS sẽ tắt ô vừa bật (xem Bước 3, Cách A).
+- LTV đặt `"usesAppleSignIn": true` trong `expo.ios` của `app.json` (commit `a5cfb2e`). Lần `eas build` kế tiếp tự bật **Sign In with Apple** cho App ID `vn.wedo.app` và làm lại hồ sơ cấp phép.
+- Cách tự tay, nếu cần: **Certificates, IDs & Profiles** → **Identifiers** → `vn.wedo.app`. Đánh dấu **Sign In with Apple**, bấm **Edit** cạnh nó, chọn **Enable as a primary App ID**, bấm **Save**.
 
-### B.2 Khoá Đăng nhập bằng Apple và email chuyển tiếp (cho máy chủ)
+### B.2 Khoá Sign in with Apple cho máy chủ · Đã làm
 
-**Khoá `.p8` cho máy chủ.** Máy chủ cần khoá này để thu hồi token Apple khi người dùng xoá tài khoản (Apple bắt buộc). Làm sau khi App ID `vn.wedo.app` đã bật Sign In with Apple (xem B.1), vì bước 3 dưới đây cần chọn App ID đó.
+Máy chủ cần khoá này để đổi mã uỷ quyền lấy refresh token, và để **thu hồi** đăng nhập Apple khi người dùng xoá tài khoản (Apple bắt buộc).
+
+- Đã tạo khoá, **Key ID `U9G7RAS2LZ`**. Tệp `.p8` do chủ dự án giữ. Không gửi nội dung khoá qua chat, không ghi vào tài liệu hay git (`.gitignore` của repo mobile đã chặn `*.p8`).
+- Đã đặt năm biến trên Azure → App Service `api-wedo-backend-dai` → **Environment variables**: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_IOS_CLIENT_ID`. `APPLE_PRIVATE_KEY` là nội dung tệp `.p8`; dán vào ô một dòng của Azure Portal vẫn đọc được (commit `e9b556b`).
+- Đã kiểm trên iPhone thật ngày 28/09/2026: xoá một tài khoản tạo bằng Apple thì WeDo biến khỏi **Cài đặt → [tên] → Đăng nhập & Bảo mật → Đăng nhập bằng Apple**. Nghĩa là máy chủ đã thu hồi được.
+
+Thay khoá (chỉ khi lộ hoặc bị thu hồi):
 
 1. **Certificates, IDs & Profiles** → **Keys** → dấu **+**.
 2. **Key Name**: `WeDo Sign in with Apple`.
 3. Đánh dấu **Sign in with Apple**, bấm **Configure**. **Primary App ID**: chọn `vn.wedo.app`. Bấm **Save**.
 4. Bấm **Continue**, rồi **Register**.
-5. Bấm **Download**. Tệp `.p8` chỉ **tải được một lần**. Ghi lại **Key ID** hiện trên trang.
-6. Gửi tệp `.p8`, Key ID và Team ID cho người làm máy chủ qua kênh riêng tư. Đặt vào biến môi trường trên Azure theo tên mà tài liệu máy chủ quy định.
-7. Không commit tệp vào git. `.gitignore` của repo mobile đã chặn `*.p8`.
+5. Bấm **Download**. Tệp `.p8` chỉ **tải được một lần**. Ghi lại **Key ID** mới.
+6. Sửa `APPLE_KEY_ID` và `APPLE_PRIVATE_KEY` trên Azure, lưu, chờ máy chủ khởi động lại. Rồi thu hồi khoá cũ trên trang Keys.
 
-**Email chuyển tiếp.** Người dùng chọn **Ẩn địa chỉ email** sẽ có email dạng `...@privaterelay.appleid.com`. Thư đặt lại mật khẩu gửi tới địa chỉ đó sẽ bị trả về, trừ khi đăng ký nơi gửi với Apple:
+### B.3 Email chuyển tiếp của Apple · Còn lại
+
+Người dùng chọn **Ẩn địa chỉ email** sẽ có email dạng `...@privaterelay.appleid.com`. Thư WeDo gửi tới địa chỉ đó (mã đặt lại mật khẩu, thư trả lời từ hộp thư hỗ trợ) **có thể không tới**, trừ khi đăng ký nơi gửi với Apple. **Chưa đăng ký.** Trong lúc chờ, người đã ẩn email nên tiếp tục đăng nhập bằng nút Apple.
 
 1. **Certificates, IDs & Profiles** → **Services** → **Sign in with Apple for Email Communication** → **Configure**.
-2. Bấm **+**, thêm tên miền và địa chỉ gửi thư của máy chủ: [ĐỊA CHỈ GỬI THƯ CỦA MÁY CHỦ — lấy từ biến `MAIL_FROM` trên Azure; nếu biến này trống thì máy chủ dùng `MAIL_USER` (`BE_WEDO/src/mail/mail.service.ts:57-58`)].
+2. Bấm **+**, thêm tên miền và địa chỉ gửi thư của máy chủ: [ĐỊA CHỈ GỬI THƯ CỦA MÁY CHỦ — lấy từ biến `MAIL_FROM` trên Azure; nếu biến này trống thì máy chủ dùng `MAIL_USER` (`BE_WEDO/src/mail/mail.service.ts:57-58`)]. Thêm cả `wedosupport6886@gmail.com` nếu muốn trả lời thư người dùng từ hộp thư hỗ trợ.
 3. Bấm **Register**. Tên miền gửi thư cần có bản ghi SPF hợp lệ thì Apple mới chấp nhận.
+4. Gửi thử: tài khoản Apple ẩn email bấm **Quên mật khẩu?**, phải nhận được mã.
 
-Máy chủ gửi thư qua SMTP của Brevo (theo `BE_WEDO/.env.example`). Nếu địa chỉ gửi là một hộp thư `@gmail.com`, anh không đăng ký được tên miền `gmail.com`, và bản ghi SPF của Gmail không cho Brevo gửi thay. Khi đó nên đổi `MAIL_FROM` sang một địa chỉ trên tên miền riêng (ví dụ trên `wedofpt.com.vn`) có SPF cho Brevo.
+Máy chủ gửi thư qua SMTP của Brevo (theo `BE_WEDO/.env.example`, `MAIL_FROM` mẫu là một địa chỉ `@gmail.com`). Nếu địa chỉ gửi thật là `@gmail.com`, anh không đăng ký được tên miền `gmail.com`, và bản ghi SPF của Gmail không cho Brevo gửi thay. Khi đó nên đổi `MAIL_FROM` sang một địa chỉ trên tên miền riêng (ví dụ trên `wedofpt.com.vn`) có SPF cho Brevo. Chi tiết ở `08`, SAU-04.
 
-### B.3 Google Cloud: tạo OAuth client cho iOS
+### B.4 Google Cloud: OAuth client cho iOS · Đã làm
 
-Chỉ làm khi bật lại nút **Tiếp tục với Google** trên iPhone. Không có client iOS thì nút **hỏng trên mọi iPhone**: thư viện báo lỗi ngay khi thiếu cả `GoogleService-Info.plist` lẫn `iosClientId`.
+- Đã tạo client loại **iOS**, tên `WeDo iOS`, bundle `vn.wedo.app`, trong project `alert-rush-501204-b6` (tài khoản Google đã tạo client Web và hai client Android).
+- Client ID và iOS URL scheme **không phải bí mật**. Chúng nằm sẵn trong mã:
+  - Client ID: `GOOGLE_IOS_CLIENT_ID` trong `src/lib/auth/google-signin.ts` (nhúng cứng, không đọc biến EAS), và biến Azure `GOOGLE_IOS_CLIENT_ID` cho máy chủ.
+  - iOS URL scheme (client ID viết ngược): `iosUrlScheme` của plugin `@react-native-google-signin/google-signin` trong `app.json` (commit `df0c255`). Thiếu nó thì bấm nút là app văng.
+- App vẫn truyền `webClientId`. Máy chủ nhận ID token có `aud` là client Web hoặc client iOS (commit `654db2a`).
+- Màn đồng ý OAuth của project đã ở trạng thái **In production** (theo ghi chú bàn giao ngày 11/08/2026), nên người duyệt của Apple đăng nhập Google được mà không cần nằm trong danh sách người thử.
+- Đã kiểm trên iPhone thật ngày 28/09/2026: "Tiếp tục với Google" vào đúng tài khoản Google đã có.
 
-#### Tạo client (CDA)
-
-1. Mở `https://console.cloud.google.com`. Đăng nhập bằng tài khoản Google đang quản lý project **`alert-rush-501204-b6`** (tài khoản đã tạo client Web và hai client Android).
-2. Chọn project `alert-rush-501204-b6` ở ô chọn project trên cùng.
-3. Vào **APIs & Services → Credentials**, bấm **+ Create credentials → OAuth client ID**. (Giao diện mới có thể đưa anh sang **Google Auth Platform → Clients → + Create client**. Hai đường dẫn tới cùng một biểu mẫu.)
-4. **Application type**: `iOS`.
-5. **Name**: `WeDo iOS`.
-6. **Bundle ID**: `vn.wedo.app`.
-7. **App Store ID**: để trống. Điền sau khi có ascAppId ở Bước 7, nếu muốn.
-8. **Team ID**: dán Team ID từ Bước 1.5. Ô này không bắt buộc.
-9. Bấm **Create**.
-10. Mở client vừa tạo. Ghi lại hai giá trị:
-    - **Client ID**: dạng `108450458549-xxxx.apps.googleusercontent.com`. Nhiều khả năng bắt đầu bằng cùng số `108450458549` như client Web, vì cùng project.
-    - **iOS URL scheme**: dạng `com.googleusercontent.apps.108450458549-xxxx`. Đây là Client ID viết ngược.
-
-Hai giá trị này **không phải bí mật**. Chúng nằm sẵn trong mọi bản app phát hành.
-
-Màn đồng ý OAuth của project đã ở trạng thái **In production** (theo ghi chú bàn giao ngày 11/08/2026), nên người duyệt của Apple đăng nhập Google được mà không cần nằm trong danh sách người thử.
-
-#### Giá trị nào đi đâu (LTV)
-
-| Giá trị | Đặt vào | Ghi chú |
-|---|---|---|
-| Client ID | Biến EAS `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, môi trường `production` (lệnh `env:set` như Bước 5.3, `--visibility plaintext`) | LTV thêm dòng đọc `process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (code **chưa đọc** biến này). Phải viết nguyên biểu thức, vì biến `EXPO_PUBLIC_*` được thay thẳng lúc build |
-| Client ID | Tệp `.env` trên máy LTV, thêm một dòng cùng tên | Để chạy thử ở máy |
-| Client ID | `src/lib/auth/google-signin.ts:80`: `GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, iosClientId: ... })` | **Hiện chưa có** `iosClientId`. Có thể nhúng giá trị dự phòng giống cách đang làm với client Web |
-| iOS URL scheme | `app.json`, đổi dòng plugin thành `["@react-native-google-signin/google-signin", { "iosUrlScheme": "com.googleusercontent.apps.108450458549-xxxx" }]` | Phải nằm trong `app.json` (JSON tĩnh, không đọc được biến môi trường) |
-| Client Web (không đổi) | Máy chủ, biến `GOOGLE_CLIENT_ID` | Giữ nguyên |
-
-Thêm tuỳ chọn `iosUrlScheme` không ảnh hưởng Android: Expo vẫn áp `android.googleServicesFile` như cũ. Nhưng nó **đổi vân tay native** (xem Bước 6.1).
-
-#### Một chỗ cần thử trên máy thật
-
-Máy chủ so trường `aud` của ID token với **đúng một** giá trị `GOOGLE_CLIENT_ID` (client Web) ở `BE_WEDO/src/auth/auth.service.ts:243`. Vì app truyền `webClientId`, token trên iOS nhiều khả năng mang `aud` là client Web và qua được. Điều này **chưa được kiểm** trên iPhone thật.
-
-Nếu đăng nhập Google trên iPhone báo **"Google token không thuộc ứng dụng WEDO"**, máy chủ phải chấp nhận thêm iOS client ID. Đó là việc của người làm máy chủ.
+Làm lại từ đầu (chỉ khi phải tạo client mới): Google Cloud Console → project `alert-rush-501204-b6` → **APIs & Services → Credentials** (hoặc **Google Auth Platform → Clients**) → **+ Create client** → **Application type** `iOS`, **Bundle ID** `vn.wedo.app`, **Team ID** `LR53W8386S` → **Create**. Rồi thay client ID ở ba chỗ trên và build iOS mới, vì `iosUrlScheme` đổi vân tay native.

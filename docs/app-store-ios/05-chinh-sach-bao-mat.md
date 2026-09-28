@@ -2,9 +2,9 @@
 
 Tên trang đã chốt là **"Chính sách quyền riêng tư"**. Tên tệp tài liệu này vẫn là `05-chinh-sach-bao-mat.md` để các liên kết giữa các tài liệu không gãy.
 
-Tài liệu này thay toàn bộ nội dung trang `https://wedofpt.com.vn/privacy.html`. Trang đang sống là tệp `D:\WEDO_PC\FE_WEDO\public\privacy.html` (hiệu lực 15/08/2026, tên cũ "Chính sách bảo mật", chỉ ghi "web WeDo và ứng dụng Android").
+Tài liệu này thay toàn bộ nội dung trang `https://wedofpt.com.vn/privacy.html`. Bản cũ (hiệu lực 15/08/2026, tên cũ "Chính sách bảo mật", chỉ ghi "web WeDo và ứng dụng Android") đã được thay ngày 28/09/2026 bằng bản theo tài liệu này, chưa có phần Apple.
 
-**Trạng thái:** bản HTML theo tài liệu này đã làm xong ở `D:\WEDO_PC\FE_WEDO-ios\public\privacy.html` (nhánh `ios-web`, commit `c4b98c2`), **chưa đăng**. Đăng theo `08-sua-code-truoc-khi-nop.md`, mục Thứ tự đưa lên, Bước B, tức là **sau** khi máy chủ mới đã chạy: nhiều câu trong chính sách (bộ lọc `***`, AI không nhận email, xoá tệp khi xoá tài khoản, tìm bạn) chỉ đúng với máy chủ mới.
+**Trạng thái (28/09/2026):** bản HTML theo tài liệu này (commit `c4b98c2` và các commit sửa chữ) **đã đăng** ngày 28/09/2026, sau khi máy chủ mới chạy. Cùng ngày, trang `D:\WEDO_PC\FE_WEDO-ios\public\privacy.html` được sửa thêm cho **Sign in with Apple và Google trên iPhone** (nhánh `ios-web`, commit `3a7920c`, `7bbf0c1`) (mục 2, 3.1, 4, 5, 6, 7, 9, 10, 13, 14 và phụ lục tiếng Anh). Phần 3 dưới đây đã chép theo bản sửa đó. **Bản sửa này chưa đăng:** phải đẩy web lại trước khi nộp build có nút Apple.
 
 Cách dùng:
 
@@ -13,7 +13,7 @@ Cách dùng:
 3. Phần 3 là toàn văn. Bản HTML đã chép sẵn phần này, với câu trung tính ở chỗ chưa biết giá trị (phần 2.1). Khi đổi chữ, sửa cả hai nơi.
 4. Làm các việc kèm theo ở phần 4.
 
-Căn cứ để viết: bản đang đăng, bản rà soát `ios-audit.json` (chỉ dùng phát hiện không bị bác bỏ), và mã nguồn ba kho trên các nhánh iOS, đã đọc lại ngày 26/09/2026. Chỗ nào dựa vào mã, tôi ghi tệp.
+Căn cứ để viết: bản đang đăng, bản rà soát `ios-audit.json` (chỉ dùng phát hiện không bị bác bỏ), và mã nguồn ba kho trên các nhánh iOS, đã đọc lại ngày 26/09/2026. Phần đăng nhập Apple và Google đọc lại ngày 28/09/2026 (`BE src/auth/apple-auth.service.ts`, `src/auth/auth.service.ts`, `src/users/users.service.ts`; `M src/lib/auth/apple-signin.ts`, `google-signin.ts`). Chỗ nào dựa vào mã, tôi ghi tệp.
 
 Quy ước trong tài liệu:
 
@@ -23,7 +23,7 @@ Quy ước trong tài liệu:
 
 ---
 
-## Phần 1. Những điểm đã sửa so với bản đang đăng
+## Phần 1. Những điểm đã sửa so với bản cũ (15/08/2026)
 
 Tên phát hiện ghi theo `ios-audit.json`, kèm khu vực rà soát trong ngoặc vuông.
 
@@ -44,7 +44,7 @@ Tên phát hiện ghi theo `ios-audit.json`, kèm khu vực rà soát trong ngo�
 | 13 | Cách rút lại đồng ý chỉ có Do Not Track cho PostHog. | Mục 11 liệt kê mọi cách rút lại đồng ý đang có, và cách gửi yêu cầu. | Như dòng 1 (Apple 5.1.1(i): "describe how a user can revoke consent") |
 | 14 | Không nêu căn cứ xử lý, không nêu quyền theo luật Việt Nam, không nói máy chủ ở đâu. Hứa trả lời "trong vòng 30 ngày". | Mục 5, 11, 14: căn cứ xử lý bằng lời thường; quyền theo Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 và Nghị định 356/2025/NĐ-CP; thời hạn trả lời; dữ liệu nằm ở Hồng Kông, Nhật Bản, Hoa Kỳ, châu Âu. | Dữ kiện `data_residency` trong [privacy-inventory]: mọi dữ liệu nằm ngoài Việt Nam |
 | 15 | "Không chủ động thu thập dữ liệu của trẻ em dưới 13 tuổi", nhưng app không có bước nào khớp. | Mục 12: tuổi tối thiểu 18 (đã chốt), kèm lý do. | [critic] "The age rating questionnaire (new 2025 system) must declare Messaging/Chat and user-generated content, and the policy's minimum age has no matching check in the app" |
-| 16 | Không nhắc báo cáo vi phạm, chặn người dùng, bộ lọc từ ngữ, và không nói iPhone đăng nhập bằng gì. | Mục 3.1 nói ứng dụng iPhone chỉ đăng nhập bằng email và mật khẩu (Google chỉ có trên web và Android). Mục 3.10, 4, 6, 9, 10, 11 mô tả báo cáo (kèm bản chụp nội dung), chặn, bộ lọc `***` và khoá tài khoản. Đăng nhập bằng Apple **không** có ở bản này; đoạn chữ cho lúc làm nằm ở Phần 5 (Bản sau). | [review-guidelines] "Google Sign-In offered without Sign in with Apple or another equivalent privacy-preserving login (4.8)"; [review-guidelines] "No way to report objectionable content or block abusive users anywhere in the app (1.2)"; [critic] "Sign in with Apple must take the user's name from the first credential and must never ask for a name or email afterwards"; [backend] "Emails to Apple private relay addresses will bounce until the WeDo mail domain is registered with Apple"; [backend] "Account deletion cannot revoke Sign in with Apple tokens, because no Apple refresh token is stored" |
+| 16 | Không nhắc báo cáo vi phạm, chặn người dùng, bộ lọc từ ngữ, và không nói iPhone đăng nhập bằng gì. | Mục 3.1 nói iPhone đăng nhập bằng Apple, Google hoặc email và mật khẩu; Android và web bằng Google hoặc email. Mục 3.1, 7, 9, 10, 13 nói dữ liệu nhận từ Apple (mã người dùng, email hoặc địa chỉ chuyển tiếp, họ tên lần đầu), mã làm mới giữ chỉ để thu hồi, giới hạn thư tới địa chỉ chuyển tiếp, và việc thu hồi khi xoá tài khoản (sửa ngày 28/09/2026). Mục 3.10, 4, 6, 9, 10, 11 mô tả báo cáo (kèm bản chụp nội dung), chặn, bộ lọc `***` và khoá tài khoản. | [review-guidelines] "Google Sign-In offered without Sign in with Apple or another equivalent privacy-preserving login (4.8)"; [review-guidelines] "No way to report objectionable content or block abusive users anywhere in the app (1.2)"; [critic] "Sign in with Apple must take the user's name from the first credential and must never ask for a name or email afterwards"; [backend] "Emails to Apple private relay addresses will bounce until the WeDo mail domain is registered with Apple"; [backend] "Account deletion cannot revoke Sign in with Apple tokens, because no Apple refresh token is stored" |
 | 17 | Chỉ có tiếng Việt. | Thêm phụ lục tóm tắt tiếng Anh cho người duyệt của Apple. Bản dịch đầy đủ để đợt sau. | [privacy-inventory] "Privacy policy and account deletion page are Vietnamese-only" (xử lý một phần) |
 | 18 | Mục PostHog chỉ nói "trên web WeDo". | Mục 2 và 3.8 nói thêm: trang web mở từ trong ứng dụng (ví dụ Bảng đóng góp trên Android) cũng thuộc phần đo lường web; bốn trang pháp lý là trang tĩnh, không đo lường. | Dữ kiện `usage_data.product_interaction` trong [privacy-inventory] (`src\app\(tabs)\account\contributions.tsx:164`) |
 | 19 | Tên trang là "Chính sách bảo mật", còn app gọi là "Chính sách quyền riêng tư". | Một tên cho mọi nơi: "Chính sách quyền riêng tư". | Quyết định của chủ dự án |
@@ -76,7 +76,8 @@ Bản HTML trên nhánh `ios-web` không để ngoặc vuông nào. Ở mỗi ch
 
 - ⚠ Giả định: bên chịu trách nhiệm là **cá nhân Lê Hữu Đại**, vì bạn đăng ký Apple Developer Program dạng cá nhân và chưa có công ty. Tài liệu 06 cũng ghi như vậy. Nếu tài khoản Google Play ("WeDo FPTU") đứng tên người khác, sửa mục 1 và 16.
 - Đã chốt: **tên trang là "Chính sách quyền riêng tư"** ở mọi nơi. App (ô đồng ý khi đăng ký, tab Tài khoản), trang web, điều khoản và tài liệu đều dùng tên này.
-- Đã chốt: ứng dụng trên iPhone **chỉ đăng nhập bằng email và mật khẩu**. Nút Google bị ẩn trên iPhone; web và Android giữ Google. **Không có Đăng nhập bằng Apple** ở bản này. Đoạn chữ để thêm khi làm tính năng đó nằm ở Phần 5.
+- Đã chốt ngày 28/09/2026: ứng dụng trên iPhone **đăng nhập bằng Apple, Google, hoặc email và mật khẩu**. Android và web có Google và email, không có Apple. Máy chủ lưu mã người dùng Apple và mã làm mới của Apple; mã làm mới chỉ dùng để thu hồi khi xoá tài khoản (`08`, SAU-01).
+- ⚠ Giới hạn đã biết: nơi gửi thư của WeDo **chưa** đăng ký với "Sign in with Apple for Email Communication", nên thư tới địa chỉ chuyển tiếp của Apple có thể không tới. Mục 3.1 nói thật điều này. Khi đã đăng ký và gửi thử được, sửa câu "Lưu ý về thư" ở mục 3.1 và câu tương ứng trong phụ lục (`08`, SAU-04).
 - Đã làm (`08-sua-code-truoc-khi-nop.md`, IOS-03, IOS-04): **báo cáo vi phạm**, **chặn người dùng**, **bộ lọc từ ngữ** tiếng Việt và tiếng Anh (thay từ bằng `***`), **khoá tài khoản**. Tên trên màn hình: "Báo cáo tin nhắn", "Báo cáo người này", "Chặn người này", "Người đã chặn". Chỉ đăng chính sách khi máy chủ mới đã chạy trên production.
 - Đã làm trên **ứng dụng điện thoại** (IOS-08): hộp thoại xin đồng ý trước lần đầu dùng AI, và công tắc **"Cho phép dùng AI"** trong tab Tài khoản để rút lại. **Web chưa có** bước hỏi: web vẫn tự gửi mỗi tin trưởng nhóm vừa gõ cho AI (`FE_WEDO\src\views\ChatView.tsx:920-923`), không hỏi ai. Vì vậy mục 8.3 dùng câu nói thật về web.
 - Đã làm (IOS-09): máy chủ mới **không gửi email** của ai cho AI. Vẫn gửi tối đa 12 tin gần nhất kèm tên người viết.
@@ -86,7 +87,7 @@ Bản HTML trên nhánh `ios-web` không để ngoặc vuông nào. Ở mỗi ch
 - Đã làm (IOS-19): tìm bạn cần tối thiểu 3 ký tự; email và số điện thoại chỉ khớp khi gõ đủ; người chưa là bạn không thấy email, số điện thoại trong kết quả; người nhận lời mời chưa đồng ý thì người gửi chưa thấy email, số điện thoại của họ.
 - ⚠ Giả định: thư đặt lại mật khẩu và thư báo cáo vi phạm đi qua **Brevo**. `BE_WEDO\.env.example` ghi "Hiện dùng Brevo", còn chú thích trong `src\mail\mail.service.ts` nói hộp thư P.A Việt Nam. Xem `MAIL_HOST` trên Azure. Nếu là P.A Việt Nam, sửa dòng Brevo ở mục 7 và 14 thành "P.A Việt Nam — hộp thư trên tên miền của WeDo — Việt Nam".
 - ⚠ Giả định: thư báo cáo vi phạm gửi tới hộp thư `wedosupport6886@gmail.com` (giá trị nên đặt cho `REPORT_NOTIFY_EMAIL`). Hộp thư đó là Gmail, nên mục 7 có dòng Gmail. Đặt địa chỉ khác thì sửa câu tương ứng.
-- ⚠ Chưa biết: production dùng nhà cung cấp AI nào, nên chính sách nêu cả ba. Mã chỉ dùng **một** nhà cung cấp tại một thời điểm: Gemini nếu có `GEMINI_API_KEY`; không có thì Azure OpenAI nếu đủ `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`; không có nữa thì OpenAI nếu có `OPENAI_API_KEY`. Nhà cung cấp gặp lỗi thì máy chủ dùng quy tắc có sẵn, không chuyển sang nhà cung cấp kế tiếp. Hộp thoại trong app ghi "Google Gemini hoặc OpenAI". Khi biết cấu hình thật, bỏ nhà cung cấp không dùng khỏi mục 7, 8, 14 và phụ lục, và sửa câu trong app nếu cần.
+- ⚠ Chưa biết: production dùng nhà cung cấp AI nào, nên chính sách nêu cả ba. Mã chỉ dùng **một** nhà cung cấp tại một thời điểm: Gemini nếu có `GEMINI_API_KEY`; không có thì Azure OpenAI nếu đủ `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`; không có nữa thì OpenAI nếu có `OPENAI_API_KEY`. Nhà cung cấp gặp lỗi thì máy chủ dùng quy tắc có sẵn, không chuyển sang nhà cung cấp kế tiếp. Hộp thoại trong app nêu đủ ba tên (commit `608d06c`). Khi biết cấu hình thật, bỏ nhà cung cấp không dùng khỏi mục 7, 8, 14 và phụ lục, và sửa câu trong app nếu cần.
 - Đã chốt: **tuổi tối thiểu 18**. Lý do:
   1. Điều khoản Gemini API cấm dùng API trong dịch vụ "hướng tới hoặc có khả năng được người dưới 18 tuổi truy cập" (https://ai.google.dev/gemini-api/terms). Mã WeDo ưu tiên Gemini.
   2. Theo luật Việt Nam, xử lý dữ liệu của trẻ em (dưới 16 tuổi) cần cha mẹ hoặc người giám hộ đồng ý. WeDo không có bước đó.
@@ -109,12 +110,12 @@ Phương án "tệp còn nằm trong Azure Blob sau khi xoá tài khoản" của
 
 ## Phần 3. Toàn văn chính sách (chép lên web)
 
-Bản HTML theo phần này đã có ở `D:\WEDO_PC\FE_WEDO-ios\public\privacy.html` (nhánh `ios-web`, commit `c4b98c2`), chưa đăng. Sửa chữ ở đây thì sửa cả trang đó, và ngược lại. Mỗi mục có mốc neo `#muc-1` … `#muc-16`.
+Bản HTML theo phần này nằm ở `D:\WEDO_PC\FE_WEDO-ios\public\privacy.html`. Bản trước (commit `c4b98c2` và các commit sửa chữ) đã đăng; bản có đoạn về Apple (sửa ngày 28/09/2026) chưa đăng. Sửa chữ ở đây thì sửa cả trang đó, và ngược lại. Mỗi mục có mốc neo `#muc-1` … `#muc-16`.
 
 ```text
 CHÍNH SÁCH QUYỀN RIÊNG TƯ CỦA WEDO
 
-Có hiệu lực từ [NGÀY HIỆU LỰC]. Bản này thay cho bản có hiệu lực từ 15/08/2026.
+Có hiệu lực từ [NGÀY HIỆU LỰC]. Bản này thay cho bản có hiệu lực từ 26/09/2026.
 Áp dụng cho web WeDo, ứng dụng WeDo trên Android và ứng dụng WeDo trên iPhone.
 
 WeDo là công cụ làm việc nhóm cho sinh viên: giao việc, trò chuyện theo dự án, nhắn tin riêng, kết bạn, cuộc họp và lịch. Chính sách này nói rõ chúng tôi thu thập dữ liệu gì, dùng để làm gì, gửi cho ai, giữ trong bao lâu, và bạn có quyền gì với dữ liệu của mình.
@@ -150,7 +151,7 @@ Ba nơi dùng chung một tài khoản và một máy chủ. Một số việc c
 
 Khi ứng dụng mở một trang web WeDo (ví dụ trang Bảng đóng góp), trang đó là web WeDo và theo các điều về đo lường trên web ở mục 3.8. Riêng các trang Chính sách quyền riêng tư, Điều khoản sử dụng, Hỗ trợ và Xoá tài khoản là trang tĩnh: không cần đăng nhập và không dùng công cụ đo lường.
 
-Chính sách này không áp dụng cho dịch vụ của bên khác mà bạn tự mở, như trang đăng nhập của Google, trang thanh toán payOS, hay phòng họp Daily.co. Các dịch vụ đó có chính sách riêng.
+Chính sách này không áp dụng cho dịch vụ của bên khác mà bạn tự mở, như trang đăng nhập của Google, bảng Đăng nhập bằng Apple, trang thanh toán payOS, hay phòng họp Daily.co. Các dịch vụ đó có chính sách riêng.
 ```
 
 > Trên bản HTML, địa chỉ web WeDo ở mục 2 chỉ là chữ thường, không phải liên kết (nhánh `ios-web`, commit `3e81a48`). Trang chủ web có mục "Bảng giá", mà app mở trang chính sách trong trình duyệt trong app; một liên kết là một lần chạm tới trang giá (Guideline 3.1.1, 3.1.3(f)). Giữ như vậy.
@@ -160,8 +161,16 @@ Chính sách này không áp dụng cho dịch vụ của bên khác mà bạn t
 
 3.1. Tài khoản
 - Họ tên, email và mật khẩu. Mật khẩu chỉ lưu dạng băm (bcrypt); chúng tôi không đọc được mật khẩu gốc.
-- Nếu bạn đăng nhập bằng Google (trên web hoặc ứng dụng Android): Google gửi cho chúng tôi họ tên, email và đường dẫn ảnh hồ sơ Google của bạn. Chúng tôi không nhận mật khẩu Google.
-- Ứng dụng trên iPhone chỉ đăng nhập bằng email và mật khẩu. Nếu bạn đã tạo tài khoản bằng Google, bạn đặt mật khẩu qua "Quên mật khẩu" để đăng nhập trên iPhone.
+- Cách đăng nhập: trên iPhone, bạn dùng Apple, Google hoặc email và mật khẩu. Trên Android và trên web, bạn dùng Google hoặc email và mật khẩu. Nút Đăng nhập bằng Apple chỉ có trên iPhone.
+- Nếu bạn đăng nhập bằng Google (trên web, ứng dụng Android hoặc ứng dụng iPhone): Google gửi cho chúng tôi họ tên, email và đường dẫn ảnh hồ sơ Google của bạn. Chúng tôi không nhận mật khẩu Google.
+- Nếu bạn đăng nhập bằng Apple (chỉ trên iPhone), chúng tôi nhận:
+  - mã người dùng Apple: một mã cố định Apple cấp cho WeDo để nhận ra bạn;
+  - email của bạn, hoặc một địa chỉ chuyển tiếp của Apple nếu bạn chọn ẩn email (xem dòng dưới), kèm thông tin email đó đã được Apple xác minh hay chưa;
+  - họ tên, chỉ ở lần đầu bạn đăng nhập bằng Apple và chỉ khi bạn đồng ý chia sẻ. Nếu bạn không chia sẻ, tài khoản mới mang tên "Người dùng Apple". Bạn sửa tên được trong Tài khoản → Thông tin cá nhân. Chúng tôi không nhận mật khẩu Apple ID và không nhận ảnh từ Apple.
+- Địa chỉ chuyển tiếp: nếu bạn chọn ẩn email ở bảng đăng nhập của Apple, Apple đưa cho WeDo một địa chỉ dạng ...@privaterelay.appleid.com thay cho email thật. Địa chỉ này là email của tài khoản WeDo. Thư gửi tới địa chỉ này đi qua Apple rồi mới tới hộp thư thật của bạn. Hiếm khi Apple không gửi email nào; khi đó, tài khoản mang một địa chỉ thay thế có đuôi apple.invalid, không nhận được thư.
+- Lưu ý về thư: Apple chỉ chuyển tiếp thư từ những bên gửi đã đăng ký với Apple. Vì vậy, thư WeDo gửi tới địa chỉ chuyển tiếp, như mã đặt lại mật khẩu hay thư trả lời của đội hỗ trợ, có thể không tới hộp thư của bạn. Nếu bạn đã ẩn email, hãy tiếp tục đăng nhập bằng nút Apple, và khi cần hỗ trợ, hãy ghi rõ địa chỉ chuyển tiếp trong thư gửi chúng tôi.
+- Khi bạn đăng nhập bằng Apple, máy chủ WeDo đổi mã uỷ quyền Apple gửi kèm lấy một mã làm mới (refresh token) của Apple. Chúng tôi lưu mã này chỉ để thu hồi Đăng nhập bằng Apple khi bạn xoá tài khoản (mục 10), không dùng vào việc gì khác.
+- Nếu email Apple đã xác minh trùng với email của một tài khoản WeDo sẵn có, chúng tôi gắn Apple ID của bạn vào tài khoản đó thay vì tạo tài khoản mới.
 - Mã phiên đăng nhập, để bạn không phải đăng nhập lại mỗi lần mở ứng dụng. Trên máy chủ, mã gia hạn phiên chỉ lưu dạng băm.
 - Mã đặt lại mật khẩu gồm 6 chữ số, gửi qua email khi bạn chọn "Quên mật khẩu". Mã chỉ lưu dạng băm và hết hạn sau 10 phút.
 - Thời điểm bạn đồng ý Điều khoản sử dụng và xác nhận đủ 18 tuổi, và thời điểm bạn đồng ý dùng AI trong ứng dụng.
@@ -237,7 +246,7 @@ Muốn không bị PostHog ghi nhận, hãy bật Do Not Track trong trình duy�
 Chúng tôi KHÔNG thu thập: vị trí chính xác từ GPS, danh bạ điện thoại, tin nhắn SMS, nhật ký cuộc gọi, danh sách ứng dụng đã cài, dữ liệu sức khoẻ, số thẻ hay số tài khoản ngân hàng, mã quảng cáo của thiết bị. Ứng dụng trên điện thoại không ghi âm. Phòng họp video mở trên trình duyệt, không nằm trong ứng dụng; ở đó micrô và máy ảnh chỉ bật khi bạn cho trình duyệt quyền (xem mục 7, dòng Daily.co).
 ```
 
-> Câu "đặt mật khẩu qua Quên mật khẩu" ở 3.1 đúng với mã: máy chủ tìm tài khoản theo email, không phân biệt cách đăng ký (`BE_WEDO\src\auth\password-reset.service.ts`; tài liệu 08, IOS-02). Mục 3.10 đúng với máy chủ mới (`BE src/moderation/*`, nhánh `ios-backend`): sáu lý do, ghi chú tối đa 500 ký tự, bản chụp tối đa 2.000 ký tự.
+> Các câu về Apple ở 3.1 đúng với mã máy chủ đang chạy (`BE src/auth/apple-auth.service.ts`: kiểm chữ ký, `aud`, nonce; `BE src/auth/auth.service.ts`, `timHoacTaoNguoiDungApple`: tìm theo `appleSub`, rồi theo email đã xác minh, tên mặc định "Người dùng Apple", địa chỉ `<sub>@apple.invalid` khi thiếu email; `luuRefreshTokenApple`: đổi mã uỷ quyền lấy mã làm mới, ghi đè mỗi lần đăng nhập). Câu "Lưu ý về thư" phản ánh giới hạn còn mở (`08`, SAU-04). Mục 3.10 đúng với máy chủ mới (`BE src/moderation/*`, nhánh `ios-backend`): sáu lý do, ghi chú tối đa 500 ký tự, bản chụp tối đa 2.000 ký tự.
 >
 > Nếu chọn **phương án B cho Sentry** (đã bật chặn lưu IP), thay câu "Khi báo cáo được gửi đi, Sentry có thể nhận địa chỉ IP của máy bạn." bằng câu dưới. Nếu đã thêm `beforeBreadcrumb` bỏ phần truy vấn khỏi địa chỉ yêu cầu (chưa làm, `08` IOS-24), bỏ luôn câu "ví dụ từ khoá bạn vừa gõ để tìm bạn bè".
 
@@ -248,7 +257,7 @@ Sentry được cấu hình để không lưu địa chỉ IP của máy bạn.
 ```text
 4. CHÚNG TÔI DÙNG DỮ LIỆU ĐỂ LÀM GÌ
 
-- Tạo và bảo vệ tài khoản: đăng ký, đăng nhập, đặt lại mật khẩu.
+- Tạo và bảo vệ tài khoản: đăng ký, đăng nhập, đặt lại mật khẩu; thu hồi Đăng nhập bằng Apple khi bạn xoá tài khoản.
 - Cung cấp các tính năng bạn dùng: giao việc, trò chuyện dự án, nhắn tin riêng, kết bạn, cuộc họp, lịch, bảng đóng góp.
 - Gửi thông báo đẩy về công việc, cuộc họp, tin nhắn, lời mời kết bạn; gửi email mã đặt lại mật khẩu. Chúng tôi không gửi email quảng cáo.
 - Chạy tính năng AI khi bạn hoặc nhóm của bạn dùng (mục 8).
@@ -264,12 +273,12 @@ Chúng tôi không dùng dữ liệu của bạn để quảng cáo, không lậ
 ```text
 5. CĂN CỨ ĐỂ CHÚNG TÔI XỬ LÝ DỮ LIỆU
 
-- Sự đồng ý của bạn. Trong ứng dụng, bạn đánh dấu ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" khi đăng ký, hoặc ở màn Điều khoản sử dụng hiện một lần sau khi đăng nhập. Bạn cũng đồng ý khi cho ứng dụng dùng máy ảnh, ảnh hoặc thông báo, và khi đồng ý dùng tính năng AI trong ứng dụng. Bạn rút lại được sự đồng ý bất cứ lúc nào (mục 11).
+- Sự đồng ý của bạn. Trong ứng dụng, bạn đánh dấu ô "Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" khi đăng ký bằng email, hoặc ở màn Điều khoản sử dụng hiện một lần sau khi đăng nhập. Tài khoản mới tạo bằng Apple hoặc Google phải qua màn này trước khi dùng ứng dụng. Bạn cũng đồng ý khi cho ứng dụng dùng máy ảnh, ảnh hoặc thông báo, và khi đồng ý dùng tính năng AI trong ứng dụng. Bạn rút lại được sự đồng ý bất cứ lúc nào (mục 11).
 - Để thực hiện thoả thuận giữa bạn và WeDo. Khi bạn gửi tin nhắn, chúng tôi phải chuyển nó tới người nhận. Khi bạn nộp bài, chúng tôi phải lưu tệp để trưởng nhóm xem. Không có các dữ liệu này thì dịch vụ không chạy được.
 - Để làm đúng nghĩa vụ pháp luật. Ví dụ: cung cấp dữ liệu theo yêu cầu hợp pháp của cơ quan nhà nước có thẩm quyền.
 - Trong trường hợp khẩn cấp, để bảo vệ tính mạng, sức khoẻ của bạn hoặc người khác, khi pháp luật cho phép.
 
-Họ tên, email và mật khẩu là bắt buộc để tạo tài khoản. Số điện thoại, ngày sinh và ảnh đại diện có thể bỏ trống.
+Khi đăng ký bằng email, họ tên, email và mật khẩu là bắt buộc. Khi đăng nhập bằng Google hoặc Apple, chúng tôi lấy họ tên và email từ bên đó; với Apple, bạn có thể không chia sẻ họ tên và có thể ẩn email. Số điện thoại, ngày sinh và ảnh đại diện có thể bỏ trống.
 ```
 
 > Câu "Trong ứng dụng, bạn đánh dấu ô…" đúng với app mới (`08`, IOS-06). Web đăng ký chưa có ô này; người đăng ký trên web sẽ gặp màn đồng ý một lần khi mở ứng dụng. Nếu web thêm ô đồng ý, sửa câu thành "Khi đăng ký trên ứng dụng hoặc web, …".
@@ -284,6 +293,7 @@ Người dùng WeDo khác:
 - Bạn bè thấy họ tên, email, ảnh đại diện và số điện thoại của bạn (nếu bạn đã điền), và có thể nhắn tin riêng cho bạn. Khi bạn gửi lời mời kết bạn cho ai, người đó cũng thấy các thông tin này. Ngược lại, khi người nhận chưa đồng ý, bạn chưa thấy email và số điện thoại của họ.
 - Tìm kiếm: mọi người dùng WeDo đã đăng nhập có thể tìm thấy bạn khi gõ ít nhất 3 ký tự trong tên của bạn, hoặc gõ đúng và đủ email hay số điện thoại của bạn. Người chưa là bạn bè chỉ thấy họ tên và ảnh đại diện của bạn trong kết quả, không thấy email hay số điện thoại. Họ có thể gửi lời mời kết bạn cho bạn. Người bạn đã chặn, và người đã chặn bạn, không tìm thấy bạn.
 - Trạng thái đang hoạt động: khi bạn đang mở WeDo, máy chủ báo cho các ứng dụng WeDo đang kết nối rằng tài khoản của bạn đang trực tuyến. Thông báo này chỉ kèm mã tài khoản, không kèm tên. Người nhắn tin riêng với bạn thấy dấu "đang hoạt động" cạnh tên bạn.
+- Nếu bạn đăng nhập bằng Apple và đã ẩn email, "email" ở các dòng trên là địa chỉ chuyển tiếp của Apple, không phải email thật của bạn.
 
 Ai có đường dẫn:
 - Phòng họp video: ai có đường dẫn phòng họp cũng vào được. Đừng chia sẻ đường dẫn ra ngoài nhóm.
@@ -320,7 +330,8 @@ Chúng tôi dùng các nhà cung cấp dưới đây để vận hành WeDo. M�
 - Microsoft Azure (Microsoft). Việc: chạy máy chủ WeDo (Azure App Service) và lưu ảnh, tệp gửi trong trò chuyện và bài nộp (Azure Blob Storage). Dữ liệu: mọi dữ liệu đi qua máy chủ WeDo; ảnh và tệp. Nơi xử lý: máy chủ ở Hồng Kông (vùng East Asia); kho tệp ở [VÙNG LƯU TỆP AZURE].
 - Supabase. Việc: cơ sở dữ liệu chứa tài khoản và nội dung. Dữ liệu: dữ liệu ở mục 3, trừ ảnh và tệp. Nơi xử lý: [VÙNG CƠ SỞ DỮ LIỆU] (hạ tầng Amazon Web Services).
 - Vercel. Việc: lưu và phát trang web WeDo. Dữ liệu: địa chỉ IP, thông tin trình duyệt, trang bạn mở. Nơi xử lý: Hoa Kỳ và mạng máy chủ của Vercel ở nhiều nước.
-- Google (Đăng nhập bằng Google, trên web và ứng dụng Android). Việc: xác minh tài khoản Google khi bạn chọn đăng nhập bằng Google. Dữ liệu: Google cho chúng tôi biết họ tên, email, ảnh hồ sơ của bạn; Google biết bạn đã đăng nhập vào WeDo.
+- Google (Đăng nhập bằng Google, trên web, ứng dụng Android và ứng dụng iPhone). Việc: xác minh tài khoản Google khi bạn chọn đăng nhập bằng Google. Dữ liệu: Google cho chúng tôi biết họ tên, email, ảnh hồ sơ của bạn; Google biết bạn đã đăng nhập vào WeDo.
+- Apple (Đăng nhập bằng Apple, chỉ trên ứng dụng iPhone). Việc: xác minh Apple ID khi bạn chọn đăng nhập bằng Apple; thu hồi Đăng nhập bằng Apple khi bạn xoá tài khoản. Dữ liệu: Apple cho chúng tôi biết mã người dùng Apple, email hoặc địa chỉ chuyển tiếp, và họ tên ở lần đầu nếu bạn chia sẻ (mục 3.1). Máy chủ WeDo gửi cho Apple mã uỷ quyền để đổi lấy mã làm mới, và khi bạn xoá tài khoản thì gửi mã làm mới đó để thu hồi. Apple biết bạn đã đăng nhập vào WeDo. Nơi xử lý: trên hạ tầng của Apple.
 - Gmail (Google). Việc: hộp thư hỗ trợ wedosupport6886@gmail.com. Dữ liệu: thư bạn gửi cho chúng tôi, kể cả yêu cầu về dữ liệu và báo cáo qua email.
 - Expo (650 Industries, Inc.). Việc: chuyển thông báo đẩy tới điện thoại, và phát bản cập nhật ứng dụng. Dữ liệu: mã nhận thông báo, tiêu đề và nội dung thông báo (ví dụ tên người gửi và tối đa 120 ký tự đầu của tin nhắn, tên công việc, tên cuộc họp); yêu cầu kiểm tra cập nhật ở mục 3.6. Nơi xử lý: Hoa Kỳ.
 - Apple Push Notification service (Apple) và Firebase Cloud Messaging (Google). Việc: đưa thông báo tới iPhone và điện thoại Android. Dữ liệu: như dòng Expo.
@@ -423,6 +434,7 @@ Chúng tôi giữ dữ liệu chừng nào còn cần để cung cấp dịch v�
 - Mã đặt lại mật khẩu: hết hiệu lực sau 10 phút, hoặc ngay sau khi dùng.
 - Thời điểm đồng ý Điều khoản và xác nhận đủ 18 tuổi: tới khi bạn xoá tài khoản. Thời điểm đồng ý dùng AI bị xoá ngay khi bạn tắt "Cho phép dùng AI".
 - Kết quả AI và số lượt dùng AI: tới khi bạn xoá tài khoản.
+- Mã người dùng Apple và mã làm mới của Apple: tới khi bạn xoá tài khoản. Mỗi lần bạn đăng nhập bằng Apple, mã làm mới cũ được thay bằng mã Apple vừa cấp.
 - Góp ý cho WeDo: tới khi bạn xoá tài khoản.
 - Báo cáo vi phạm: được giữ làm hồ sơ xử lý, kể cả sau khi tài khoản liên quan bị xoá; khi đó báo cáo không còn gắn với tài khoản. Thời hạn giữ: [THỜI HẠN GIỮ BÁO CÁO]. Bạn có thể yêu cầu xoá theo mục 11.
 - Danh sách người bạn đã chặn: tới khi bạn bỏ chặn hoặc xoá tài khoản.
@@ -446,16 +458,20 @@ Cách 1 — Trong ứng dụng trên iPhone hoặc Android:
 2) Vào tab Tài khoản, chọn Xoá tài khoản.
 3) Đọc danh sách dữ liệu sẽ bị xoá, gõ XOA để xác nhận.
 4) Nhấn Xoá tài khoản vĩnh viễn, rồi xác nhận thêm một lần.
-Tài khoản bị xoá ngay và ứng dụng tự đăng xuất. Không có thời gian chờ và không khôi phục được.
+Tài khoản bị xoá ngay và ứng dụng tự đăng xuất. Không có thời gian chờ và không khôi phục được. Trên iPhone, ứng dụng báo "Đã xoá tài khoản" rồi đưa bạn về màn Đăng nhập.
+
+Nếu bạn từng đăng nhập bằng Apple: ngay sau khi xoá theo cách 1, máy chủ WeDo yêu cầu Apple thu hồi Đăng nhập bằng Apple của WeDo. Khi Apple nhận yêu cầu, WeDo biến mất khỏi mục Đăng nhập bằng Apple trong Cài đặt của iPhone. Nếu Apple không nhận được yêu cầu, ví dụ vì lỗi mạng, tài khoản WeDo vẫn bị xoá; khi đó bạn tự gỡ WeDo ở mục đó.
 
 Cách 2 — Qua email (ví dụ khi bạn chỉ dùng web, vì web chưa có nút xoá tài khoản):
 Gửi email từ chính địa chỉ đã đăng ký tới wedosupport6886@gmail.com, tiêu đề "Yêu cầu xoá tài khoản WeDo". Chúng tôi xác minh, xoá trong vòng 20 ngày và báo lại cho bạn.
 Hướng dẫn chi tiết: https://wedofpt.com.vn/xoa-tai-khoan.html
+Nếu tài khoản của bạn dùng địa chỉ chuyển tiếp của Apple, bạn không gửi thư từ địa chỉ đó được. Hãy xoá theo cách 1. Nếu không được, gửi email từ địa chỉ bạn đang dùng và ghi rõ địa chỉ chuyển tiếp; chúng tôi có thể hỏi thêm để chắc bạn là chủ tài khoản. Xoá theo cách 2 không tự thu hồi Đăng nhập bằng Apple; hãy tự gỡ WeDo trong mục Đăng nhập bằng Apple ở Cài đặt của iPhone.
 
 Trước khi xoá: nếu bạn là chủ một không gian làm việc còn thành viên khác, ứng dụng yêu cầu bạn chuyển quyền chủ cho một thành viên trước. Việc này để một người không vô tình xoá dữ liệu của cả nhóm.
 
 Bị xoá ngay khi tài khoản bị xoá:
 - Hồ sơ, email, mật khẩu, số điện thoại, ngày sinh, ảnh đại diện.
+- Mã người dùng Apple và mã làm mới của Apple, nếu bạn từng đăng nhập bằng Apple.
 - Tin nhắn bạn đã gửi trong trò chuyện dự án và tin nhắn riêng, cùng biểu cảm của bạn.
 - Bạn bè và lời mời kết bạn.
 - Thông báo của bạn, mã nhận thông báo đẩy, phiên đăng nhập.
@@ -485,9 +501,10 @@ Bản sao ở nơi khác:
 - Nếu bạn từng dùng web: sự kiện đo lường tại PostHog gắn với mã tài khoản hiện chưa tự xoá. Gửi email nếu bạn muốn xoá.
 - Bản chép lời cuộc họp tại Daily.co hiện chưa tự xoá. Gửi email nếu bạn muốn xoá.
 - Nếu bạn đăng nhập bằng Google: bạn gỡ được liên kết với WeDo trong phần bảo mật của Tài khoản Google.
+- Nếu bạn đăng nhập bằng Apple: WeDo tự yêu cầu Apple thu hồi khi bạn xoá trong ứng dụng (xem trên). Bạn cũng tự gỡ được WeDo trong mục Đăng nhập bằng Apple ở Cài đặt của iPhone.
 ```
 
-> Phần tệp đúng với máy chủ mới (`BE src/users/users.service.ts`, `gomTepCanDon`, `donTepSauKhiXoa`, commit `3386c52`): gom tệp đính kèm và bài nộp do người đó tải lên và của không gian bị xoá theo, xoá xong trong cơ sở dữ liệu thì xoá trên Azure Blob, chỉ xoá tệp không còn dòng nào trỏ tới. Việc xoá tệp chạy ngầm; lỗi thì máy chủ ghi log. Chỉ đăng câu này khi máy chủ mới đã chạy. Câu về thu hồi quyền Apple để dành cho Phần 5.
+> Phần tệp đúng với máy chủ mới (`BE src/users/users.service.ts`, `gomTepCanDon`, `donTepSauKhiXoa`, commit `3386c52`): gom tệp đính kèm và bài nộp do người đó tải lên và của không gian bị xoá theo, xoá xong trong cơ sở dữ liệu thì xoá trên Azure Blob, chỉ xoá tệp không còn dòng nào trỏ tới. Việc xoá tệp chạy ngầm; lỗi thì máy chủ ghi log. Máy chủ này đã chạy từ 28/09/2026. Câu thu hồi Apple đúng với `BE src/users/users.service.ts` (`thuHoiAppleSauKhiXoa`, gọi `appleid.apple.com/auth/revoke` sau khi xoá; Apple lỗi thì chỉ ghi log). Đã thử trên iPhone thật ngày 28/09/2026: xoá xong, WeDo biến khỏi Cài đặt → Đăng nhập bằng Apple. Câu "Đã xoá tài khoản" đúng với commit `2b94b17` trên nhánh `ios`.
 
 Phương án B cho phần thanh toán — dùng khi backend đã đổi sang giữ đơn đã thanh toán, tách khỏi tài khoản (sau khi hỏi người làm kế toán, thuế):
 
@@ -545,6 +562,7 @@ WeDo dành cho người từ đủ 18 tuổi trở lên. Chúng tôi không cố
 
 - Mọi kết nối giữa thiết bị của bạn và máy chủ WeDo đều được mã hoá bằng HTTPS.
 - Mật khẩu chỉ lưu dạng băm (bcrypt). Mã gia hạn phiên và mã đặt lại mật khẩu cũng chỉ lưu dạng băm. Mã đặt lại mật khẩu chỉ cho nhập sai 5 lần.
+- Với Đăng nhập bằng Apple, máy chủ kiểm chữ ký của Apple trên mã xác minh trước khi cho bạn vào. Mã làm mới của Apple nằm trong cơ sở dữ liệu, chỉ máy chủ dùng để thu hồi, và không được ghi vào nhật ký kỹ thuật.
 - Trên điện thoại, mã đăng nhập nằm trong kho bảo mật của hệ điều hành (Keychain trên iPhone, Keystore trên Android). Dữ liệu tạm của ứng dụng bị xoá khi bạn đăng xuất.
 - Ảnh và tệp trong trò chuyện nằm trong kho lưu trữ riêng tư. Máy chủ chỉ trả tệp cho người đã đăng nhập và thuộc đúng dự án hoặc cuộc trò chuyện đó.
 - Nhật ký kỹ thuật của máy chủ không ghi mật khẩu, mã đặt lại mật khẩu hay mã đăng nhập.
@@ -560,7 +578,7 @@ Bạn giúp giữ an toàn bằng cách dùng mật khẩu riêng cho WeDo, khô
 ```text
 14. DỮ LIỆU ĐƯỢC LƯU Ở ĐÂU
 
-WeDo chưa đặt máy chủ tại Việt Nam. Dữ liệu của bạn được lưu và xử lý ở nước ngoài:
+WeDo chưa đặt máy chủ tại Việt Nam. Phần lớn dữ liệu của bạn được lưu và xử lý ở nước ngoài:
 - Hồng Kông: máy chủ WeDo (Microsoft Azure, vùng East Asia).
 - [VÙNG LƯU TỆP AZURE]: ảnh và tệp (Azure Blob Storage).
 - [VÙNG CƠ SỞ DỮ LIỆU]: cơ sở dữ liệu (Supabase, trên hạ tầng Amazon Web Services).
@@ -568,6 +586,7 @@ WeDo chưa đặt máy chủ tại Việt Nam. Dữ liệu của bạn được 
 - Liên minh châu Âu: gửi email (Brevo).
 - Việt Nam: thanh toán (payOS).
 - Hộp thư hỗ trợ (Gmail): trên hạ tầng của Google.
+- Đăng nhập bằng Apple: trên hạ tầng của Apple.
 
 Chúng tôi chỉ chuyển phần dữ liệu cần cho từng việc, và chỉ dùng nhà cung cấp có cam kết bảo vệ dữ liệu như mục 7.
 ```
@@ -609,15 +628,16 @@ SUMMARY IN ENGLISH
 
 - Who we are: WeDo is built and run by the WeDo student team. The individual responsible for personal data is Lê Hữu Đại. Contact: wedosupport6886@gmail.com. We acknowledge requests within 2 working days.
 - Scope: the WeDo website, the Android app and the iPhone app.
-- Sign-in: the iPhone app signs in with email and password only. Google sign-in exists on the website and the Android app; Google accounts can set a password with "Quên mật khẩu" (Forgot password).
-- Data we collect: account data (name, email, hashed password; Google profile data if you signed in with Google; when you accepted the Terms, confirmed you are 18 or older, and allowed AI); optional profile data (phone, date of birth, avatar); content you create (tasks, task submissions, project chat and direct messages, photos and files you choose, meetings, calendar, feedback); friends, blocked users and team membership; reports you file; push token; crash and performance diagnostics (Sentry, not linked to your name or email); activity timestamps; web-only analytics (PostHog); payment records if you paid on the website (payOS). The iPhone app has no payment features.
+- Sign-in: on iPhone, Sign in with Apple, Google or email and password. On Android and the website, Google or email and password. Sign in with Apple is available on iPhone only. New Apple and Google accounts must accept the Terms and confirm they are 18 or older on a one-time screen before using the app.
+- Sign in with Apple: we receive your Apple user identifier, your email or an Apple private relay address (…@privaterelay.appleid.com) if you hide your email, and your name on the first sign-in if you choose to share it (otherwise the account is named "Người dùng Apple"). If the verified email matches an existing WeDo account, the Apple ID is linked to that account. The server exchanges Apple's authorization code for an Apple refresh token and keeps it only to revoke Sign in with Apple when you delete your account. Emails from WeDo, such as password reset codes, may not reach a private relay address, because Apple only relays mail from senders registered with Apple; if you hid your email, keep signing in with the Apple button.
+- Data we collect: account data (name, email, hashed password; Google profile data if you signed in with Google; Apple user identifier, email or relay address and Apple refresh token if you used Sign in with Apple; when you accepted the Terms, confirmed you are 18 or older, and allowed AI); optional profile data (phone, date of birth, avatar); content you create (tasks, task submissions, project chat and direct messages, photos and files you choose, meetings, calendar, feedback); friends, blocked users and team membership; reports you file; push token; crash and performance diagnostics (Sentry, not linked to your name or email); activity timestamps; web-only analytics (PostHog); payment records if you paid on the website (payOS). The iPhone app has no payment features.
 - Device access: camera only when you take a photo to send in a chat; photos only when you pick one; notifications only if you allow them. No microphone, location, contacts or ad tracking.
 - AI: when a project leader asks for an AI task suggestion, WeDo sends the project name, the selected message, up to 12 recent project messages with author IDs and names, and the member list (IDs, names, roles) to one AI provider: Google Gemini API, Azure OpenAI or OpenAI. No email addresses or phone numbers are sent. Meeting transcripts made on the website are summarized the same way. The mobile app asks for permission before the first AI use, and you can withdraw it with the "Cho phép dùng AI" (Allow AI) switch in the Account tab. On the website, a leader's newly sent project message is currently sent to the AI provider automatically, without that prompt.
-- Third parties: Microsoft Azure, Supabase, Vercel, Google Sign-In (website and Android), Gmail (support mailbox), Expo push and updates, Apple Push Notification service, Firebase Cloud Messaging, Sentry, Google Gemini API, Azure OpenAI, OpenAI, Daily.co and Deepgram, Brevo, payOS, PostHog. They process data only to provide their service to WeDo and must protect it at least as well as this policy; section 8.4 explains how Gemini's terms differ between its paid and unpaid tiers.
+- Third parties: Microsoft Azure, Supabase, Vercel, Google Sign-In (website, Android and iPhone), Sign in with Apple (iPhone), Gmail (support mailbox), Expo push and updates, Apple Push Notification service, Firebase Cloud Messaging, Sentry, Google Gemini API, Azure OpenAI, OpenAI, Daily.co and Deepgram, Brevo, payOS, PostHog. They process data only to provide their service to WeDo and must protect it at least as well as this policy; section 8.4 explains how Gemini's terms differ between its paid and unpaid tiers.
 - We do not sell your data, show ads, or track you across other companies' apps and websites.
 - Safety: objectionable words in messages and display names are replaced with *** by an automatic filter. You can report messages and users and block users in the app. Blocked users cannot send you direct messages or friend requests and cannot find you in search. Their messages, including those in shared project chats, are hidden from you in the app. We review reports within 24 hours, remove violating content and suspend the accounts that posted it. Suspended accounts cannot sign in.
-- Other users: people in your workspaces and projects see your name, email, avatar and the content you share there. Any signed-in WeDo user (except users with a block between you) can find you by typing at least 3 characters of your name, or your full email or phone number; people who are not your friends only see your name and avatar in results. Friends, people you send a friend request to, and direct-message partners also see your email and, if you added one, your phone number.
-- Account deletion: in the app, Tài khoản (Account) > Xoá tài khoản (Delete account); it takes effect immediately. Photos, attachments and task files you uploaded are then deleted from storage. You can also email us. Section 10 lists what is deleted and what remains.
+- Other users: people in your workspaces and projects see your name, email, avatar and the content you share there. Any signed-in WeDo user (except users with a block between you) can find you by typing at least 3 characters of your name, or your full email or phone number; people who are not your friends only see your name and avatar in results. Friends, people you send a friend request to, and direct-message partners also see your email and, if you added one, your phone number. If you hid your email with Sign in with Apple, they see the relay address instead.
+- Account deletion: in the app, Tài khoản (Account) > Xoá tài khoản (Delete account); it takes effect immediately. Photos, attachments and task files you uploaded are then deleted from storage. If you used Sign in with Apple, the server then asks Apple to revoke it; once Apple accepts, WeDo disappears from Sign in with Apple in the iPhone's Settings. You can also email us; deletion by email does not revoke Sign in with Apple, so remove WeDo there yourself. Section 10 lists what is deleted and what remains.
 - Your rights under Vietnam's Personal Data Protection Law No. 91/2025/QH15 and Decree 356/2025/ND-CP: to be informed, to consent or withdraw consent, to access, correct and obtain a copy of your data, to request deletion or restriction, to object, and to complain.
 - Minimum age: 18.
 - Data is stored and processed mostly outside Vietnam, including Hong Kong, the United States and the European Union.
@@ -633,7 +653,7 @@ Những việc này không nằm trong trang chính sách, nhưng thiếu chúng
 
 | # | Việc | Trạng thái |
 |---|---|---|
-| 1 | **Trang xoá tài khoản** `FE public/xoa-tai-khoan.html`: phạm vi gồm iPhone, hạn 20 ngày, phần tệp khớp mục 10. | **Đã làm** trên nhánh `ios-web` (commit `2d02fa7`). Còn đăng (`08`, Bước B). |
+| 1 | **Trang xoá tài khoản** `FE public/xoa-tai-khoan.html`: phạm vi gồm iPhone, hạn 20 ngày, phần tệp khớp mục 10, thu hồi Đăng nhập bằng Apple. | **Đã làm** (commit `2d02fa7`), đã đăng ngày 28/09/2026. Phần Apple sửa ngày 28/09/2026 (commit `3bafbc8`), còn phải đẩy web lại. |
 | 2 | **Đường dẫn chính sách trong app** không được biến mất khi thiếu biến EAS. | **Đã làm** (`M src/lib/legal-links.ts`, commit `899c8eb`, `dd1fa4e`): có địa chỉ dự phòng. Nếu `EXPO_PUBLIC_PRIVACY_URL` có trên EAS, nên đặt `https://wedofpt.com.vn/privacy.html`. |
 | 3 | **App Store Connect**: dán `https://wedofpt.com.vn/privacy.html` vào ô Privacy Policy URL, khai App Privacy theo tài liệu 03. | Chủ dự án làm. |
 | 4 | **Google Play → An toàn dữ liệu**: sửa cho khớp danh sách ở tài liệu 03 mục 8. | Chủ dự án làm. |
@@ -641,39 +661,21 @@ Những việc này không nằm trong trang chính sách, nhưng thiếu chúng
 | 6 | **Sentry**: bật "Prevent Storing of IP Addresses" ở cả hai project; thêm `beforeBreadcrumb` bỏ phần truy vấn khỏi địa chỉ yêu cầu. Xong thì dùng phương án B ở mục 3.7. | Chủ dự án làm (công tắc). `beforeBreadcrumb`: còn lại (`08` IOS-24). |
 | 7 | **Gemini**: bật thanh toán cho project Google Cloud chứa `GEMINI_API_KEY`, rồi dùng phương án A ở mục 8.4. | Chủ dự án làm. |
 | 8 | **Web**: dừng việc tự gửi tin của trưởng nhóm cho AI, hoặc đặt nó sau bước xin đồng ý (`FE_WEDO\src\views\ChatView.tsx:920-923`). Làm xong thì bỏ đoạn "Trên web…" ở mục 8.3 và phụ lục. | Còn lại. |
-| 9 | **Máy chủ**: xoá tệp trên Azure Blob khi xoá tài khoản; bỏ email khỏi dữ liệu gửi AI; không trả email, số điện thoại cho người lạ khi tìm bạn. | **Đã làm** trên nhánh `ios-backend` (commit `3386c52`, `6384ab9`, `f76f0ec`, `db0322e`). Còn đăng (`08`, Bước A). |
+| 9 | **Máy chủ**: xoá tệp trên Azure Blob khi xoá tài khoản; bỏ email khỏi dữ liệu gửi AI; không trả email, số điện thoại cho người lạ khi tìm bạn; thu hồi Đăng nhập bằng Apple khi xoá tài khoản. | **Đã làm** (commit `3386c52`, `6384ab9`, `f76f0ec`, `db0322e`; Apple `654db2a`, `a50a58e`). Đang chạy trên production từ 28/09/2026. |
 | 10 | **Máy chủ, làm sau**: phòng họp Daily riêng tư (bỏ câu "ai có đường dẫn phòng họp cũng vào được"); xoá bản chép lời ở Daily; gọi API xoá người dùng của PostHog khi xoá tài khoản; giữ đơn đã thanh toán tách khỏi tài khoản (mục 10, phương án B); chỉ phát trạng thái đang hoạt động cho người quen; tự xoá báo cáo vi phạm sau `[THỜI HẠN GIỮ BÁO CÁO]`. | Còn lại. |
 | 11 | **Bản tiếng Anh đầy đủ** (không bắt buộc): dịch toàn văn thành `privacy-en.html` và dẫn chéo hai trang. | Còn lại. |
 | 12 | **Mức tuổi trong App Store Connect**: Override to Higher Age Rating → 18+ (tài liệu 02, mục 14). | Chủ dự án làm. |
 | 13 | **Hồ sơ chuyển dữ liệu ra nước ngoài**: hỏi người có chuyên môn pháp lý theo ghi chú dưới mục 14. | Chủ dự án làm. |
 | 14 | **Điền giá trị thật** thay cho câu trung tính (phần 2.1). | Chủ dự án làm. |
+| 15 | **Email chuyển tiếp của Apple**: đăng ký nơi gửi thư của WeDo ở "Sign in with Apple for Email Communication", gửi thử tới một địa chỉ chuyển tiếp. Xong thì sửa câu "Lưu ý về thư" ở mục 3.1 và phụ lục. | Còn lại (`08`, SAU-04). |
 
 ---
 
-## Phần 5. Bản sau (1.1): thêm khi có Đăng nhập bằng Apple
+## Phần 5. Đăng nhập bằng Apple: đã đưa vào Phần 3
 
-Bản này không có Đăng nhập bằng Apple. Khi làm tính năng đó (tài liệu 08, SAU-01 … SAU-04), sửa chính sách như dưới đây **trước** khi nộp bản có nút Apple.
+Phần này trước là "Bản sau (1.1)", gồm đoạn chữ để thêm khi có Đăng nhập bằng Apple. Ngày 28/09/2026, bản iPhone có nút Apple và Google, nên các đoạn đó đã được viết lại theo mã thật và đưa vào Phần 3 (mục 2, 3.1, 4, 5, 6, 7, 9, 10, 13, 14 và phụ lục tiếng Anh), khớp trang `privacy.html` sửa cùng ngày.
 
-Mục 3.1, thay gạch đầu dòng "Ứng dụng trên iPhone chỉ đăng nhập bằng email và mật khẩu…" bằng:
+Hai điểm khác bản nháp cũ:
 
-```text
-- Nếu bạn đăng nhập bằng Apple (trên iPhone): Apple gửi cho chúng tôi một mã định danh chỉ dùng cho WeDo, email của bạn, và họ tên ở lần đăng nhập đầu tiên. Nếu bạn chọn "Ẩn địa chỉ email", chúng tôi chỉ nhận một địa chỉ chuyển tiếp của Apple (dạng ...@privaterelay.appleid.com); thư gửi tới địa chỉ đó được Apple chuyển về email thật của bạn. Chúng tôi lưu thêm mã do Apple cấp để có thể thu hồi quyền đăng nhập khi bạn xoá tài khoản.
-```
-
-Mục 7, thêm sau dòng Google:
-
-```text
-- Apple (Đăng nhập bằng Apple). Việc: xác minh tài khoản Apple trên iPhone, chuyển tiếp email nếu bạn chọn ẩn email. Dữ liệu: mã định danh, email hoặc địa chỉ chuyển tiếp, họ tên ở lần đầu.
-```
-
-Mục 10, thêm vào cuối "Cách 2" và cuối "Bản sao ở nơi khác":
-
-```text
-Nếu bạn đăng nhập bằng Apple với email ẩn, hãy xoá trong ứng dụng (cách 1), vì chúng tôi không đối chiếu được địa chỉ email thật của bạn.
-```
-
-```text
-- Nếu bạn đăng nhập bằng Apple: khi bạn xoá tài khoản, chúng tôi thu hồi quyền đăng nhập WeDo đã được cấp qua Apple. Bạn cũng tự gỡ được trong Cài đặt của iPhone, phần Tài khoản Apple, mục Đăng nhập bằng Apple.
-```
-
-Điều kiện: câu "thư gửi tới địa chỉ đó được Apple chuyển về email thật" chỉ đúng khi địa chỉ gửi thư của WeDo đã đăng ký với dịch vụ chuyển tiếp email của Apple (hôm nay thư đi từ một hộp thư `@gmail.com` qua Brevo, `BE_WEDO\.env.example:53-60`). Câu thu hồi quyền chỉ đúng khi máy chủ gọi `https://appleid.apple.com/auth/revoke` lúc xoá tài khoản. Sửa cả mục 14 (thêm Apple vào "đăng nhập") và phụ lục tiếng Anh (thêm "Sign in with Apple" vào danh sách bên thứ ba).
+- Bản nháp cũ hứa "thư gửi tới địa chỉ đó được Apple chuyển về email thật". Câu này **chỉ đúng khi** nơi gửi thư của WeDo đã đăng ký với Apple, mà hôm nay **chưa**. Bản mới nói thật: thư có thể không tới; người đã ẩn email nên tiếp tục dùng nút Apple (`08`, SAU-04).
+- Kế hoạch cũ ở `08` (SAU-01) định không gắn tài khoản theo email chuyển tiếp. Máy chủ thật gắn Apple ID vào tài khoản có cùng email **đã được Apple xác minh**, kể cả địa chỉ chuyển tiếp; email chưa xác minh thì không bao giờ gắn. Mục 3.1 nói đúng như vậy.
