@@ -42,17 +42,35 @@ export const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || CLIENT_ID_DU_PHONG;
 
 /**
+ * OAuth client dạng **iOS** của cùng project, cho bản iPhone.
+ *
+ * Trên iPhone, `aud` của ID token là client iOS này chứ không phải client Web,
+ * nên máy chủ phải khai cùng giá trị ở `GOOGLE_IOS_CLIENT_ID`.
+ *
+ * ĐANG ĐỂ TRỐNG — người điều phối điền sau khi chủ dự án tạo client iOS trong
+ * Google Cloud Console. Để trống thì iPhone không hiện nút Google (xem
+ * `coDangNhapGoogle`). Điền vào thì PHẢI khai cùng lúc `iosUrlScheme` (client ID
+ * đảo ngược, `com.googleusercontent.apps.…`) cho plugin
+ * `@react-native-google-signin/google-signin` trong `app.json` — thiếu nó thì
+ * bấm nút là app văng.
+ *
+ * Không phải bí mật, giống client Web ở trên.
+ */
+export const GOOGLE_IOS_CLIENT_ID = '';
+
+/**
  * Máy này có đăng nhập bằng Google hay không.
  *
- * Bản iPhone đầu tiên chỉ có email và mật khẩu: plugin Google chưa khai
- * `iosUrlScheme`, nên bấm nút là hiện băng lỗi đỏ — reviewer của Apple bấm vào
- * là từ chối (Guideline 2.1). Không có đăng nhập bên thứ ba thì cũng không phải
- * làm Sign in with Apple (4.8). Android giữ nguyên.
+ * Android luôn có. iPhone chỉ có khi đã khai `GOOGLE_IOS_CLIENT_ID`: thiếu client
+ * iOS (và `iosUrlScheme` đi kèm) thì bấm nút là hỏng — reviewer của Apple bấm
+ * vào là từ chối (Guideline 2.1). Có Google trên iPhone thì cũng phải có Sign in
+ * with Apple (4.8) — xem `apple-signin.ts`.
  *
  * Đọc lúc gọi chứ không chốt ở tầng module, để kiểm thử đổi được hệ điều hành.
+ * Tham số chỉ để kiểm thử thay được client ID; mã thật gọi không đối số.
  */
-export function coDangNhapGoogle(): boolean {
-  return Platform.OS !== 'ios';
+export function coDangNhapGoogle(iosClientId: string = GOOGLE_IOS_CLIENT_ID): boolean {
+  return Platform.OS !== 'ios' || iosClientId.trim() !== '';
 }
 
 /**
@@ -65,9 +83,9 @@ export function coDangNhapGoogle(): boolean {
  * Nuốt mọi lỗi: người đăng nhập bằng email chưa hề chạm tới Google, và việc
  * đăng xuất khỏi WeDo không được phụ thuộc vào việc Google có hợp tác hay không.
  */
-export async function signOutFromGoogle(): Promise<void> {
-  // iPhone không có đường đăng nhập Google nào — xem `coDangNhapGoogle`.
-  if (!coDangNhapGoogle()) return;
+export async function signOutFromGoogle(iosClientId: string = GOOGLE_IOS_CLIENT_ID): Promise<void> {
+  // iPhone chưa khai client iOS thì không có đường đăng nhập Google nào — xem `coDangNhapGoogle`.
+  if (!coDangNhapGoogle(iosClientId)) return;
 
   try {
     await GoogleSignin.signOut();
@@ -92,18 +110,28 @@ function maNativeCuaLoi(error: unknown): string | null {
  *
  * Ném lỗi kèm thông báo tiếng Việt cho những trường hợp người dùng cần biết.
  */
-export async function getGoogleIdToken(): Promise<string | null> {
+export async function getGoogleIdToken(
+  iosClientId: string = GOOGLE_IOS_CLIENT_ID,
+): Promise<string | null> {
   /*
-    Nút đã bị giấu trên iPhone. Chốt thêm ở đây để không đường nào khác chạm
-    được tới SDK Google trên iPhone — `configure` bên dưới cũng không chạy.
+    iPhone chưa khai client iOS thì nút đã bị giấu. Chốt thêm ở đây để không
+    đường nào khác chạm được tới SDK Google — `configure` bên dưới cũng không chạy.
   */
-  if (!coDangNhapGoogle()) {
+  if (!coDangNhapGoogle(iosClientId)) {
     throw new Error('Bản iPhone chưa hỗ trợ đăng nhập Google. Vui lòng dùng email và mật khẩu.');
   }
 
   // `configure` là thao tác nhẹ và `signIn` luôn chờ nó xong, nên gọi ngay trước
   // mỗi lần đăng nhập là đủ — khỏi cần một bước khởi tạo riêng lúc mở app.
-  GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+  //
+  // Trên iPhone khai thêm `iosClientId`: SDK iOS mở hộp chọn tài khoản bằng
+  // client iOS, còn `webClientId` vẫn cần để Google cấp ID token cho máy chủ.
+  // Android giữ nguyên như cũ, chỉ `webClientId`.
+  GoogleSignin.configure(
+    Platform.OS === 'ios'
+      ? { webClientId: GOOGLE_WEB_CLIENT_ID, iosClientId }
+      : { webClientId: GOOGLE_WEB_CLIENT_ID },
+  );
 
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
