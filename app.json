@@ -12,8 +12,9 @@
     },
     "ios": {
       "bundleIdentifier": "vn.wedo.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "icon": "./assets/images/icon.png",
       "config": {
         "usesNonExemptEncryption": false
@@ -71,6 +72,7 @@
         }
       ],
       "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
       [
         "expo-image-picker",
         {
