@@ -47,9 +47,9 @@ export const GOOGLE_WEB_CLIENT_ID =
  * Trên iPhone, `aud` của ID token là client iOS này chứ không phải client Web,
  * nên máy chủ phải khai cùng giá trị ở `GOOGLE_IOS_CLIENT_ID`.
  *
- * ĐANG ĐỂ TRỐNG — người điều phối điền sau khi chủ dự án tạo client iOS trong
- * Google Cloud Console. Để trống thì iPhone không hiện nút Google (xem
- * `coDangNhapGoogle`). Điền vào thì PHẢI khai cùng lúc `iosUrlScheme` (client ID
+ * Tạo ngày 28/09/2026 trong Google Cloud Console (client "WeDo iOS", bundle
+ * vn.wedo.app). Để trống thì iPhone không hiện nút Google (xem
+ * `coDangNhapGoogle`). Có giá trị thì PHẢI khai cùng lúc `iosUrlScheme` (client ID
  * đảo ngược, `com.googleusercontent.apps.…`) cho plugin
  * `@react-native-google-signin/google-signin` trong `app.json` — thiếu nó thì
  * bấm nút là app văng.
@@ -59,7 +59,8 @@ export const GOOGLE_WEB_CLIENT_ID =
  * Khai hẳn kiểu `string`: để TypeScript tự suy thì kiểu là đúng giá trị chữ
  * đang điền, và mọi phép so với `''` thành lỗi TS2367 ngay khi điền giá trị thật.
  */
-export const GOOGLE_IOS_CLIENT_ID: string = '';
+export const GOOGLE_IOS_CLIENT_ID: string =
+  '108450458549-jr95oi462iueau8md2n4vp2di1b47pmn.apps.googleusercontent.com';
 
 /**
  * Máy này có đăng nhập bằng Google hay không.
