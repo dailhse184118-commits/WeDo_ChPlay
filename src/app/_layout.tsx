@@ -7,6 +7,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { CongDieuKhoan } from '../components/auth/CongDieuKhoan';
+import { VeDangNhapKhiDangXuat } from '../components/auth/VeDangNhapKhiDangXuat';
 import { UpdateGate } from '../components/update/UpdateGate';
 import { baoLoi, khoiDongSentry } from '../lib/observability/sentry';
 import { AuthProvider } from '../lib/auth/auth-context';
@@ -114,6 +115,7 @@ export default function RootLayout() {
         >
           <AuthProvider>
             <StatusBar style="dark" />
+            <VeDangNhapKhiDangXuat />
             <CongPhienBan>
               {/*
                 Người đã đăng nhập mà chưa đồng ý Điều khoản sử dụng thì không

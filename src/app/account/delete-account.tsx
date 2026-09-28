@@ -89,7 +89,7 @@ function BlockerCard({
 export default function DeleteAccountScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { signOut } = useAuth();
+  const { signOut, status } = useAuth();
 
   const [confirmText, setConfirmText] = useState('');
   const [actionError, setActionError] = useState('');
@@ -97,6 +97,12 @@ export default function DeleteAccountScreen() {
   const blockersQuery = useQuery({
     queryKey: ['deletion-blockers'],
     queryFn: getDeletionBlockers,
+    /*
+      Đăng xuất xoá sạch cache, và query đang gắn trên màn lập tức tự tải lại —
+      bằng một phiên đã mất, nên màn hiện "Không tải được thông tin tài khoản"
+      ngay sau khi xoá thành công. Tắt nó khi đã đăng xuất.
+    */
+    enabled: status !== 'signedOut',
   });
 
   const transferMutation = useMutation({
@@ -113,8 +119,15 @@ export default function DeleteAccountScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteAccount,
-    // Xoá xong thì token trỏ tới một tài khoản không còn tồn tại, phải đăng xuất ngay.
-    onSuccess: () => void signOut(),
+    /*
+      Xoá xong thì token trỏ tới một tài khoản không còn tồn tại, phải đăng xuất
+      ngay. `VeDangNhapKhiDangXuat` ở layout gốc đưa về màn Đăng nhập; báo một câu
+      để người dùng — và người duyệt của Apple — thấy rõ việc xoá đã thành công.
+    */
+    onSuccess: async () => {
+      await signOut();
+      Alert.alert('Đã xoá tài khoản', 'Tài khoản WeDo của bạn và dữ liệu đi kèm đã được xoá vĩnh viễn.');
+    },
     onError: (err) =>
       setActionError(err instanceof Error ? err.message : 'Không xoá được tài khoản.'),
   });
