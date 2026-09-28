@@ -169,6 +169,17 @@ describe('đăng xuất khỏi Google', () => {
 });
 
 describe('client iOS khai trong mã', () => {
+  it('mang kiểu string, không phải kiểu chữ của giá trị đang điền', () => {
+    /*
+      Khai `const X = ''` thì TypeScript chốt kiểu là `''`. Tới lúc người điều
+      phối điền client ID thật, phép so `!== ''` ở ca dưới thành so hai kiểu chữ
+      không giao nhau — `tsc` báo TS2367 và bản build hỏng đúng lúc điền. Dòng
+      này bắt lỗi đó ngay bây giờ, khi hằng số còn trống.
+    */
+    const laString: string extends typeof GOOGLE_IOS_CLIENT_ID ? true : false = true;
+    expect(laString).toBe(true);
+  });
+
   it('để trống, hoặc đúng dạng client ID của Google', () => {
     // Người điều phối điền giá trị sau; điền sai dạng thì máy chủ từ chối mọi token.
     if (GOOGLE_IOS_CLIENT_ID !== '') {

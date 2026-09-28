@@ -55,8 +55,11 @@ export const GOOGLE_WEB_CLIENT_ID =
  * bấm nút là app văng.
  *
  * Không phải bí mật, giống client Web ở trên.
+ *
+ * Khai hẳn kiểu `string`: để TypeScript tự suy thì kiểu là đúng giá trị chữ
+ * đang điền, và mọi phép so với `''` thành lỗi TS2367 ngay khi điền giá trị thật.
  */
-export const GOOGLE_IOS_CLIENT_ID = '';
+export const GOOGLE_IOS_CLIENT_ID: string = '';
 
 /**
  * Máy này có đăng nhập bằng Google hay không.
