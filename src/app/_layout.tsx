@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { VeDangNhapKhiDangXuat } from '../components/auth/VeDangNhapKhiDangXuat';
 import { UpdateGate } from '../components/update/UpdateGate';
 import { baoLoi, khoiDongSentry } from '../lib/observability/sentry';
 import { AuthProvider } from '../lib/auth/auth-context';
@@ -113,6 +114,7 @@ export default function RootLayout() {
         >
           <AuthProvider>
             <StatusBar style="dark" />
+            <VeDangNhapKhiDangXuat />
             <CongPhienBan>
               <Stack screenOptions={{ headerShown: false }} />
             </CongPhienBan>
