@@ -47,15 +47,50 @@ export function register(input: RegisterInput): Promise<AuthResponse> {
  * Đăng nhập bằng Google.
  *
  * Gửi **ID token** chứ không phải access token: máy chủ đối chiếu `aud` của
- * token với một `GOOGLE_CLIENT_ID` duy nhất — client dạng Web. Trên Android,
- * access token do thư viện cấp gắn với client dạng Android nên `aud` lệch và
- * máy chủ từ chối; còn ID token thì được cấp cho `webClientId` mà ứng dụng khai
- * báo, nên khớp.
+ * token với client ID của ứng dụng. Trên Android, access token do thư viện cấp
+ * gắn với client dạng Android nên `aud` lệch và máy chủ từ chối; còn ID token
+ * thì được cấp cho `webClientId` mà ứng dụng khai báo, nên khớp. Trên iPhone,
+ * `aud` là client dạng iOS — máy chủ nhận cả `GOOGLE_IOS_CLIENT_ID`.
  */
 export function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   return apiRequest<AuthResponse>('/auth/google', {
     method: 'POST',
     body: { idToken },
+    skipAuth: true,
+  });
+}
+
+/** Những gì `POST /auth/apple` nhận. Xem `layThongTinApple`. */
+export interface DangNhapAppleInput {
+  /** JWT do Apple ký; máy chủ tự kiểm chữ ký, `aud` và `nonce`. */
+  identityToken: string;
+  /** Mã dùng một lần; máy chủ đổi lấy refresh token để thu hồi khi xoá tài khoản. */
+  authorizationCode?: string;
+  /** Nonce GỐC. Identity token mang SHA-256 của nó. */
+  nonce: string;
+  /** Apple chỉ gửi tên ở lần cấp quyền đầu tiên. */
+  fullName?: string;
+  email?: string;
+}
+
+/**
+ * Đăng nhập bằng Apple (chỉ iPhone). Máy chủ trả đúng hình dạng như `/auth/google`.
+ *
+ * Chỉ gửi những khoá có giá trị: máy chủ bật `forbidNonWhitelisted` và kiểm độ
+ * dài `fullName`, gửi `null` hay chuỗi rỗng là tự chuốc lỗi 400.
+ */
+export function loginWithApple(input: DangNhapAppleInput): Promise<AuthResponse> {
+  const body: Record<string, string> = {
+    identityToken: input.identityToken,
+    nonce: input.nonce,
+  };
+  if (input.authorizationCode) body.authorizationCode = input.authorizationCode;
+  if (input.fullName) body.fullName = input.fullName;
+  if (input.email) body.email = input.email;
+
+  return apiRequest<AuthResponse>('/auth/apple', {
+    method: 'POST',
+    body,
     skipAuth: true,
   });
 }

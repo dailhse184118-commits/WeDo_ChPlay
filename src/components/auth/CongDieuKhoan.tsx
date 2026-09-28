@@ -28,8 +28,9 @@ export function canDongYDieuKhoan(user: UserProfile | null): boolean {
  * nhận đủ 18 tuổi.
  *
  * Dành cho người không đi qua màn đăng ký của app: tài khoản tạo trước khi có
- * điều khoản, và người vào bằng Google (web, Android). Người đăng ký bằng app
- * đã đánh dấu ô lúc đăng ký nên không bao giờ thấy màn này.
+ * điều khoản, và người vào bằng Google hay Apple (web, Android, iPhone). Người
+ * đăng ký bằng email trong app đã đánh dấu ô lúc đăng ký nên không bao giờ
+ * thấy màn này.
  *
  * Đặt ở layout gốc, THAY CHỖ cả `<Stack>`, chứ không phải một màn trong nhóm
  * `(tabs)`: màn chi tiết mở từ thông báo hay đường dẫn cũng nằm dưới `<Stack>`,

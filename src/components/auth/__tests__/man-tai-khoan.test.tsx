@@ -53,6 +53,7 @@ function dangNhap(user: UserProfile) {
     user,
     signIn: jest.fn(),
     signInWithGoogle: jest.fn(),
+    signInWithApple: jest.fn(),
     signUp: jest.fn(),
     signOut: jest.fn(),
     capNhatHoSo,

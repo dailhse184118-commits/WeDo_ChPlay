@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from '../auth-context';
 import { ApiError, apiRequest, giaHanMotLuot } from '../../api/client';
 import * as pushToken from '../../notifications/push-token';
 import * as authApi from '../../api/auth';
+import * as appleSignIn from '../apple-signin';
 import * as googleSignIn from '../google-signin';
 import * as query from '../../query';
 import * as tokenStorage from '../token-storage';
@@ -13,6 +14,7 @@ import * as tokenStorage from '../token-storage';
 jest.mock('../../api/auth');
 jest.mock('../token-storage');
 jest.mock('../google-signin');
+jest.mock('../apple-signin');
 jest.mock('../../query', () => ({ xoaCacheBenBi: jest.fn() }));
 jest.mock('../../notifications/push-token', () => ({
   huyDangKyPushToken: jest.fn(async () => undefined),
@@ -22,13 +24,14 @@ jest.mock('../../notifications/push-token', () => ({
 const mockedAuthApi = authApi as jest.Mocked<typeof authApi>;
 const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
 const mockedGoogle = googleSignIn as jest.Mocked<typeof googleSignIn>;
+const mockedApple = appleSignIn as jest.Mocked<typeof appleSignIn>;
 const mockedQuery = query as jest.Mocked<typeof query>;
 const mockedPush = pushToken as jest.Mocked<typeof pushToken>;
 
 const profile = { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' };
 
 function Probe() {
-  const { status, user, signIn, signInWithGoogle, signOut } = useAuth();
+  const { status, user, signIn, signInWithGoogle, signInWithApple, signOut } = useAuth();
   return (
     <>
       <Text testID="status">{status}</Text>
@@ -38,6 +41,9 @@ function Probe() {
       </Pressable>
       <Pressable testID="signin-google" onPress={() => signInWithGoogle()}>
         <Text>vao bang google</Text>
+      </Pressable>
+      <Pressable testID="signin-apple" onPress={() => signInWithApple()}>
+        <Text>vao bang apple</Text>
       </Pressable>
       <Pressable testID="signout" onPress={() => signOut()}>
         <Text>ra</Text>
@@ -180,6 +186,46 @@ describe('AuthProvider', () => {
     await fireEvent.press(getByTestId('signin-google'));
 
     expect(mockedAuthApi.loginWithGoogle).not.toHaveBeenCalled();
+    expect(getByTestId('status').props.children).toBe('signedOut');
+  });
+
+  it('đổi thông tin Apple lấy phiên của WeDo, gửi nguyên thứ bảng Apple trả về', async () => {
+    const thongTin = {
+      identityToken: 'jwt-cua-apple',
+      authorizationCode: 'ma-mot-lan',
+      nonce: 'nonce-goc',
+      fullName: 'Lê Hữu Đại',
+      email: 'abc@privaterelay.appleid.com',
+    };
+    mockedApple.layThongTinApple.mockResolvedValue(thongTin);
+    mockedAuthApi.loginWithApple.mockResolvedValue({
+      message: 'ok',
+      accessToken: 'tok-apple',
+      refreshToken: 'rt-apple',
+      user: { id: 'u1', email: 'abc@privaterelay.appleid.com', fullName: 'Lê Hữu Đại' },
+    } as never);
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin-apple'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedAuthApi.loginWithApple).toHaveBeenCalledWith(thongTin);
+    expect(mockedStorage.saveToken).toHaveBeenCalledWith('tok-apple');
+    expect(mockedStorage.saveRefreshToken).toHaveBeenCalledWith('rt-apple');
+  });
+
+  it('không gọi máy chủ khi người dùng đóng bảng Apple', async () => {
+    mockedApple.layThongTinApple.mockResolvedValue(null);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin-apple'));
+
+    expect(mockedAuthApi.loginWithApple).not.toHaveBeenCalled();
     expect(getByTestId('status').props.children).toBe('signedOut');
   });
 

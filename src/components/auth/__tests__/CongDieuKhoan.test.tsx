@@ -35,6 +35,7 @@ function dangNhap(user: UserProfile | null, status: AuthState['status'] = 'signe
     user,
     signIn: jest.fn(),
     signInWithGoogle: jest.fn(),
+    signInWithApple: jest.fn(),
     signUp: jest.fn(),
     signOut,
     capNhatHoSo,
