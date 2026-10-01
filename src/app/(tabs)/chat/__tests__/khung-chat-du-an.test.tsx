@@ -9,8 +9,11 @@ import {
   getProjectMessages,
   markProjectRead,
   requestTaskSuggestion,
+  sendProjectFiles,
   sendProjectMessage,
 } from '../../../../lib/api/chat';
+import { LoiGuiDoDang } from '../../../../lib/api/chat-files';
+import { chonAnh } from '../../../../lib/images/pick-images';
 import { createTaskFromMessage } from '../../../../lib/chat/create-task-from-message';
 import { listProjects } from '../../../../lib/api/projects';
 import { getEntitlements } from '../../../../lib/api/entitlements';
@@ -94,8 +97,10 @@ jest.mock('../../../../components/chat/MessageBubble', () => {
 let mockSoanTin: {
   value: string;
   sending: boolean;
+  anhDaChon: unknown[];
   onChangeText: (v: string) => void;
   onSend: () => void;
+  onChonAnh: () => void;
 } | null = null;
 jest.mock('../../../../components/chat/MessageComposer', () => ({
   MessageComposer: (props: never) => {
@@ -645,5 +650,35 @@ describe('tạo việc bằng AI ở dự án thuộc không gian khác', () => 
     expect(mockedTaoViec).toHaveBeenCalledWith(
       expect.objectContaining({ projectId: 'p1', workspaceId: 'w1', assigneeId: 'u2' }),
     );
+  });
+});
+
+/*
+  Mỗi ảnh là một tin nhắn thật. Ảnh thứ hai hỏng mà màn giữ nguyên cả ba ảnh
+  trong ô soạn thì bấm Gửi lại là cả nhóm thấy ảnh đầu hai lần.
+*/
+describe('gửi nhiều ảnh hỏng giữa chừng', () => {
+  it('bỏ ảnh đã tới khỏi ô soạn, giữ phần chưa gửi, nói rõ đã gửi bao nhiêu', async () => {
+    const ANH = [1, 2, 3].map((i) => ({ uri: `file:///a${i}.jpg`, name: `a${i}.jpg` }));
+    (chonAnh as jest.Mock).mockResolvedValue(ANH);
+    const daToi = { ...tin('anh-1', 'ảnh một kèm chú thích', 40), authorId: 'u1' };
+    (sendProjectFiles as jest.Mock).mockRejectedValue(
+      new LoiGuiDoDang([daToi], 3, new Error('Không gửi được tệp. Kiểm tra mạng và thử lại.')),
+    );
+    mockedTin.mockResolvedValue([tin('m1', 'Dạ', 1)]);
+
+    const man = await render(dung());
+    await waitFor(() => expect(man.getByText('Dạ')).toBeTruthy());
+
+    await act(async () => mockSoanTin?.onChangeText('chú thích'));
+    await act(async () => mockSoanTin?.onChonAnh());
+    await waitFor(() => expect(mockSoanTin?.anhDaChon).toHaveLength(3));
+    await act(async () => mockSoanTin?.onSend());
+
+    await waitFor(() => expect(mockSoanTin?.anhDaChon).toEqual([ANH[1], ANH[2]]));
+    // Chú thích đã đi cùng ảnh đầu — để lại là gửi lặp.
+    expect(mockSoanTin?.value).toBe('');
+    expect(man.getByText('ảnh một kèm chú thích')).toBeTruthy();
+    expect(man.getByText(/Đã gửi 1\/3 ảnh/)).toBeTruthy();
   });
 });

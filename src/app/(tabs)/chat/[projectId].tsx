@@ -37,6 +37,7 @@ import { listProjects } from '../../../lib/api/projects';
 import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
 import { ApiError } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { LoiGuiDoDang, cauGuiDoDang } from '../../../lib/api/chat-files';
 import { createTaskFromMessage } from '../../../lib/chat/create-task-from-message';
 import { createLocalId } from '../../../lib/chat/local-id';
 import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
@@ -548,7 +549,23 @@ export default function ChatThreadScreen() {
           tep: files.map(moTaTep),
           coChuThich: content.trim().length > 0,
         });
-        const cauLoi = loi instanceof Error ? loi.message : 'Không gửi được ảnh.';
+        /*
+          Hỏng giữa lô: những ảnh đầu ĐÃ là tin nhắn thật trong nhóm. Hiện chúng
+          ra, bỏ chúng (và chú thích, đã đi cùng ảnh đầu) khỏi ô soạn — để nguyên
+          thì bấm Gửi lại là cả nhóm thấy ảnh đầu hai lần.
+        */
+        const doDang = loi instanceof LoiGuiDoDang ? (loi as LoiGuiDoDang<ChatMessage>) : null;
+        if (doDang && duAnDangHien.current === duAn) {
+          const daToi = new Set(files.slice(0, doDang.daGui.length));
+          setMessages((current) => mergeMessages(current, doDang.daGui));
+          setAnhChoGui((hienCo) => hienCo.filter((tep) => !daToi.has(tep)));
+          setDraft('');
+        }
+        const cauLoi = doDang
+          ? cauGuiDoDang(doDang, 'ảnh')
+          : loi instanceof Error
+            ? loi.message
+            : 'Không gửi được ảnh.';
         if (theHe.current !== theHeLucGui) {
           Alert.alert('Chưa gửi được ảnh', `${cauLoi} Ảnh chưa tới nhóm trước — mở lại dự án đó để gửi lại.`);
           return;

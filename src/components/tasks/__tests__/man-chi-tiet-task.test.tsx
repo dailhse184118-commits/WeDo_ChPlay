@@ -7,7 +7,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { renderScreen } from '../../../test-utils/render';
 import ManChiTietTask from '../../../app/(tabs)/tasks/[taskId]';
 import { listProjects } from '../../../lib/api/projects';
-import { approveReview, getTask, updateTaskStatus } from '../../../lib/api/tasks';
+import { LoiGuiDoDang } from '../../../lib/api/chat-files';
+import { approveReview, getTask, updateTaskStatus, uploadSubmissions } from '../../../lib/api/tasks';
+import { chonTaiLieu } from '../../../lib/files/pick-documents';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import type { Project, Task, TaskSubmission } from '../../../lib/types';
@@ -231,5 +233,34 @@ describe('leader chấm bài', () => {
 
     await waitFor(() => expect(mockedDuyet).toHaveBeenCalledWith('t1'));
     hoi.mockRestore();
+  });
+});
+
+/*
+  Mỗi tệp nộp là một bài nộp thật. Tệp thứ hai hỏng thì tệp đầu vẫn đã lên —
+  màn phải đọc lại công việc để hiện nó, không thì người làm tưởng chưa nộp gì
+  và nộp lại, thành hai bản.
+*/
+describe('nộp nhiều tệp hỏng giữa chừng', () => {
+  it('đọc lại công việc để hiện tệp đã lên, và nói rõ đã nộp bao nhiêu', async () => {
+    const dangLam = congViec({
+      assigneeId: MINH_ANH.id,
+      assignmentStatus: 'ACCEPTED',
+      status: 'IN_PROGRESS',
+    });
+    (chonTaiLieu as jest.Mock).mockResolvedValue([
+      { uri: 'file:///a.pdf', name: 'a.pdf' },
+      { uri: 'file:///b.pdf', name: 'b.pdf' },
+    ]);
+    (uploadSubmissions as jest.Mock).mockRejectedValue(
+      new LoiGuiDoDang([{ ...dangLam, submissions: [BAI_NOP] }], 2, new Error('Mất mạng')),
+    );
+    const man = await moMan(dangLam, MINH_ANH.id);
+    const soLanDoc = mockedGetTask.mock.calls.length;
+
+    await fireEvent.press(man.getByTestId('submission-pick'));
+
+    await waitFor(() => expect(man.getByText(/Đã gửi 1\/2 tệp/)).toBeTruthy());
+    await waitFor(() => expect(mockedGetTask.mock.calls.length).toBeGreaterThan(soLanDoc));
   });
 });

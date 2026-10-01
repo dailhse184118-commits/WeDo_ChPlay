@@ -14,6 +14,7 @@ import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
+import { LoiGuiDoDang } from '../../../lib/api/chat-files';
 import { baseUrl } from '../../../lib/api/client';
 import { listProjects } from '../../../lib/api/projects';
 import {
@@ -217,8 +218,15 @@ export default function TaskDetailScreen() {
       setActionError('');
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không nộp được tài liệu.'),
+    onError: (err) => {
+      /*
+        Hỏng giữa lô: những tệp đầu ĐÃ là bài nộp thật. Đọc lại công việc để
+        chúng hiện ra — không thì người làm tưởng chưa nộp gì và nộp lại thành
+        hai bản.
+      */
+      if (err instanceof LoiGuiDoDang) invalidate();
+      setActionError(err instanceof Error ? err.message : 'Không nộp được tài liệu.');
+    },
   });
 
   const sendReviewMutation = useMutation({
