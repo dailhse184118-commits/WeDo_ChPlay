@@ -8,6 +8,7 @@ export type RealtimeEvent =
   | 'task:project:updated'
   | 'message:direct'
   | 'message:direct:updated'
+  | 'message:direct:recalled'
   | 'read:direct';
 
 /** Khoá truy vấn cần báo hỏng khi nhận được sự kiện. */
@@ -25,6 +26,13 @@ export function keysToInvalidate(event: RealtimeEvent): string[][] {
       return [['direct-conversations'], ['direct-messages']];
     case 'message:direct:updated':
       return [['direct-messages']];
+    case 'message:direct:recalled':
+      /*
+        Người gửi thu hồi trên web, hoặc quản trị gỡ tin sau báo cáo. Không nghe
+        thì điện thoại vẫn hiện nguyên nội dung cũ. Danh sách hội thoại cũng phải
+        đọc lại: tin chưa đọc bị thu hồi thì huy hiệu đổi.
+      */
+      return [['direct-messages'], ['direct-conversations']];
     case 'read:direct':
       // Người kia đọc xong thì chỉ trạng thái hội thoại đổi, nội dung thì không.
       return [['direct-conversations']];

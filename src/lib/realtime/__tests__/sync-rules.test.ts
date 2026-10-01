@@ -28,6 +28,17 @@ describe('keysToInvalidate', () => {
     expect(keysToInvalidate('message:direct:updated')).toEqual([['direct-messages']]);
   });
 
+  /*
+    Tin bị thu hồi (người gửi thu hồi trên web, hoặc quản trị gỡ sau báo cáo) mà
+    điện thoại không nghe thì vẫn hiện nguyên nội dung cũ.
+  */
+  it('tin nhắn riêng bị thu hồi làm hỏng luồng lẫn danh sách hội thoại', () => {
+    expect(keysToInvalidate('message:direct:recalled')).toEqual([
+      ['direct-messages'],
+      ['direct-conversations'],
+    ]);
+  });
+
   it('đã đọc làm hỏng danh sách hội thoại để huy hiệu tắt đi', () => {
     expect(keysToInvalidate('read:direct')).toEqual([['direct-conversations']]);
   });
