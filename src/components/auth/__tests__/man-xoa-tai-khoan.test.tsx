@@ -44,6 +44,27 @@ afterEach(() => {
 });
 
 describe('màn xoá tài khoản', () => {
+  // Máy chủ xoá cả tin nhắn riêng, bạn bè và tệp trên kho lưu trữ; danh sách phải nói đủ.
+  it('nói rõ tin nhắn riêng, bạn bè, ảnh và tệp cũng bị xoá', async () => {
+    const man = await moMan();
+
+    await waitFor(() => expect(man.getByTestId('delete-account')).toBeTruthy());
+    expect(man.getByText('Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên')).toBeTruthy();
+  });
+
+  it('tải thông tin hỏng: có nút Thử lại, bấm là hỏi lại máy chủ', async () => {
+    mockedBlockers.mockRejectedValueOnce(new Error('mạng'));
+    const man = await moMan();
+
+    await waitFor(() => expect(man.getByText('Không tải được thông tin tài khoản.')).toBeTruthy());
+    expect(man.queryByTestId('delete-account')).toBeNull();
+
+    await fireEvent.press(man.getByTestId('delete-retry'));
+
+    await waitFor(() => expect(man.getByTestId('delete-account')).toBeTruthy());
+    expect(mockedBlockers).toHaveBeenCalledTimes(2);
+  });
+
   /*
     Gặp thật 28/09/2026: xoá xong, đăng xuất xoá cache và query trên màn tự tải
     lại bằng phiên đã mất, hiện "Không tải được thông tin tài khoản". Người duyệt
