@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -18,7 +19,8 @@ import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
-import { capNhatAnhDaiDien } from '../../../lib/api/account';
+import { useDongYAI } from '../../../lib/ai/dong-y-ai';
+import { capNhatAnhDaiDien, datDongYAI } from '../../../lib/api/account';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
@@ -74,6 +76,36 @@ export default function AccountScreen() {
 
   const [dangLuuAnh, setDangLuuAnh] = useState(false);
   const [loiAnh, setLoiAnh] = useState('');
+
+  const { daDongY: choPhepAI, xinDongYRoiChay } = useDongYAI();
+  const [dangLuuAI, setDangLuuAI] = useState(false);
+  const [loiAI, setLoiAI] = useState('');
+
+  /*
+    Bật: đi qua ĐÚNG hộp thoại xin đồng ý như lúc dùng AI lần đầu, để người dùng
+    đọc được sẽ gửi gì đi trước khi cho phép. Không có việc gì để chạy tiếp —
+    đồng ý xong là công tắc tự bật theo hồ sơ.
+
+    Tắt: rút lại ngay, không hỏi — rút lại phải dễ như cho phép.
+  */
+  async function doiChoPhepAI(bat: boolean) {
+    if (bat) {
+      xinDongYRoiChay(() => undefined);
+      return;
+    }
+    if (!user) return;
+
+    setLoiAI('');
+    setDangLuuAI(true);
+    try {
+      const { aiConsentAt } = await datDongYAI(false);
+      capNhatHoSo({ ...user, aiConsentAt });
+    } catch (loi) {
+      setLoiAI(loi instanceof Error ? loi.message : 'Không lưu được lựa chọn.');
+    } finally {
+      setDangLuuAI(false);
+    }
+  }
 
   async function luuAnh(anhUrl: string | null) {
     setLoiAnh('');
@@ -193,6 +225,7 @@ export default function AccountScreen() {
         </View>
 
         {loiAnh ? <ErrorBanner message={loiAnh} /> : null}
+        {loiAI ? <ErrorBanner message={loiAI} /> : null}
 
         <Card style={styles.menu}>
           {/*
@@ -236,6 +269,28 @@ export default function AccountScreen() {
             hint="Nói cho chúng tôi biết chỗ nào khó dùng"
             onPress={() => router.push('/account/feedback')}
           />
+          {/*
+            Hộp thoại xin đồng ý AI hứa "có thể tắt trong Tài khoản", và chính
+            sách quyền riêng tư nhắc đích danh công tắc này — đây là chỗ đó. Đổi
+            tên hay dời đi thì sửa cả câu trong `lib/ai/dong-y-ai.ts`.
+          */}
+          <View style={[styles.menuRow, styles.menuDivider]}>
+            <IconTile name="sparkles-outline" tone="info" />
+            <View style={styles.menuBody}>
+              <Text style={styles.menuLabel}>Cho phép dùng AI</Text>
+              <Text style={styles.menuHint}>
+                Gợi ý công việc từ tin nhắn bạn chọn. Tắt thì app không gửi tin nhắn bạn chọn cho AI nữa.
+              </Text>
+            </View>
+            <Switch
+              testID="account-ai-consent"
+              accessibilityLabel="Cho phép dùng AI"
+              value={choPhepAI}
+              disabled={dangLuuAI}
+              onValueChange={(bat) => void doiChoPhepAI(bat)}
+              trackColor={{ true: colors.primary }}
+            />
+          </View>
           {/*
             Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
             chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.

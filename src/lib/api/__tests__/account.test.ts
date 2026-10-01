@@ -1,4 +1,4 @@
-import { deleteAccount, getDeletionBlockers, transferWorkspaceOwner } from '../account';
+import { datDongYAI, deleteAccount, getDeletionBlockers, transferWorkspaceOwner } from '../account';
 import { apiRequest } from '../client';
 
 jest.mock('../client', () => ({ apiRequest: jest.fn() }));
@@ -35,5 +35,20 @@ describe('API xoá tài khoản', () => {
   */
   it('không bao giờ nhận id người dùng từ bên ngoài', () => {
     expect(deleteAccount.length).toBe(0);
+  });
+});
+
+describe('API đồng ý dùng AI', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedRequest.mockResolvedValue({ aiConsentAt: null } as never);
+  });
+
+  it('cho phép dùng AI bằng POST, rút lại bằng DELETE', async () => {
+    await datDongYAI(true);
+    expect(mockedRequest).toHaveBeenLastCalledWith('/users/me/ai-consent', { method: 'POST' });
+
+    await datDongYAI(false);
+    expect(mockedRequest).toHaveBeenLastCalledWith('/users/me/ai-consent', { method: 'DELETE' });
   });
 });
