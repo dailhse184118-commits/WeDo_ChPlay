@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Modal,
   Pressable,
   RefreshControl,
@@ -9,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
@@ -87,6 +88,12 @@ function Muc({ item, onPress }: { item: MucLich; onPress?: () => void }) {
   );
 }
 
+/** `2026-09-30` theo giờ máy — đổi đúng lúc qua nửa đêm. */
+function khoaHomNay(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
 export default function ManLich() {
   const router = useRouter();
   const { active, workspaces, switchTo } = useWorkspace();
@@ -100,6 +107,25 @@ export default function ManLich() {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [taoMoiOpen, setTaoMoiOpen] = useState(false);
 
+  /*
+    "Hôm nay" là một TRẠNG THÁI, xét lại mỗi lần màn được đưa lên và mỗi lần app
+    trở lại tiền cảnh. Màn này là tab ẩn, sống suốt phiên: trước đây khoảng ngày
+    và mốc "Hôm nay" tính một lần lúc gắn, nên app nằm nền qua đêm thì hạn chót
+    hôm nay vẫn ghi "Ngày mai" và khoảng ngày không bao giờ dời theo.
+  */
+  const [homNay, setHomNay] = useState(khoaHomNay);
+  const xetLaiHomNay = useCallback(() => {
+    const moi = khoaHomNay();
+    setHomNay((cu) => (cu === moi ? cu : moi));
+  }, []);
+  useFocusEffect(xetLaiHomNay);
+  useEffect(() => {
+    const dangKy = AppState.addEventListener('change', (trangThai) => {
+      if (trangThai === 'active') xetLaiHomNay();
+    });
+    return () => dangKy.remove();
+  }, [xetLaiHomNay]);
+
   const khoang = useMemo(() => {
     const bayGio = new Date();
     const tu = new Date(bayGio);
@@ -107,10 +133,12 @@ export default function ManLich() {
     const den = new Date(bayGio);
     den.setDate(den.getDate() + NGAY_SAU);
     return { tu, den, bayGio };
-  }, []);
+    // Phụ thuộc `homNay` là cố ý: chỉ dựng lại khoảng khi đã sang ngày mới.
+  }, [homNay]);
 
   const lich = useQuery({
-    queryKey: ['calendar', active?.id],
+    // Kèm ngày: sang ngày mới là một khoảng khác, không dùng lại kết quả hôm qua.
+    queryKey: ['calendar', active?.id, homNay],
     queryFn: () => getCalendar(active!.id, khoang.tu, khoang.den),
     enabled: Boolean(active?.id),
   });

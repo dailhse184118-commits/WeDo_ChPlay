@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -34,6 +34,29 @@ export default function ManTaoCuocHop() {
   const [loiThoiDiem, setLoiThoiDiem] = useState<string | null>(null);
   const [loiChung, setLoiChung] = useState<string | null>(null);
 
+  const lamTrongForm = useCallback(() => {
+    setDuAnId(null);
+    setTieuDe('');
+    setNoiDung('');
+    setNgay('');
+    setGio('');
+    setLoiTieuDe(null);
+    setLoiThoiDiem(null);
+    setLoiChung(null);
+  }, []);
+
+  /*
+    Màn này là một tab ẩn, sống suốt phiên: lần bấm "Tạo cuộc họp" sau là CÙNG
+    một màn, giữ nguyên mọi thứ của cuộc họp vừa tạo — bấm Tạo lần nữa là ra
+    cuộc họp trùng. Dọn lúc RỜI màn để lần mở sau không loé lên form cũ.
+  */
+  useFocusEffect(useCallback(() => lamTrongForm, [lamTrongForm]));
+
+  /* Dự án của không gian cũ không thuộc không gian mới — máy chủ sẽ từ chối. */
+  useEffect(() => {
+    lamTrongForm();
+  }, [active?.id, lamTrongForm]);
+
   const duAnQuery = useQuery({
     queryKey: ['projects', active?.id],
     queryFn: () => listProjects(active!.id),
@@ -45,6 +68,7 @@ export default function ManTaoCuocHop() {
   const tao = useMutation({
     mutationFn: taoCuocHop,
     onSuccess: (hop) => {
+      lamTrongForm();
       void queryClient.invalidateQueries({ queryKey: ['meetings'] });
       void queryClient.invalidateQueries({ queryKey: ['calendar'] });
       router.replace(`/meetings/${hop.id}`);

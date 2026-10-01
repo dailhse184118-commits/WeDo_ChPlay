@@ -1,4 +1,8 @@
-import { createTaskFromMessage, combineDueDateTime } from '../create-task-from-message';
+import {
+  combineDueDateTime,
+  createTaskFromMessage,
+  docHanChotAI,
+} from '../create-task-from-message';
 import { createTask } from '../../api/tasks';
 import { linkMessageTask } from '../../api/chat';
 
@@ -35,6 +39,52 @@ describe('combineDueDateTime', () => {
 
   it('trả undefined khi ngày không hợp lệ', () => {
     expect(combineDueDateTime('khong-phai-ngay', '09:00')).toBeUndefined();
+  });
+});
+
+/*
+  Ô "Ngày hết hạn" của trợ lý là ô chữ tự do. Trước đây chỉ đúng dạng
+  yyyy-mm-dd và HH:mm mới qua; gõ "30/09/2026" hay "8:00" như mọi ô ngày khác
+  trong app là hạn chót bị vứt đi trong im lặng, và màn vẫn báo "Đã tạo".
+*/
+describe('docHanChotAI', () => {
+  const dia = (nam: number, thang: number, ngay: number, gio: number, phut: number) =>
+    new Date(nam, thang - 1, ngay, gio, phut, 0, 0).toISOString();
+
+  it('nhận ngày/tháng/năm như mọi ô ngày khác trong app', () => {
+    expect(docHanChotAI('30/09/2026', '8:00')).toEqual({ iso: dia(2026, 9, 30, 8, 0), loi: null });
+  });
+
+  it('nhận dạng máy chủ trả về, kể cả không có số 0 đứng đầu', () => {
+    expect(docHanChotAI('2026-09-30', '20:00').iso).toBe(dia(2026, 9, 30, 20, 0));
+    expect(docHanChotAI('2026-9-3', '20:00').iso).toBe(dia(2026, 9, 3, 20, 0));
+  });
+
+  it('nhận giờ kiểu Việt Nam: 20h, 20h30, 8:05', () => {
+    expect(docHanChotAI('30/09/2026', '20h').iso).toBe(dia(2026, 9, 30, 20, 0));
+    expect(docHanChotAI('30/09/2026', '20h30').iso).toBe(dia(2026, 9, 30, 20, 30));
+    expect(docHanChotAI('30/09/2026', '8:05').iso).toBe(dia(2026, 9, 30, 8, 5));
+  });
+
+  it('không có ngày thì không có hạn, cũng không có lỗi', () => {
+    expect(docHanChotAI('', '23:59')).toEqual({ iso: null, loi: null });
+    expect(docHanChotAI('   ')).toEqual({ iso: null, loi: null });
+  });
+
+  it('báo lỗi ngày không có thật thay vì cuộn sang tháng sau', () => {
+    expect(docHanChotAI('31/02/2026', '09:00')).toEqual({
+      iso: null,
+      loi: expect.stringMatching(/Ngày hết hạn/),
+    });
+  });
+
+  it('báo lỗi chuỗi không phải ngày', () => {
+    expect(docHanChotAI('mai', '09:00').loi).toMatch(/Ngày hết hạn/);
+  });
+
+  it('báo lỗi giờ sai', () => {
+    expect(docHanChotAI('30/09/2026', '25:00').loi).toMatch(/Giờ/);
+    expect(docHanChotAI('30/09/2026', 'tối').loi).toMatch(/Giờ/);
   });
 });
 
@@ -100,6 +150,25 @@ describe('createTaskFromMessage', () => {
 
     expect(result.outcome).toBe('failed');
     expect(mockedLink).not.toHaveBeenCalled();
+  });
+
+  it('gửi đúng hạn chót khi người dùng gõ ngày/tháng/năm', async () => {
+    mockedCreateTask.mockResolvedValue(task as never);
+    mockedLink.mockResolvedValue(message as never);
+
+    await createTaskFromMessage({ ...baseInput, dueDate: '30/09/2026', dueTime: '8:00' });
+
+    expect(mockedCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate: new Date(2026, 8, 30, 8, 0, 0, 0).toISOString() }),
+    );
+  });
+
+  it('có ngày mà không đọc được thì KHÔNG tạo việc thiếu hạn chót', async () => {
+    const result = await createTaskFromMessage({ ...baseInput, dueDate: '31/02/2026' });
+
+    expect(result.outcome).toBe('failed');
+    if (result.outcome === 'failed') expect(result.error.message).toMatch(/Ngày hết hạn/);
+    expect(mockedCreateTask).not.toHaveBeenCalled();
   });
 
   it('không tạo lại công việc khi được đưa sẵn existingTaskId', async () => {

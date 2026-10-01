@@ -19,6 +19,24 @@ export function getMyFeedback(): Promise<DanhGiaCuaToi | null> {
   return apiRequest<DanhGiaCuaToi | null>('/feedback/mine');
 }
 
+/** `GET /feedback/status` — phần app dùng tới. Máy chủ còn trả `prompt`, ở đây không cần. */
+export interface TrangThaiDanhGia {
+  feedback: DanhGiaCuaToi | null;
+  /** Chưa gửi lần nào, hoặc quản trị đã mở khoá cho gửi lại. */
+  canSubmit: boolean;
+  locked: boolean;
+}
+
+/**
+ * Đã gửi chưa, và còn bị khoá không.
+ *
+ * Khác `getMyFeedback`: lượt này biết quản trị đã MỞ KHOÁ cho gửi lại hay chưa
+ * (`unlockedAt` phía máy chủ). Đọc `/mine` thì thấy bản cũ là tưởng còn khoá.
+ */
+export function getFeedbackStatus(): Promise<TrangThaiDanhGia> {
+  return apiRequest<TrangThaiDanhGia>('/feedback/status');
+}
+
 export function submitFeedback(rating: number, comment: string): Promise<DanhGiaCuaToi> {
   return apiRequest<DanhGiaCuaToi>('/feedback', {
     method: 'POST',

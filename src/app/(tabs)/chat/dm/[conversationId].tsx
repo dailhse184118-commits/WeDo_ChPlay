@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   View,
 } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
@@ -17,7 +17,10 @@ import { ImageViewer } from '../../../../components/chat/ImageViewer';
 import { MessageComposer } from '../../../../components/chat/MessageComposer';
 import { ErrorBanner } from '../../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../../components/ui/GradientHeader';
+import { LoiGuiDoDang, cauGuiDoDang } from '../../../../lib/api/chat-files';
 import {
+  SO_TIN_RIENG_MOI_NHAT,
+  getDirectHistory,
   getDirectMessages,
   markConversationRead,
   sendDirectFiles,
@@ -25,11 +28,14 @@ import {
 } from '../../../../lib/api/direct-chat';
 import type { TepChon } from '../../../../lib/api/tasks';
 import { useAuth } from '../../../../lib/auth/auth-context';
+import { mergeMessages } from '../../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../../lib/chat/nhom-tin';
+import { useDongBoKhungChat } from '../../../../lib/chat/use-dong-bo-khung-chat';
 import { useHeaderTep } from '../../../../lib/chat/use-header-tep';
-import { datManDangMo, quenManDangMo } from '../../../../lib/notifications/man-dang-mo';
 import { baoLoi, moTaTep } from '../../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../../lib/images/pick-images';
+import { useSocket } from '../../../../lib/socket/socket-context';
+import type { DirectMessage } from '../../../../lib/types';
 import { colors, spacing } from '../../../../theme/tokens';
 
 const GOC_MAY_CHU = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
@@ -37,6 +43,7 @@ const GOC_MAY_CHU = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 export default function ManTinNhanRieng() {
   const router = useRouter();
   const { user } = useAuth();
+  const { socket } = useSocket();
   const queryClient = useQueryClient();
   const { conversationId, ten } = useLocalSearchParams<{
     conversationId: string;
@@ -71,11 +78,135 @@ export default function ManTinNhanRieng() {
   const banPhim = useReanimatedKeyboardAnimation();
   const kieuTruThem = useAnimatedStyle(() => ({ paddingBottom: -banPhim.height.value }));
 
+  /*
+    Màn này là một tab ẩn, sống suốt phiên: rời đi chỉ là ẩn, còn mở hội thoại
+    khác vẫn là CÙNG một màn, chỉ đổi tham số.
+
+    Chỉ nạp tin khi người dùng ĐANG NHÌN — màn được focus và app ở tiền cảnh.
+    Máy chủ coi `GET /messages` là "đã đọc". Trước đây truy vấn luôn bật, nên mỗi
+    tin mới (socket báo hỏng cả nhánh 'direct-messages') hay mỗi lần mở app lên
+    là màn đã ẩn nạp lại: huy hiệu chưa đọc biến mất và người gửi thấy "Đã xem"
+    trong khi người dùng đang ở tab khác. Màn đã rời thì để lần focus sau nạp.
+  */
+  const [dangXem, setDangXem] = useState(false);
+
   const messagesQuery = useQuery({
     queryKey: ['direct-messages', conversationId],
     queryFn: () => getDirectMessages(conversationId),
-    enabled: Boolean(conversationId),
+    enabled: Boolean(conversationId) && dangXem,
   });
+
+  const napLai = useCallback(() => {
+    setDangXem(true);
+    /*
+      Đánh dấu cũ chứ không gọi thẳng: lúc focus, truy vấn còn đang tắt — bật lên
+      ở lượt dựng kế tiếp là tự nạp đúng một lần. Đang bật sẵn (socket nối lại)
+      thì nạp ngay.
+    */
+    void queryClient.invalidateQueries({ queryKey: ['direct-messages', conversationId] });
+  }, [queryClient, conversationId]);
+  const thoiXem = useCallback(() => setDangXem(false), []);
+
+  /*
+    Focus, mở app lên, socket nối lại — và chặn banner của đúng hội thoại đang
+    xem. Cùng một cơ chế với chat dự án: xem `useDongBoKhungChat`.
+  */
+  useDongBoKhungChat({
+    khoaManDangMo: conversationId ? `dm:${conversationId}` : null,
+    socket,
+    napLai,
+    onRoi: thoiXem,
+  });
+
+  /*
+    Tin cũ hơn trang mới nhất, tải thêm khi cuộn lên. `getDirectMessages` chỉ trả
+    40 tin gần nhất — trước đây cuộn lên là hết, không có cách nào xem lại tin
+    và tệp cũ hơn trên điện thoại.
+
+    Cũng giữ luôn những tin từng nằm ở trang mới nhất: có tin mới tới thì tin
+    cũ nhất rơi khỏi trang đó, và nếu không giữ lại thì danh sách thủng một lỗ
+    giữa phần mới và phần đã cuộn tải.
+  */
+  const [tinCu, setTinCu] = useState<DirectMessage[]>([]);
+  const [hetTinCu, setHetTinCu] = useState(false);
+  const [dangTaiCu, setDangTaiCu] = useState(false);
+  const [loiTaiCu, setLoiTaiCu] = useState('');
+  const dangTaiCuRef = useRef(false);
+  const hoiThoaiDangHien = useRef(conversationId);
+  hoiThoaiDangHien.current = conversationId;
+
+  /* Đổi hội thoại: xoá phần tin cũ của hội thoại trước NGAY trong lượt dựng. */
+  const [hoiThoaiCuaTinCu, setHoiThoaiCuaTinCu] = useState(conversationId);
+  if (hoiThoaiCuaTinCu !== conversationId) {
+    setHoiThoaiCuaTinCu(conversationId);
+    setTinCu([]);
+    setHetTinCu(false);
+    setDangTaiCu(false);
+    setLoiTaiCu('');
+    dangTaiCuRef.current = false;
+  }
+
+  const tinMoiNhat = messagesQuery.data;
+  useEffect(() => {
+    if (!tinMoiNhat) return;
+    setTinCu((truoc) => (truoc.length > 0 ? mergeMessages(truoc, tinMoiNhat) : truoc));
+  }, [tinMoiNhat]);
+
+  /* Cũ trước, mới sau. Trang mới nhất thắng khi trùng — nó là bản tươi nhất. */
+  const tatCaTin = useMemo(
+    () => (tinCu.length > 0 ? mergeMessages(tinCu, tinMoiNhat ?? []) : (tinMoiNhat ?? [])),
+    [tinCu, tinMoiNhat],
+  );
+
+  const conTinCu = !hetTinCu && (tinMoiNhat?.length ?? 0) >= SO_TIN_RIENG_MOI_NHAT;
+
+  const taiTinCu = useCallback(async () => {
+    const hoiThoai = conversationId;
+    const cuNhat = tatCaTin[0]?.id;
+    if (!hoiThoai || !cuNhat || !conTinCu || dangTaiCuRef.current) return;
+
+    dangTaiCuRef.current = true;
+    setDangTaiCu(true);
+    setLoiTaiCu('');
+    try {
+      const trang = await getDirectHistory(hoiThoai, cuNhat);
+      // Đã sang hội thoại khác trong lúc chờ: bỏ trang này.
+      if (hoiThoaiDangHien.current !== hoiThoai) return;
+      setTinCu((truoc) => mergeMessages(mergeMessages(truoc, tinMoiNhat ?? []), trang.items));
+      if (!trang.nextCursor || trang.items.length === 0) setHetTinCu(true);
+    } catch (loi) {
+      if (hoiThoaiDangHien.current !== hoiThoai) return;
+      setLoiTaiCu(loi instanceof Error ? loi.message : 'Không tải được tin nhắn cũ hơn.');
+    } finally {
+      if (hoiThoaiDangHien.current === hoiThoai) {
+        dangTaiCuRef.current = false;
+        setDangTaiCu(false);
+      }
+    }
+  }, [conversationId, tatCaTin, conTinCu, tinMoiNhat]);
+
+  /*
+    Tin bị thu hồi. Trang mới nhất tự nạp lại nhờ `useRealtimeSync`; còn phần đã
+    cuộn tải thì không nằm trong bộ nhớ đệm nào, phải tự thay ở đây — không thì
+    tin đã thu hồi vẫn hiện nguyên nội dung cũ.
+  */
+  useEffect(() => {
+    if (!socket) return;
+    const khiThuHoi = (tin: Partial<DirectMessage> | null | undefined) => {
+      if (!tin?.id || tin.conversationId !== hoiThoaiDangHien.current) return;
+      setTinCu((truoc) =>
+        truoc.some((m) => m.id === tin.id)
+          ? truoc.map((m) =>
+              m.id === tin.id ? { ...m, ...tin, attachments: tin.attachments ?? [] } : m,
+            )
+          : truoc,
+      );
+    };
+    socket.on('message:direct:recalled', khiThuHoi);
+    return () => {
+      socket.off('message:direct:recalled', khiThuHoi);
+    };
+  }, [socket]);
 
   function xongMotLuotGui() {
     // Xoá ô soạn SAU khi máy chủ nhận. Xoá trước mà mạng hỏng thì người dùng
@@ -95,53 +226,49 @@ export default function ManTinNhanRieng() {
     mutationFn: ({ files, content }: { files: TepChon[]; content: string }) =>
       sendDirectFiles(conversationId, files, content),
     onSuccess: xongMotLuotGui,
-    /*
-      Bao ve Sentry, neu khong cau loi that bien mat sau bang do "Khong the ket
-      noi may chu" ma nguoi dung nhin thay. Nguoi kiem thu bao khong gui duoc
-      anh ngay 19/09 va khong ai biet vi sao — vi dung cho nay nuot loi.
-    */
-    onError: (loi, bien) =>
-      baoLoi(loi, 'gui-anh-tin-nhan-rieng', {
+    onError: (loi, bien) => {
+      /*
+        Hỏng giữa lô: những ảnh đầu ĐÃ là tin nhắn thật. Bỏ chúng (và chú thích,
+        đã đi cùng ảnh đầu) khỏi ô soạn, chỉ để lại phần chưa gửi — để nguyên
+        thì bấm Gửi lại là người nhận thấy ảnh đầu hai lần.
+      */
+      if (loi instanceof LoiGuiDoDang) {
+        const daToi = new Set(bien.files.slice(0, loi.daGui.length));
+        setAnhChoGui((hienCo) => hienCo.filter((tep) => !daToi.has(tep)));
+        setNoiDung('');
+        void queryClient.invalidateQueries({ queryKey: ['direct-messages', conversationId] });
+        void queryClient.invalidateQueries({ queryKey: ['direct-conversations'] });
+      }
+      /*
+        Bao ve Sentry, neu khong cau loi that bien mat sau bang do "Khong the ket
+        noi may chu" ma nguoi dung nhin thay. Nguoi kiem thu bao khong gui duoc
+        anh ngay 19/09 va khong ai biet vi sao — vi dung cho nay nuot loi.
+      */
+      baoLoi(loi instanceof LoiGuiDoDang ? loi.loiGoc : loi, 'gui-anh-tin-nhan-rieng', {
         soTep: bien.files.length,
         tep: bien.files.map(moTaTep),
         coChuThich: bien.content.trim().length > 0,
-      }),
+      });
+    },
   });
-
-  /*
-    Báo cho bộ xử lý thông báo biết đang mở hội thoại nào, để tin của chính hội
-    thoại này không nhảy banner đè lên thứ người dùng đang đọc.
-
-    Theo FOCUS, không theo lần gắn màn: màn này là tab ẩn, sống suốt phiên. Theo
-    lần gắn thì rời đi rồi banner của hội thoại này vẫn bị chặn, còn quay lại thì
-    khoá đã bị màn khác xoá mà không được đặt lại.
-  */
-  useFocusEffect(
-    useCallback(() => {
-      if (!conversationId) return;
-
-      const khoa = `dm:${conversationId}`;
-      datManDangMo(khoa);
-      // Chỉ xoá khoá của chính mình — khung chat khác có thể đã kịp đặt khoá của nó.
-      return () => quenManDangMo(khoa);
-    }, [conversationId]),
-  );
 
   /*
     Đánh dấu đã đọc khi mở, và mỗi lần có tin mới về trong lúc màn đang mở.
     Không làm thì huy hiệu chưa đọc vẫn sáng dù người dùng đang nhìn thẳng vào
     tin nhắn đó.
   */
-  const soTin = messagesQuery.data?.length ?? 0;
+  const soTin = tinMoiNhat?.length ?? 0;
+  const tinMoiNhatId = tinMoiNhat?.[tinMoiNhat.length - 1]?.id;
   useEffect(() => {
-    if (!conversationId || soTin === 0) return;
+    // Chỉ khi đang nhìn: màn ẩn mà báo đã đọc là người gửi thấy "Đã xem" giả.
+    if (!conversationId || soTin === 0 || !dangXem) return;
 
     void markConversationRead(conversationId)
       .then(() => queryClient.invalidateQueries({ queryKey: ['direct-conversations'] }))
       // Đánh dấu đã đọc hỏng không đáng làm phiền người dùng: họ vẫn đọc được
       // tin nhắn, và lượt mở sau sẽ thử lại.
       .catch(() => undefined);
-  }, [conversationId, soTin, queryClient]);
+  }, [conversationId, soTin, tinMoiNhatId, dangXem, queryClient]);
 
   /*
     Đảo ngược để `inverted` của FlatList neo ở tin mới nhất, và đổi `sender`
@@ -149,24 +276,21 @@ export default function ManTinNhanRieng() {
     `author`, tin nhắn riêng gọi là `sender`; đó là hình dạng máy chủ trả về.
   */
   const duLieu = useMemo(
-    () =>
-      [...(messagesQuery.data ?? [])]
-        .reverse()
-        .map((tin) => ({ ...tin, author: tin.sender ?? null })),
-    [messagesQuery.data],
+    () => [...tatCaTin].reverse().map((tin) => ({ ...tin, author: tin.sender ?? null })),
+    [tatCaTin],
   );
 
   /*
     Tính trên danh sách theo thứ tự thời gian, TRƯỚC khi đảo — xem `idsHienAvatar`.
   */
   const nhom = useMemo(() => {
-    const theoThoiGian = (messagesQuery.data ?? []).map((tin) => ({
+    const theoThoiGian = tatCaTin.map((tin) => ({
       id: tin.id,
       nguoiGuiId: tin.senderId,
     }));
 
     return { avatar: idsHienAvatar(theoThoiGian), ten: idsHienTen(theoThoiGian) };
-  }, [messagesQuery.data]);
+  }, [tatCaTin]);
 
   async function nhanAnh(lay: () => Promise<TepChon[]>) {
     setLoiChonAnh('');
@@ -201,13 +325,17 @@ export default function ManTinNhanRieng() {
   const loiGui = guiMutation.error ?? guiAnhMutation.error;
   const loi =
     loiChonAnh ||
-    (loiGui instanceof Error
-      ? loiGui.message
-      : messagesQuery.isError && !messagesQuery.data
-        ? messagesQuery.error instanceof Error
-          ? messagesQuery.error.message
-          : 'Không tải được tin nhắn.'
-        : '');
+    (loiGui instanceof LoiGuiDoDang
+      ? cauGuiDoDang(loiGui, 'ảnh')
+      : loiGui instanceof Error
+        ? loiGui.message
+        : loiTaiCu
+          ? loiTaiCu
+          : messagesQuery.isError && !messagesQuery.data
+            ? messagesQuery.error instanceof Error
+              ? messagesQuery.error.message
+              : 'Không tải được tin nhắn.'
+            : '');
 
   return (
     <View style={styles.man}>
@@ -216,15 +344,29 @@ export default function ManTinNhanRieng() {
       <Reanimated.View style={[styles.than, kieuTruThem]}>
         {loi ? <ErrorBanner message={loi} /> : null}
 
-        {messagesQuery.isLoading && !messagesQuery.data ? (
+        {/*
+          Chờ khi CHƯA CÓ dữ liệu, không chỉ khi `isLoading`: truy vấn còn tắt ở
+          khung hình đầu (chưa focus) báo `isLoading = false`, và màn sẽ loé lên
+          "Chưa có tin nhắn nào" trước khi tin về.
+        */}
+        {!messagesQuery.data && !messagesQuery.isError ? (
           <View style={styles.giua}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <FlatList
+            testID="khung-tin-rieng"
             data={duLieu}
             inverted
             keyExtractor={(item) => item.id}
+            // Danh sách đảo ngược: "cuối" là phía TRÊN, tức tin cũ nhất.
+            onEndReached={() => void taiTinCu()}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              dangTaiCu ? (
+                <ActivityIndicator style={styles.taiCu} color={colors.primary} />
+              ) : null
+            }
             contentContainerStyle={styles.danhSach}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
@@ -272,4 +414,5 @@ const styles = StyleSheet.create({
   than: { flex: 1 },
   giua: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   danhSach: { padding: spacing.md },
+  taiCu: { paddingVertical: spacing.md },
 });

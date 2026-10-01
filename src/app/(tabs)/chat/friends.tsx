@@ -101,6 +101,8 @@ export default function FriendsScreen() {
   });
 
   const dangTim = tuKhoaCho.trim().length >= DO_DAI_TU_KHOA_TOI_THIEU;
+  /* Đã gõ mà chưa đủ dài: nói thẳng là cần gõ thêm, đừng để người dùng tưởng không có ai. */
+  const tuKhoaQuaNgan = tuKhoa.trim().length > 0 && tuKhoa.trim().length < DO_DAI_TU_KHOA_TOI_THIEU;
   const nguoiTimDuoc = timQuery.data ?? [];
 
   const loi =
@@ -149,7 +151,13 @@ export default function FriendsScreen() {
       >
         {loi ? <ErrorBanner message={loi} /> : null}
 
-        {dangTim ? (
+        {tuKhoaQuaNgan ? (
+          <Text testID="goi-y-tu-khoa" style={styles.trong}>
+            {`Gõ ít nhất ${DO_DAI_TU_KHOA_TOI_THIEU} ký tự để tìm.`}
+          </Text>
+        ) : null}
+
+        {dangTim && !tuKhoaQuaNgan ? (
           <Muc tieuDe="Kết quả tìm kiếm">
             {timQuery.isLoading ? (
               <ActivityIndicator color={colors.primary} style={styles.cho} />

@@ -71,6 +71,7 @@ export function useRealtimeSync(): void {
 
     const onDirectMessage = () => invalidate('message:direct');
     const onDirectUpdated = () => invalidate('message:direct:updated');
+    const onDirectRecalled = () => invalidate('message:direct:recalled');
     const onDirectRead = () => invalidate('read:direct');
 
     socket.on('notification:new', onNotification);
@@ -80,6 +81,7 @@ export function useRealtimeSync(): void {
     socket.on('message:project:recalled', onProjectMessage);
     socket.on('message:direct', onDirectMessage);
     socket.on('message:direct:updated', onDirectUpdated);
+    socket.on('message:direct:recalled', onDirectRecalled);
     socket.on('read:direct', onDirectRead);
 
     return () => {
@@ -89,6 +91,7 @@ export function useRealtimeSync(): void {
       socket.off('message:project:recalled', onProjectMessage);
       socket.off('message:direct', onDirectMessage);
       socket.off('message:direct:updated', onDirectUpdated);
+      socket.off('message:direct:recalled', onDirectRecalled);
       socket.off('read:direct', onDirectRead);
     };
   }, [socket, queryClient, userId]);

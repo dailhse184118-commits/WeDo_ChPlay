@@ -5,7 +5,12 @@ import { TaskSubmissionPanel } from '../TaskSubmissionPanel';
 import type { QuyenTrenTask } from '../../../lib/tasks/task-permissions';
 import type { TaskSubmission } from '../../../lib/types';
 
-const KHONG_QUYEN: QuyenTrenTask = { nopTaiLieu: false, guiDuyet: false, duyetBai: false };
+const KHONG_QUYEN: QuyenTrenTask = {
+  nopTaiLieu: false,
+  guiDuyet: false,
+  duyetBai: false,
+  batDauLam: false,
+};
 
 function tep(ghiDe: Partial<TaskSubmission> = {}): TaskSubmission {
   return {
@@ -108,7 +113,7 @@ describe('người phụ trách nộp bài', () => {
 });
 
 describe('leader duyệt bài', () => {
-  const QUYEN_LEADER: QuyenTrenTask = { nopTaiLieu: false, guiDuyet: false, duyetBai: true };
+  const QUYEN_LEADER: QuyenTrenTask = { ...KHONG_QUYEN, duyetBai: true };
 
   it('hiện hai nút duyệt và trả lại', async () => {
     const onApprove = jest.fn();
@@ -145,5 +150,32 @@ describe('bài bị trả lại', () => {
     });
 
     expect(getByText('Thiếu số liệu quý 2')).toBeTruthy();
+  });
+});
+
+/*
+  Leader được hỏi "Duyệt bài" hay "Trả lại" — phải mở được bài đã nộp thì mới
+  chấm được. Trước đây dòng tệp chỉ là chữ, chạm vào không có gì xảy ra.
+*/
+describe('mở tệp đã nộp', () => {
+  it('chạm vào dòng tệp thì báo đúng tệp đó lên màn hình', async () => {
+    const onMoTep = jest.fn();
+    const baiNop = tep();
+    const { getByTestId } = await dung({
+      quyen: { ...KHONG_QUYEN, duyetBai: true },
+      submissions: [baiNop],
+      onMoTep,
+    });
+
+    await fireEvent.press(getByTestId('submission-file-s1'));
+    expect(onMoTep).toHaveBeenCalledWith(baiNop);
+  });
+
+  it('dòng tệp là một liên kết cho trình đọc màn hình', async () => {
+    const { getByTestId } = await dung({ submissions: [tep()], onMoTep: () => {} });
+    const dong = getByTestId('submission-file-s1');
+
+    expect(dong.props.accessibilityRole).toBe('link');
+    expect(dong.props.accessibilityLabel).toMatch(/Báo cáo tuần 3\.pdf/);
   });
 });

@@ -59,6 +59,21 @@ export function rejectTask(id: string, reason: string): Promise<Task> {
   });
 }
 
+/**
+ * Đổi trạng thái công việc bằng `PATCH /tasks/:id`.
+ *
+ * Chỉ gửi đúng trường `status`: máy chủ hiểu "không gửi" là giữ nguyên, nên
+ * kèm thêm trường nào là tự nhận việc sửa trường đó. Máy chủ chỉ cho leader dự
+ * án (hoặc người tạo / chủ không gian với việc không thuộc dự án) đổi trạng thái
+ * — xem `quyenTrenTask` để biết khi nào nên hiện nút.
+ */
+export function updateTaskStatus(id: string, status: TaskStatus): Promise<Task> {
+  return apiRequest<Task>(`/tasks/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: { status },
+  });
+}
+
 /** Một tệp người dùng vừa chọn trên máy, trước khi gửi đi. */
 export interface TepChon {
   uri: string;

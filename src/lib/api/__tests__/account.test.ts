@@ -1,4 +1,10 @@
-import { datDongYAI, deleteAccount, getDeletionBlockers, transferWorkspaceOwner } from '../account';
+import {
+  capNhatThongTinCaNhan,
+  datDongYAI,
+  deleteAccount,
+  getDeletionBlockers,
+  transferWorkspaceOwner,
+} from '../account';
 import { apiRequest } from '../client';
 
 jest.mock('../client', () => ({ apiRequest: jest.fn() }));
@@ -50,5 +56,33 @@ describe('API đồng ý dùng AI', () => {
 
     await datDongYAI(false);
     expect(mockedRequest).toHaveBeenLastCalledWith('/users/me/ai-consent', { method: 'DELETE' });
+  });
+});
+
+/*
+  Máy chủ phân biệt ba trạng thái: KHÔNG gửi `dob` = giữ nguyên, gửi `null` = gỡ,
+  gửi chuỗi = đặt ngày mới. Trước đây app bỏ hẳn khoá khi ô ngày sinh trống,
+  nên xoá ngày sinh rồi bấm Lưu thì màn báo "Đã lưu thay đổi" mà ngày cũ vẫn còn.
+*/
+describe('sửa thông tin cá nhân', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedRequest.mockResolvedValue({} as never);
+  });
+
+  it('xoá trống ngày sinh thì gửi dob: null để máy chủ gỡ đi', async () => {
+    await capNhatThongTinCaNhan({ fullName: 'Lê Hữu Đại', phone: '', dob: null });
+
+    const [, tuyChon] = mockedRequest.mock.calls[0] as [string, { body: Record<string, unknown> }];
+    expect(tuyChon.body).toHaveProperty('dob', null);
+  });
+
+  it('có ngày sinh thì gửi đúng ngày đó', async () => {
+    await capNhatThongTinCaNhan({ fullName: 'Lê Hữu Đại', phone: '', dob: '1999-08-14' });
+
+    expect(mockedRequest).toHaveBeenCalledWith('/users/me', {
+      method: 'PATCH',
+      body: { fullName: 'Lê Hữu Đại', phone: '', dob: '1999-08-14' },
+    });
   });
 });
