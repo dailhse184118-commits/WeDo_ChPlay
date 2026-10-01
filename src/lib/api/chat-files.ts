@@ -20,6 +20,8 @@ export class LoiGuiDoDang<T> extends Error {
   constructor(daGui: T[], tongSo: number, loiGoc: unknown) {
     const cau = loiGoc instanceof Error ? loiGoc.message : 'Không gửi được tệp.';
     super(`Đã gửi ${daGui.length}/${tongSo} tệp. ${cau}`);
+    // Cần thiết để `instanceof LoiGuiDoDang` vẫn đúng sau khi transpile — như `ApiError`.
+    Object.setPrototypeOf(this, LoiGuiDoDang.prototype);
     this.name = 'LoiGuiDoDang';
     this.daGui = daGui;
     this.tongSo = tongSo;
