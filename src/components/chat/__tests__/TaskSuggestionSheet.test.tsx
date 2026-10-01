@@ -283,4 +283,62 @@ describe('TaskSuggestionSheet', () => {
     await fireEvent.press(getByTestId('suggestion-report'));
     expect(onReport).toHaveBeenCalledTimes(1);
   });
+
+  /*
+    Hạn chót gõ sai dạng trước đây bị bỏ đi trong im lặng: việc tạo ra không có
+    hạn, không có nhắc, mà màn vẫn báo "Đã tạo công việc".
+  */
+  it('báo lỗi ngay trên phiếu và không gửi khi ngày hết hạn sai', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await fireEvent.changeText(getByTestId('suggestion-due-date'), '31/02/2026');
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(getByText(/Ngày hết hạn chưa đúng/)).toBeTruthy();
+  });
+
+  it('nhận ngày/tháng/năm và giờ kiểu 8:00', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await fireEvent.changeText(getByTestId('suggestion-due-date'), '30/09/2026');
+    await fireEvent.changeText(getByTestId('suggestion-due-time'), '8:00');
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate: '30/09/2026', dueTime: '8:00' }),
+    );
+  });
+
+  it('hiện ngày AI đề xuất theo dạng ngày/tháng/năm như mọi ô ngày khác', async () => {
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await waitFor(() => expect(getByTestId('suggestion-due-date').props.value).toBe('10/08/2026'));
+  });
 });
