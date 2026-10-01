@@ -135,6 +135,11 @@ export interface Task {
   projectId?: string | null;
   workspaceId: string;
   assigneeId?: string | null;
+  /**
+   * Người tạo việc. Máy chủ cũ không trả trường này, nên phải tuỳ chọn — thiếu
+   * thì coi như không biết, đừng đoán là mình.
+   */
+  creatorId?: string | null;
   createdAt: string;
   updatedAt: string;
   assignee?: UserSummary | null;

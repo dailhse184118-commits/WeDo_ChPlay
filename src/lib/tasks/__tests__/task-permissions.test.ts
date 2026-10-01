@@ -164,3 +164,58 @@ describe('duyệt bài', () => {
     ).toBe(true);
   });
 });
+
+/*
+  Việc tự giao cho mình nằm ở Cần làm + Đã nhận: máy chủ không đi qua bước Nhận
+  việc, nên nếu không có nút Bắt đầu làm thì việc kẹt mãi ở Cần làm trên điện
+  thoại — không nộp, không gửi duyệt được.
+*/
+describe('bắt đầu làm', () => {
+  const tuGiao = (ghiDe: Partial<Task> = {}) =>
+    task({ status: 'TODO', assignmentStatus: 'ACCEPTED', creatorId: TOI, ...ghiDe });
+
+  it('cho leader tự giao việc trong dự án', () => {
+    expect(
+      quyenTrenTask({ task: tuGiao(), meId: TOI, project: duAn('LEADER', TOI) }).batDauLam,
+    ).toBe(true);
+  });
+
+  it('cho chủ không gian tự giao việc trong dự án', () => {
+    expect(
+      quyenTrenTask({ task: tuGiao(), meId: TOI, workspace: khongGian(TOI) }).batDauLam,
+    ).toBe(true);
+  });
+
+  it('không cho thành viên thường: máy chủ chỉ cho leader đổi trạng thái việc dự án', () => {
+    expect(
+      quyenTrenTask({ task: tuGiao(), meId: TOI, project: duAn('MEMBER', TOI) }).batDauLam,
+    ).toBe(false);
+  });
+
+  it('cho người tạo kiêm người làm việc không thuộc dự án', () => {
+    expect(quyenTrenTask({ task: tuGiao({ projectId: null }), meId: TOI }).batDauLam).toBe(true);
+  });
+
+  it('không cho người chỉ được giao việc không thuộc dự án', () => {
+    expect(
+      quyenTrenTask({ task: tuGiao({ projectId: null, creatorId: 'u-khac' }), meId: TOI })
+        .batDauLam,
+    ).toBe(false);
+  });
+
+  it('không hiện khi việc đã đang làm, chưa nhận, hoặc của người khác', () => {
+    const leader = duAn('LEADER', TOI);
+    expect(
+      quyenTrenTask({ task: tuGiao({ status: 'IN_PROGRESS' }), meId: TOI, project: leader })
+        .batDauLam,
+    ).toBe(false);
+    expect(
+      quyenTrenTask({ task: tuGiao({ assignmentStatus: 'PENDING' }), meId: TOI, project: leader })
+        .batDauLam,
+    ).toBe(false);
+    expect(
+      quyenTrenTask({ task: tuGiao({ assigneeId: 'u-khac' }), meId: TOI, project: leader })
+        .batDauLam,
+    ).toBe(false);
+  });
+});
