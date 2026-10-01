@@ -104,7 +104,30 @@ export default function ChatThreadScreen() {
     queryFn: () => listProjects(active?.id),
     enabled: Boolean(active?.id),
   });
-  const project = projectsQuery.data?.find((item) => item.id === projectId);
+  /*
+    Chạm thông báo đẩy của một dự án ở KHÔNG GIAN KHÁC thì dự án không có trong
+    danh sách của không gian đang chọn. Tin nhắn mang sẵn `workspaceId` của dự
+    án, nên tra thêm danh sách của đúng không gian đó — không thì danh sách
+    người nhận rỗng và tạo việc gửi nhầm không gian, máy chủ từ chối SAU khi đã
+    tiêu một lượt AI.
+  */
+  const khongGianCuaKhung = messages.find((tin) => tin.projectId === projectId)?.workspaceId;
+  const duAnNgoaiKhongGian = Boolean(
+    khongGianCuaKhung &&
+      khongGianCuaKhung !== active?.id &&
+      projectsQuery.data &&
+      !projectsQuery.data.some((item) => item.id === projectId),
+  );
+  const projectsKhacQuery = useQuery({
+    queryKey: ['projects', khongGianCuaKhung],
+    queryFn: () => listProjects(khongGianCuaKhung),
+    enabled: duAnNgoaiKhongGian,
+  });
+  const project =
+    projectsQuery.data?.find((item) => item.id === projectId) ??
+    (duAnNgoaiKhongGian
+      ? projectsKhacQuery.data?.find((item) => item.id === projectId)
+      : undefined);
   const projectName = project?.name ?? 'Trò chuyện';
   const members = useMemo<UserSummary[]>(
     () => (project?.members ?? []).map((member) => member.user),
@@ -620,9 +643,15 @@ export default function ChatThreadScreen() {
       setSheetSubmitting(true);
       setSheetError('');
 
+      /* Không gian của CHÍNH dự án, không phải không gian đang chọn — xem `khongGianCuaKhung`. */
+      const workspaceId =
+        messages.find((tin) => tin.id === sourceMessageId)?.workspaceId ??
+        project?.workspaceId ??
+        active.id;
+
       const result = await createTaskFromMessage({
         projectId,
-        workspaceId: active.id,
+        workspaceId,
         messageId: sourceMessageId,
         title: values.title,
         description: values.description,
@@ -672,7 +701,7 @@ export default function ChatThreadScreen() {
 
       setSheetError(result.error.message);
     },
-    [projectId, sourceMessageId, active?.id, router, queryClient],
+    [projectId, sourceMessageId, active?.id, messages, project?.workspaceId, router, queryClient],
   );
 
   // Danh sách hiển thị: tin thật cộng tin đang gửi, đảo ngược cho FlatList inverted.
