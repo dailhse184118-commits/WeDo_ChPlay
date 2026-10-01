@@ -1,6 +1,6 @@
 import { File } from 'expo-file-system';
 
-import { apiRequest, ApiError } from '../client';
+import { apiRequest, ApiError, MA_PHAN_HOI_LA } from '../client';
 import { phanTepGuiLen, taiMotTepLen } from '../tai-tep';
 
 jest.mock('expo-file-system', () => {
@@ -16,7 +16,7 @@ jest.mock('expo-file-system', () => {
 
 jest.mock('../client', () => {
   const thuc = jest.requireActual('../client');
-  return { ApiError: thuc.ApiError, baseUrl: thuc.baseUrl, apiRequest: jest.fn() };
+  return { ...thuc, apiRequest: jest.fn() };
 });
 
 jest.mock('../../auth/token-storage', () => ({
@@ -143,5 +143,45 @@ describe('taiMotTepLen', () => {
     upload.mockResolvedValue({ status: 413, body: '{"message":"Tệp quá nặng."}' });
 
     await expect(taiMotTepLen('/p/files', TEP, '')).rejects.toThrow('Tệp quá nặng.');
+  });
+  /* Hai người đã chặn nhau: đường native cũng phải mang mã `BLOCKED` như đường fetch. */
+  it('đường native giữ mã lỗi của máy chủ', async () => {
+    goi.mockRejectedValue(new ApiError('Không thể kết nối.', 0));
+    upload.mockResolvedValue({
+      status: 403,
+      body: '{"statusCode":403,"code":"BLOCKED","message":"Bạn không thể nhắn tin cho người này."}',
+    });
+
+    const loi = (await taiMotTepLen('/p/files', TEP, '').catch((e) => e)) as ApiError;
+
+    expect(loi).toBeInstanceOf(ApiError);
+    expect(loi.status).toBe(403);
+    expect(loi.code).toBe('BLOCKED');
+    expect(loi.message).toBe('Bạn không thể nhắn tin cho người này.');
+  });
+
+  /*
+    Cổng Azure trả trang HTML lúc máy chủ khởi động lại. Đường fetch giờ ném
+    ApiError mang mã thật (máy chủ đã trả lời), nên KHÔNG gửi lại tệp lần nữa
+    qua đường native.
+  */
+  it('đường fetch nhận trang lỗi của cổng thì dừng, không gửi lại tệp', async () => {
+    goi.mockRejectedValue(
+      new ApiError('Máy chủ đang bận hoặc đang khởi động lại (mã 502). Thử lại sau ít phút.', 502, MA_PHAN_HOI_LA),
+    );
+
+    await expect(taiMotTepLen('/p/files', TEP, '')).rejects.toMatchObject({ status: 502 });
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('đường native nhận trang HTML thì báo máy chủ bận, không phải lỗi mạng', async () => {
+    goi.mockRejectedValue(new ApiError('Không thể kết nối.', 0));
+    upload.mockResolvedValue({ status: 503, body: '<html><body>Service Unavailable</body></html>' });
+
+    const loi = (await taiMotTepLen('/p/files', TEP, '').catch((e) => e)) as ApiError;
+
+    expect(loi).toBeInstanceOf(ApiError);
+    expect(loi.status).toBe(503);
+    expect(loi.message).toBe('Máy chủ đang bận hoặc đang khởi động lại (mã 503). Thử lại sau ít phút.');
   });
 });

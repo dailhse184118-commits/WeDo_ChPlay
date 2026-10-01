@@ -55,7 +55,11 @@ interface MessageBubbleProps {
    * header thì máy chủ trả 401 và ảnh thành ô trống — xem `useHeaderTep`.
    */
   headers?: Record<string, string>;
-  onLongPress: () => void;
+  /**
+   * Thiếu thì nhấn giữ không làm gì và không hứa gì với trình đọc màn hình —
+   * dành cho người không được dùng AI và cho tin chưa tới máy chủ.
+   */
+  onLongPress?: () => void;
   onRetry?: () => void;
   onXemAnh?: (url: string) => void;
 }
@@ -82,12 +86,14 @@ export function MessageBubble({
   const recalled = Boolean(message.deletedAt);
   const dinhKem = recalled ? [] : message.attachments ?? [];
 
+  const nhanGiuDuoc = !recalled && Boolean(onLongPress);
+
   const handleLongPress = () => {
-    if (recalled) return;
+    if (!nhanGiuDuoc) return;
     // Rung nhẹ khi nhấn giữ. tapFeedback không bao giờ ném lỗi nên thiếu mô-tơ rung
     // hay thiếu module native cũng không chặn được luồng tạo công việc.
     void tapFeedback();
-    onLongPress();
+    onLongPress?.();
   };
 
   return (
@@ -117,7 +123,7 @@ export function MessageBubble({
         <Pressable
           testID={`message-${message.id}`}
           accessibilityRole="button"
-          accessibilityHint={recalled ? undefined : 'Nhấn giữ để tạo công việc từ tin nhắn này'}
+          accessibilityHint={nhanGiuDuoc ? 'Nhấn giữ để nhờ AI tạo công việc từ tin nhắn này' : undefined}
           onLongPress={handleLongPress}
           delayLongPress={350}
           style={[

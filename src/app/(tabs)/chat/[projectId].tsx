@@ -34,6 +34,7 @@ import {
 import type { TepChon } from '../../../lib/api/tasks';
 import { MA_HET_LUOT_AI, getEntitlements } from '../../../lib/api/entitlements';
 import { listProjects } from '../../../lib/api/projects';
+import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
 import { ApiError } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/auth-context';
@@ -47,6 +48,7 @@ import { baoLoi, moTaTep } from '../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
+import { laLeaderDuAn } from '../../../lib/tasks/task-permissions';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import type { ChatMessage, ChatTaskSuggestion, UserSummary } from '../../../lib/types';
 import { colors, fontSize, spacing } from '../../../theme/tokens';
@@ -71,6 +73,7 @@ export default function ChatThreadScreen() {
   }, [router]);
 
   const { user } = useAuth();
+  const { xinDongYRoiChay } = useDongYAI();
   const { active } = useWorkspace();
   const { socket } = useSocket();
 
@@ -613,6 +616,31 @@ export default function ChatThreadScreen() {
     [projectId, newIdempotencyKey, hanMucQuery],
   );
 
+  /*
+    Máy chủ chỉ cho Leader dự án hoặc chủ không gian làm việc dùng AI
+    (`ensureProjectLeader`). Thành viên thường nhấn giữ từng mở bảng gợi ý rồi
+    ăn 403 — nên chỉ bày AI cho đúng những người đó.
+
+    Dự án không có trong danh sách của không gian đang chọn — mở từ thông báo của
+    không gian khác chẳng hạn — thì không biết chắc vai trò. Khi đó vẫn cho, và để
+    máy chủ quyết: giấu nhầm là Leader thật mất tính năng.
+  */
+  const duocDungAI = !project || laLeaderDuAn(user?.id ?? '', project, active);
+
+  /*
+    Nhấn giữ một tin: chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem
+    `useDongYAI`. Tin còn đang gửi hoặc gửi hỏng chưa tồn tại trên máy chủ (mã
+    là mã tạm trên máy), gửi lên chỉ nhận 404.
+  */
+  const nhanGiuTin = useCallback(
+    (messageId: string) => {
+      if (!duocDungAI) return;
+      if (pending.some((item) => item.localId === messageId)) return;
+      xinDongYRoiChay(() => void handleLongPress(messageId));
+    },
+    [duocDungAI, pending, xinDongYRoiChay, handleLongPress],
+  );
+
   const handleConfirm = useCallback(
     async (values: TaskSuggestionValues) => {
       if (!projectId || !sourceMessageId || !active?.id) return;
@@ -773,7 +801,12 @@ export default function ChatThreadScreen() {
           ListEmptyComponent={
             <EmptyChat
               title="Chưa có tin nhắn nào"
-              body="Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để biến nó thành công việc."
+              // Chỉ hứa tính năng AI với người thật sự dùng được nó — xem `duocDungAI`.
+              body={
+                duocDungAI
+                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để nhờ AI biến nó thành công việc.'
+                  : 'Gửi tin nhắn đầu tiên cho cả nhóm.'
+              }
             />
           }
           renderItem={({ item }) => {
@@ -789,7 +822,9 @@ export default function ChatThreadScreen() {
                 goc={GOC_MAY_CHU}
                 headers={headerTep}
                 onXemAnh={setAnhDangXem}
-                onLongPress={() => void handleLongPress(item.id)}
+                onLongPress={
+                  duocDungAI && !pendingItem ? () => nhanGiuTin(item.id) : undefined
+                }
                 onRetry={
                   pendingItem
                     ? () => {
@@ -834,9 +869,6 @@ export default function ChatThreadScreen() {
         submitting={sheetSubmitting}
         onConfirm={handleConfirm}
         onDismiss={() => setSheetOpen(false)}
-        onReport={() =>
-          Alert.alert('Cảm ơn phản hồi', 'Chúng tôi đã ghi nhận rằng đề xuất này chưa chính xác.')
-        }
       />
     </View>
   );

@@ -36,7 +36,6 @@ interface TaskSuggestionSheetProps {
   error?: string;
   onConfirm: (values: TaskSuggestionValues) => void;
   onDismiss: () => void;
-  onReport?: () => void;
   submitting?: boolean;
 }
 
@@ -59,7 +58,6 @@ export function TaskSuggestionSheet({
   error,
   onConfirm,
   onDismiss,
-  onReport,
   submitting = false,
 }: TaskSuggestionSheetProps) {
   const [title, setTitle] = useState('');
@@ -118,7 +116,8 @@ export function TaskSuggestionSheet({
             <View style={styles.spinnerRing}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
-            <Text style={styles.loadingTitle}>Đang phân tích tin nhắn…</Text>
+            {/* Nói rõ là AI: người dùng phải biết tin nhắn đang được gửi đi đâu. */}
+            <Text style={styles.loadingTitle}>AI đang đọc tin nhắn…</Text>
             <Text style={styles.loadingBody}>
               Thường mất vài giây. Bạn có thể đóng lại và làm việc khác.
             </Text>
@@ -252,16 +251,16 @@ export function TaskSuggestionSheet({
               disabled={!title.trim()}
             />
 
+            {/*
+              Từng có nút "Đề xuất này không đúng" ở đây: bấm vào báo "đã ghi
+              nhận" mà không gửi gì đi đâu cả. Một lời hứa giả như vậy trái
+              Guideline 2.3.1, và dễ bị lẫn với nút Báo cáo nội dung thật. Muốn
+              có lại thì phải có máy chủ nhận phản hồi trước.
+            */}
             <View style={styles.footer}>
               <Pressable testID="suggestion-cancel" onPress={onDismiss}>
                 <Text style={styles.footerLink}>Huỷ</Text>
               </Pressable>
-
-              {onReport ? (
-                <Pressable testID="suggestion-report" onPress={onReport}>
-                  <Text style={styles.footerLinkMuted}>Đề xuất này không đúng</Text>
-                </Pressable>
-              ) : null}
             </View>
           </ScrollView>
         )}
@@ -373,5 +372,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   footerLink: { color: colors.primary, fontSize: fontSize.sm, fontWeight: '600' },
-  footerLinkMuted: { color: colors.textMuted, fontSize: fontSize.xs },
 });

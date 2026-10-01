@@ -28,6 +28,11 @@ export interface UserProfile extends UserSummary {
   dob?: string | null;
   platformRole?: PlatformRole;
   createdAt?: string;
+  /**
+   * Lúc cho phép gửi tin nhắn tới AI, chuỗi ISO; `null` là chưa cho phép hoặc
+   * đã rút lại. Tuỳ chọn vì hồ sơ lưu từ bản app cũ không có khoá này.
+   */
+  aiConsentAt?: string | null;
 }
 
 /** Hình dạng phản hồi của POST /auth/login và POST /auth/register. */

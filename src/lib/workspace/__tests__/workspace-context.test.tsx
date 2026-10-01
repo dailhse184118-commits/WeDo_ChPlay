@@ -3,12 +3,20 @@ import { Text, Pressable } from 'react-native';
 import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 
-import { WorkspaceProvider, useWorkspace } from '../workspace-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { LICH_THU_LAI_MS, WorkspaceProvider, useWorkspace } from '../workspace-context';
+import { docDanhSachKhongGian, luuDanhSachKhongGian } from '../danh-sach-luu';
 import * as workspacesApi from '../../api/workspaces';
 import * as tokenStorage from '../../auth/token-storage';
 
 jest.mock('../../api/workspaces');
 jest.mock('../../auth/token-storage');
+/* Socket thật cần đăng nhập và mạng; ở đây chỉ cần cờ "đã nối" để bật tắt. */
+let mockSocketDaNoi = false;
+jest.mock('../../socket/socket-context', () => ({
+  useSocketNeuCo: () => ({ socket: null, connected: mockSocketDaNoi, onlineUserIds: new Set() }),
+}));
 
 const mockedApi = workspacesApi as jest.Mocked<typeof workspacesApi>;
 const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
@@ -44,9 +52,12 @@ function makeWorkspace(id: string) {
 }
 
 function Probe() {
-  const { status, active, workspaces, create, switchTo } = useWorkspace();
+  const { status, active, workspaces, create, switchTo, refresh } = useWorkspace();
   return (
     <>
+      <Pressable testID="thu-lai" onPress={() => refresh()}>
+        <Text>thu lai</Text>
+      </Pressable>
       <Text testID="status">{status}</Text>
       <Text testID="active">{active?.id ?? 'khong'}</Text>
       <Text testID="so-luong">{String(workspaces.length)}</Text>
@@ -212,5 +223,91 @@ describe('nạp lại khi quay lại app', () => {
     await waitFor(() => expect(mockedApi.listWorkspaces).toHaveBeenCalledTimes(2));
     expect(getByTestId('status').props.children).toBe('ready');
     expect(getByTestId('so-luong').props.children).toBe('1');
+  });
+});
+
+/*
+  Mở app lúc mất mạng, Wi-Fi hội chợ chập chờn, hay đúng lúc máy chủ Azure khởi
+  động lại: lần nạp ĐẦU TIÊN hỏng. Trước đây trạng thái kẹt ở 'loading' mãi mãi
+  — vòng quay không chữ, không nút — tới khi người dùng tắt app.
+*/
+describe('lần nạp đầu tiên hỏng', () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    mockSocketDaNoi = false;
+    await AsyncStorage.clear();
+    mockedStorage.loadActiveWorkspaceId.mockResolvedValue(null);
+    mockedStorage.saveActiveWorkspaceId.mockResolvedValue(undefined);
+    batDauNgheAppState();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('chưa lưu danh sách nào: báo error, bấm Thử lại thì vào được', async () => {
+    mockedApi.listWorkspaces.mockRejectedValueOnce(new Error('mat mang'));
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('error'));
+
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+    await fireEvent.press(getByTestId('thu-lai'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('ready'));
+    expect(getByTestId('active').props.children).toBe('a');
+  });
+
+  it('đã lưu danh sách từ lần trước: vào app luôn bằng danh sách đó', async () => {
+    await luuDanhSachKhongGian([makeWorkspace('a'), makeWorkspace('b')] as never);
+    mockedStorage.loadActiveWorkspaceId.mockResolvedValue('b');
+    mockedApi.listWorkspaces.mockRejectedValue(new Error('mat mang'));
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('ready'));
+    expect(getByTestId('active').props.children).toBe('b');
+    expect(getByTestId('so-luong').props.children).toBe('2');
+  });
+
+  it('nạp được thì lưu danh sách xuống máy cho lần mất mạng sau', async () => {
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('ready'));
+
+    await waitFor(async () => expect((await docDanhSachKhongGian())?.map((w) => w.id)).toEqual(['a']));
+  });
+
+  it('tự thử lại sau 2 giây, không cần người dùng làm gì', async () => {
+    jest.useFakeTimers();
+    mockedApi.listWorkspaces.mockRejectedValueOnce(new Error('503'));
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('error'));
+
+    await act(async () => {
+      jest.advanceTimersByTime(LICH_THU_LAI_MS[0]);
+    });
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('ready'));
+    expect(mockedApi.listWorkspaces).toHaveBeenCalledTimes(2);
+  });
+
+  it('socket nối lại được (mạng đã về) thì nạp lại ngay', async () => {
+    mockedApi.listWorkspaces.mockRejectedValueOnce(new Error('mat mang'));
+    const man = await renderProbe();
+    await waitFor(() => expect(man.getByTestId('status').props.children).toBe('error'));
+
+    mockedApi.listWorkspaces.mockResolvedValue([makeWorkspace('a')]);
+    mockSocketDaNoi = true;
+    await man.rerender(
+      <WorkspaceProvider>
+        <Probe />
+      </WorkspaceProvider>,
+    );
+
+    await waitFor(() => expect(man.getByTestId('status').props.children).toBe('ready'));
   });
 });
