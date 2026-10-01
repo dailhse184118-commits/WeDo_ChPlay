@@ -8,7 +8,7 @@ import {
   register as registerRequest,
 } from '../api/auth';
 import type { RegisterInput } from '../api/auth';
-import { ApiError, batDauPhien, ketThucPhien, onUnauthorized } from '../api/client';
+import { ApiError, MA_PHAN_HOI_LA, batDauPhien, ketThucPhien, onUnauthorized } from '../api/client';
 import { donThongBaoKhiDangXuat } from '../notifications/don-khi-dang-xuat';
 import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
 import { xoaCacheBenBi } from '../query';
@@ -180,7 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           !(err instanceof ApiError) ||
           err.status === 0 ||
           err.status === 429 ||
-          err.status >= 500;
+          err.status >= 500 ||
+          // Trang lỗi của cổng (kể cả mang mã 4xx) không nói gì về phiên.
+          err.code === MA_PHAN_HOI_LA;
 
         if (matMang) {
           const luuSan = await loadUserProfile();

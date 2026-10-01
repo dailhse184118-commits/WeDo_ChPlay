@@ -1,6 +1,7 @@
 import {
   apiRequest,
   ApiError,
+  MA_PHAN_HOI_LA,
   batDauPhien,
   giaHanMotLuot,
   ketThucPhien,
@@ -407,5 +408,74 @@ describe('gia hạn trong lúc đăng xuất', () => {
     mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
 
     await expect(giaHanMotLuot()).rejects.toMatchObject({ status: 0 });
+  });
+});
+
+/** Phản hồi có thân KHÔNG phải JSON, như trang lỗi HTML của cổng Azure. */
+function mockFetchTho(text: string, status: number) {
+  mockFetch.mockResolvedValueOnce({
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => text,
+  });
+}
+
+const TRANG_LOI_AZURE =
+  '<!DOCTYPE html><html><head><title>Service Unavailable</title></head><body>503</body></html>';
+
+/*
+  Mỗi lần backend tự triển khai hay App Service khởi động lại, cổng Azure trả
+  trang HTML 502/503. Trước đây `JSON.parse` ném SyntaxError tiếng Anh thẳng ra
+  màn hình: "JSON Parse error: Unexpected character: <".
+*/
+describe('thân phản hồi không phải JSON', () => {
+  beforeEach(() => {
+    batDauPhien();
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
+    mockFetch.mockReset();
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+    mockedLoadToken.mockResolvedValue('tok-cu');
+    mockedLoadRefresh.mockResolvedValue('rt-cu');
+  });
+
+  it('503 kèm trang HTML thành ApiError 503 với câu tiếng Việt', async () => {
+    mockFetchTho(TRANG_LOI_AZURE, 503);
+
+    const loi = (await apiRequest('/tasks').catch((e) => e)) as ApiError;
+
+    expect(loi).toBeInstanceOf(ApiError);
+    expect(loi.status).toBe(503);
+    expect(loi.code).toBe(MA_PHAN_HOI_LA);
+    expect(loi.message).toBe('Máy chủ đang bận hoặc đang khởi động lại (mã 503). Thử lại sau ít phút.');
+  });
+
+  it('502 chữ trơn "Bad Gateway" cũng vậy', async () => {
+    mockFetchTho('Bad Gateway', 502);
+
+    await expect(apiRequest('/tasks')).rejects.toMatchObject({ status: 502, code: MA_PHAN_HOI_LA });
+  });
+
+  it('2xx mà thân không đọc được cũng là ApiError, không phải SyntaxError', async () => {
+    mockFetchTho('<html>ok</html>', 200);
+
+    await expect(apiRequest('/tasks')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('401 kèm trang HTML không gia hạn, không đăng xuất', async () => {
+    const handler = jest.fn();
+    const huy = onUnauthorized(handler);
+    mockFetchTho(TRANG_LOI_AZURE, 401);
+
+    await expect(apiRequest('/users/me')).rejects.toMatchObject({ code: MA_PHAN_HOI_LA });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(handler).not.toHaveBeenCalled();
+    huy();
+  });
+
+  /* Trả `null` nghĩa là "phiên đã hết" — một trang lỗi của cổng không được đá người dùng ra. */
+  it('gia hạn nhận 200 kèm thân lạ thì ném lỗi tạm thời, không trả null', async () => {
+    mockFetchTho(TRANG_LOI_AZURE, 200);
+
+    await expect(giaHanMotLuot()).rejects.toMatchObject({ code: MA_PHAN_HOI_LA });
   });
 });

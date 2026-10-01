@@ -3,7 +3,7 @@ import { Text, Pressable } from 'react-native';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import { AuthProvider, useAuth } from '../auth-context';
-import { ApiError, apiRequest, giaHanMotLuot } from '../../api/client';
+import { ApiError, MA_PHAN_HOI_LA, apiRequest, giaHanMotLuot } from '../../api/client';
 import * as donThongBao from '../../notifications/don-khi-dang-xuat';
 import * as pushToken from '../../notifications/push-token';
 import * as authApi from '../../api/auth';
@@ -492,5 +492,21 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
     expect(mockedQuery.xoaCacheBenBi).not.toHaveBeenCalled();
+  });
+  /*
+    Cổng Azure có thể trả trang HTML kèm mã 4xx (403 lúc ứng dụng bị dừng chẳng
+    hạn). Thân lạ không nói gì về phiên: giữ phiên như lỗi tạm thời.
+  */
+  it('trang lỗi của cổng (thân không phải JSON) lúc mở app thì giữ phiên', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.getMe.mockRejectedValue(
+      new ApiError('Máy chủ đang bận hoặc đang khởi động lại (mã 403). Thử lại sau ít phút.', 403, MA_PHAN_HOI_LA),
+    );
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedStorage.clearToken).not.toHaveBeenCalled();
   });
 });
