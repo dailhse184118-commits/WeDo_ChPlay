@@ -621,7 +621,22 @@ describe('khung chat dự án', () => {
 */
 describe('tạo việc bằng AI ở dự án thuộc không gian khác', () => {
   it('lấy không gian và thành viên theo đúng dự án của tin nhắn', async () => {
-    mockedWorkspace.mockReturnValue({ active: { id: 'w-khac' } } as never);
+    /*
+      u1 là CHỦ không gian w1 của dự án, không phải Leader trong dự án, và đang
+      đứng ở không gian khác. Máy chủ (`ensureProjectLeader`) cho chủ không gian
+      dùng AI, nên quyền phải xét theo không gian của dự án chứ không theo không
+      gian đang chọn — xét nhầm thì nhấn giữ không làm gì cả.
+    */
+    mockedAuth.mockReturnValue({
+      user: { id: 'u1', fullName: 'Lê Hữu Đại', aiConsentAt: '2026-09-30T00:00:00.000Z' },
+    } as never);
+    mockedWorkspace.mockReturnValue({
+      active: { id: 'w-khac', ownerId: 'u9' },
+      workspaces: [
+        { id: 'w-khac', ownerId: 'u9' },
+        { id: 'w1', ownerId: 'u1' },
+      ],
+    } as never);
     mockedDuAn.mockImplementation(async (workspaceId?: string) =>
       workspaceId === 'w1'
         ? ([

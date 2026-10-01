@@ -75,7 +75,7 @@ export default function ChatThreadScreen() {
 
   const { user } = useAuth();
   const { xinDongYRoiChay } = useDongYAI();
-  const { active } = useWorkspace();
+  const { active, workspaces } = useWorkspace();
   const { socket } = useSocket();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -664,8 +664,13 @@ export default function ChatThreadScreen() {
     Dự án không có trong danh sách của không gian đang chọn — mở từ thông báo của
     không gian khác chẳng hạn — thì không biết chắc vai trò. Khi đó vẫn cho, và để
     máy chủ quyết: giấu nhầm là Leader thật mất tính năng.
+
+    Chủ không gian xét theo không gian CỦA DỰ ÁN: mở từ thông báo của không gian
+    khác thì `active` là không gian đang chọn, không phải không gian chứa dự án.
   */
-  const duocDungAI = !project || laLeaderDuAn(user?.id ?? '', project, active);
+  const khongGianCuaDuAn =
+    workspaces?.find((item) => item.id === project?.workspaceId) ?? active;
+  const duocDungAI = !project || laLeaderDuAn(user?.id ?? '', project, khongGianCuaDuAn);
 
   /*
     Nhấn giữ một tin: chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem
