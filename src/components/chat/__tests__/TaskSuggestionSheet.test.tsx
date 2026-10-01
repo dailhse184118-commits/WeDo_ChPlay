@@ -267,20 +267,22 @@ describe('TaskSuggestionSheet', () => {
     expect(getByText('Không phân tích được tin nhắn.')).toBeTruthy();
   });
 
-  it('gọi onReport khi báo đề xuất sai', async () => {
-    const onReport = jest.fn();
-    const { getByTestId } = await render(
+  /*
+    Nút này từng báo "đã ghi nhận" mà không gửi gì đi đâu — một lời hứa giả
+    (Guideline 2.3.1). Không có máy chủ nhận thì không được có nút.
+  */
+  it('không có nút "Đề xuất này không đúng"', async () => {
+    const { queryByTestId, queryByText } = await render(
       <TaskSuggestionSheet
         visible
         suggestion={suggestion}
         members={members}
         onConfirm={() => {}}
         onDismiss={() => {}}
-        onReport={onReport}
       />,
     );
 
-    await fireEvent.press(getByTestId('suggestion-report'));
-    expect(onReport).toHaveBeenCalledTimes(1);
+    expect(queryByTestId('suggestion-report')).toBeNull();
+    expect(queryByText('Đề xuất này không đúng')).toBeNull();
   });
 });
