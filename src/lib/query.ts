@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient } from '@tanstack/react-query';
 
+import { xoaDanhSachKhongGian } from './workspace/danh-sach-luu';
+
 /** Đổi khoá này khi hình dạng dữ liệu đổi, để cache cũ bị bỏ thay vì đọc nhầm. */
 const KHOA_CACHE = 'wedo:query-cache:v1';
 
@@ -63,6 +65,8 @@ export const HAN_CACHE_BEN_BI_MS = HAN_CACHE_MS;
  */
 export async function xoaCacheBenBi(): Promise<void> {
   queryClient.clear();
+  // Danh sách không gian làm việc lưu riêng ngoài react-query, cũng là của người vừa dùng.
+  await xoaDanhSachKhongGian();
   try {
     await cacheBenBi.removeClient();
   } catch {

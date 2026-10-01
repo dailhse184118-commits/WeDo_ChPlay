@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
+import { KhongTaiDuocKhongGian } from '../../components/workspace/KhongTaiDuocKhongGian';
 import { getUnreadCount } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
 import { useOpenTaskFromNotification } from '../../lib/notifications/mo-tu-thong-bao';
@@ -39,6 +40,11 @@ function TabsWithWorkspace() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  // Lần nạp đầu hỏng và máy chưa lưu danh sách nào: nói rõ và cho thử lại.
+  if (status === 'error') {
+    return <KhongTaiDuocKhongGian />;
   }
 
   // Tài khoản mới chưa có workspace phải tự tạo một cái trước khi dùng app.
