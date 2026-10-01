@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
@@ -13,6 +14,7 @@ import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
+import { baseUrl } from '../../../lib/api/client';
 import { listProjects } from '../../../lib/api/projects';
 import {
   acceptTask,
@@ -21,13 +23,15 @@ import {
   rejectReview,
   rejectTask,
   submitForReview,
+  updateTaskStatus,
   uploadSubmissions,
   type TepChon,
 } from '../../../lib/api/tasks';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { duongDanTepDinhKem } from '../../../lib/chat/tep-dinh-kem';
 import { chonTaiLieu } from '../../../lib/files/pick-documents';
 import { quyenTrenTask } from '../../../lib/tasks/task-permissions';
-import type { Task } from '../../../lib/types';
+import type { Task, TaskSubmission } from '../../../lib/types';
 import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
@@ -48,6 +52,20 @@ const ASSIGNMENT_LABEL: Record<string, string> = {
   ACCEPTED: 'Đã nhận',
   REJECTED: 'Đã từ chối',
 };
+
+/**
+ * Dòng "Phân công" theo đúng người đang xem.
+ *
+ * "Chờ bạn phản hồi" chỉ đúng với người được giao. Leader mở việc vừa giao cho
+ * người khác mà đọc thấy "Chờ bạn" là tưởng đến lượt mình phải bấm gì đó.
+ */
+function nhanPhanCong(task: Task, meId?: string): string {
+  if (!task.assignmentStatus) return '—';
+  if (task.assignmentStatus === 'PENDING' && task.assigneeId !== meId) {
+    return `Chờ ${task.assignee?.fullName ?? 'người được giao'} phản hồi`;
+  }
+  return ASSIGNMENT_LABEL[task.assignmentStatus] ?? '—';
+}
 
 function formatDateTime(iso?: string | null): string {
   if (!iso) return '—';
@@ -147,7 +165,7 @@ export default function TaskDetailScreen() {
 
   const quyen = useMemo(() => {
     if (!task || !user) {
-      return { nopTaiLieu: false, guiDuyet: false, duyetBai: false };
+      return { nopTaiLieu: false, guiDuyet: false, duyetBai: false, batDauLam: false };
     }
     return quyenTrenTask({
       task,
@@ -181,6 +199,16 @@ export default function TaskDetailScreen() {
     },
     onError: (err) =>
       setActionError(err instanceof Error ? err.message : 'Không từ chối được việc này.'),
+  });
+
+  const startMutation = useMutation({
+    mutationFn: () => updateTaskStatus(taskId as string, 'IN_PROGRESS'),
+    onSuccess: () => {
+      setActionError('');
+      invalidate();
+    },
+    onError: (err) =>
+      setActionError(err instanceof Error ? err.message : 'Không bắt đầu được việc này.'),
   });
 
   const uploadMutation = useMutation({
@@ -237,6 +265,32 @@ export default function TaskDetailScreen() {
       setActionError(err instanceof Error ? err.message : 'Không chọn được tệp.');
     }
   }, [uploadMutation]);
+
+  /*
+    Tệp nộp bài nằm ở `/uploads/task-submissions/<tên>` trên máy chủ WeDo, công
+    khai như đường tĩnh cũ (tên tệp là chuỗi ngẫu nhiên). Mở bằng trình duyệt
+    trong app: PDF, ảnh, tài liệu Office đều xem được mà không phải tải về.
+  */
+  const moTep = useCallback(async (tep: TaskSubmission) => {
+    setActionError('');
+    try {
+      await WebBrowser.openBrowserAsync(duongDanTepDinhKem(tep, baseUrl()));
+    } catch {
+      setActionError(`Không mở được tệp "${tep.originalName}". Thử lại, hoặc mở trên web WeDo.`);
+    }
+  }, []);
+
+  /*
+    Duyệt là chuyển việc sang Xong, ghi ngày hoàn thành và báo cả dự án — trên
+    điện thoại không có nút hoàn tác. Hỏi lại một lần để cú chạm nhầm không
+    làm được việc đó.
+  */
+  const hoiTruocKhiDuyet = useCallback(() => {
+    Alert.alert('Duyệt bài này?', 'Công việc sẽ chuyển sang Xong và cả nhóm được báo.', [
+      { text: 'Huỷ', style: 'cancel' },
+      { text: 'Duyệt', onPress: () => approveMutation.mutate() },
+    ]);
+  }, [approveMutation]);
 
   const dangChay: ThaoTacTask = uploadMutation.isPending
     ? 'nop'
@@ -303,9 +357,7 @@ export default function TaskDetailScreen() {
                 icon="hand-left-outline"
                 tone={task.assignmentStatus === 'REJECTED' ? 'rejected' : 'info'}
                 label="Phân công"
-                value={
-                  task.assignmentStatus ? (ASSIGNMENT_LABEL[task.assignmentStatus] ?? '—') : '—'
-                }
+                value={nhanPhanCong(task, user?.id)}
               />
               <Row
                 icon="time-outline"
@@ -335,7 +387,12 @@ export default function TaskDetailScreen() {
               </View>
             ) : null}
 
-            {task.assignmentStatus === 'PENDING' ? (
+            {/*
+              Chỉ người được giao mới nhận hay từ chối được — máy chủ trả 403 cho
+              mọi người khác. Leader tạo việc bằng AI rồi bấm "Xem công việc" là
+              rơi đúng vào đây: trước đây thấy hai nút của người kia, bấm là lỗi.
+            */}
+            {task.assignmentStatus === 'PENDING' && task.assigneeId === user?.id ? (
               <View style={styles.actions}>
                 <View style={styles.actionItem}>
                   <Button
@@ -358,6 +415,26 @@ export default function TaskDetailScreen() {
                   />
                 </View>
               </View>
+            ) : task.assignmentStatus === 'PENDING' ? (
+              <Text testID="detail-cho-phan-hoi" style={styles.choPhanHoi}>
+                {`Đang chờ ${task.assignee?.fullName ?? 'người được giao'} phản hồi`}
+              </Text>
+            ) : null}
+
+            {quyen.batDauLam ? (
+              <View style={styles.actions}>
+                <View style={styles.actionItem}>
+                  <Button
+                    testID="detail-start"
+                    label="Bắt đầu làm"
+                    onPress={() => {
+                      setActionError('');
+                      startMutation.mutate();
+                    }}
+                    loading={startMutation.isPending}
+                  />
+                </View>
+              </View>
             ) : null}
 
             <TaskSubmissionPanel
@@ -367,7 +444,8 @@ export default function TaskDetailScreen() {
               dangChay={dangChay}
               onPick={() => void chonVaNop()}
               onSubmitForReview={() => sendReviewMutation.mutate()}
-              onApprove={() => approveMutation.mutate()}
+              onApprove={hoiTruocKhiDuyet}
+              onMoTep={(tep) => void moTep(tep)}
               onReject={() => {
                 setActionError('');
                 setRejectingReview(true);
@@ -439,6 +517,13 @@ const styles = StyleSheet.create({
   rejectTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.danger },
   rejectText: { fontSize: fontSize.sm, color: colors.text, marginTop: spacing.xs, lineHeight: lineHeight.sm },
   actions: { flexDirection: 'row', marginTop: spacing.lg },
+  choPhanHoi: {
+    marginTop: spacing.lg,
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: lineHeight.sm,
+  },
   actionItem: { flex: 1 },
   actionSpacer: { width: spacing.md },
 });

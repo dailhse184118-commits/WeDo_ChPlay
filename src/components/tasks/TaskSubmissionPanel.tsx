@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -12,7 +13,7 @@ import { colors, fontSize, lineHeight, radius, spacing } from '../../theme/token
 export type ThaoTacTask = 'nop' | 'guiDuyet' | 'duyet' | null;
 
 interface TaskSubmissionPanelProps {
-  quyen: QuyenTrenTask;
+  quyen: Pick<QuyenTrenTask, 'nopTaiLieu' | 'guiDuyet' | 'duyetBai'>;
   submissions?: TaskSubmission[];
   /** Lý do leader trả bài về làm lại, nếu có. */
   reviewRejectedReason?: string | null;
@@ -21,6 +22,8 @@ interface TaskSubmissionPanelProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
+  /** Mở một tệp đã nộp. Thiếu thì dòng tệp chỉ để đọc. */
+  onMoTep?: (tep: TaskSubmission) => void;
 }
 
 /** Đổi số byte sang chuỗi người đọc được. Dưới 1MB thì tính bằng KB. */
@@ -38,6 +41,7 @@ export function TaskSubmissionPanel({
   onSubmitForReview,
   onApprove,
   onReject,
+  onMoTep,
 }: TaskSubmissionPanelProps) {
   const coViecDeLam = quyen.nopTaiLieu || quyen.duyetBai;
 
@@ -68,24 +72,51 @@ export function TaskSubmissionPanel({
               : 'Chưa có tệp nào.'}
           </Text>
         ) : (
-          submissions.map((tep, index) => (
-            <View
-              key={tep.id}
-              style={[styles.row, index === submissions.length - 1 ? null : styles.rowDivider]}
-            >
-              <IconTile name="document-text-outline" tone="info" size={32} />
-              <View style={styles.rowText}>
-                {/* Tên gốc, không phải `fileName` — máy chủ đã đổi tên để tránh trùng. */}
-                <Text style={styles.fileName} numberOfLines={2}>
-                  {tep.originalName}
-                </Text>
-                <Text style={styles.fileMeta}>
-                  {doDai(tep.size)}
-                  {tep.uploader?.fullName ? ` · ${tep.uploader.fullName}` : ''}
-                </Text>
-              </View>
-            </View>
-          ))
+          submissions.map((tep, index) => {
+            const noiDung = (
+              <>
+                <IconTile name="document-text-outline" tone="info" size={32} />
+                <View style={styles.rowText}>
+                  {/* Tên gốc, không phải `fileName` — máy chủ đã đổi tên để tránh trùng. */}
+                  <Text style={styles.fileName} numberOfLines={2}>
+                    {tep.originalName}
+                  </Text>
+                  <Text style={styles.fileMeta}>
+                    {doDai(tep.size)}
+                    {tep.uploader?.fullName ? ` · ${tep.uploader.fullName}` : ''}
+                  </Text>
+                </View>
+              </>
+            );
+            const kieuDong = [styles.row, index === submissions.length - 1 ? null : styles.rowDivider];
+
+            if (!onMoTep) {
+              return (
+                <View key={tep.id} style={kieuDong}>
+                  {noiDung}
+                </View>
+              );
+            }
+
+            /*
+              Leader được hỏi "Duyệt bài" hay "Trả lại" thì phải xem được bài.
+              Trước đây dòng này chỉ là chữ: chạm vào không có gì, leader duyệt
+              mù hoặc phải chạy sang web.
+            */
+            return (
+              <Pressable
+                key={tep.id}
+                testID={`submission-file-${tep.id}`}
+                accessibilityRole="link"
+                accessibilityLabel={`Mở tệp ${tep.originalName}`}
+                onPress={() => onMoTep(tep)}
+                style={({ pressed }) => [...kieuDong, pressed ? styles.rowPressed : null]}
+              >
+                {noiDung}
+                <Ionicons name="open-outline" size={18} color={colors.textMuted} />
+              </Pressable>
+            );
+          })
         )}
       </Card>
 
@@ -155,6 +186,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm + 4 },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.divider },
+  rowPressed: { opacity: 0.6 },
   rowText: { flex: 1, marginLeft: spacing.sm + 4 },
   fileName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
   fileMeta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },

@@ -23,11 +23,12 @@ export function laAnh(tep: ChatAttachment): boolean {
 /**
  * Đường dẫn đầy đủ để tải một tệp đính kèm.
  *
- * Máy chủ trả `url` tương đối (`/chat/attachments/<id>`). Riêng ảnh đại diện
+ * Máy chủ trả `url` tương đối (`/chat/attachments/<id>`, hay
+ * `/uploads/task-submissions/<tên>` với tài liệu nộp cho công việc). Riêng ảnh đại diện
  * lấy từ Google đã là URL tuyệt đối — ghép thêm gốc máy chủ WeDo vào đó cho ra
  * một đường dẫn không tồn tại, nên phải để nguyên.
  */
-export function duongDanTepDinhKem(tep: ChatAttachment, goc: string): string {
+export function duongDanTepDinhKem(tep: Pick<ChatAttachment, 'url'>, goc: string): string {
   if (/^https?:\/\//i.test(tep.url)) return tep.url;
 
   return `${goc.replace(/\/+$/, '')}${tep.url}`;
