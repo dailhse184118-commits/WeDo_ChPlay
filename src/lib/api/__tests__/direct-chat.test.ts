@@ -1,6 +1,7 @@
 import {
   listConversations,
   startConversation,
+  getDirectHistory,
   getDirectMessages,
   sendDirectMessage,
   markConversationRead,
@@ -53,5 +54,17 @@ describe('API tin nhắn riêng', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/chat/direct/conversations/c1/read', {
       method: 'POST',
     });
+  });
+});
+
+describe('getDirectHistory', () => {
+  it('GET /history với mốc là mã tin cũ nhất, đã mã hoá', async () => {
+    mockedRequest.mockResolvedValueOnce({ items: [], nextCursor: null } as never);
+
+    await getDirectHistory('c 1', 'm/1');
+
+    expect(mockedRequest).toHaveBeenCalledWith(
+      '/chat/direct/conversations/c%201/history?before=m%2F1',
+    );
   });
 });
