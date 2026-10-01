@@ -23,12 +23,24 @@ export interface BoiCanhTask {
  *
  * Chép đúng theo `hasProjectLeaderAccess` phía máy chủ. Lệch một chút là hiện
  * nút rồi ăn 403, hoặc giấu nút của người thật sự có quyền.
+ *
+ * Xuất ra vì chat dự án cũng cần: máy chủ chỉ cho đúng những người này dùng AI
+ * đề xuất công việc (`ensureProjectLeader`, cùng một quy tắc).
  */
-function laLeader({ meId, project, workspace }: BoiCanhTask): boolean {
+export function laLeaderDuAn(
+  meId: string,
+  project?: Project | null,
+  workspace?: Workspace | null,
+): boolean {
+  if (!meId) return false;
   if (workspace?.ownerId === meId) return true;
   return Boolean(
     project?.members?.some((member) => member.role === 'LEADER' && member.user.id === meId),
   );
+}
+
+function laLeader({ meId, project, workspace }: BoiCanhTask): boolean {
+  return laLeaderDuAn(meId, project, workspace);
 }
 
 /**
