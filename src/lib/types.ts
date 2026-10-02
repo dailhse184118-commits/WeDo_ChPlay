@@ -12,7 +12,8 @@ export type NotificationType =
   | 'TASK_DEADLINE_REMINDER'
   | 'MEETING_SCHEDULED'
   | 'SUBSCRIPTION_RENEWAL_DUE'
-  | 'PAYMENT_CONFIRMED';
+  | 'PAYMENT_CONFIRMED'
+  | 'PROJECT_MEMBER_JOINED';
 
 export type PlatformRole = 'USER' | 'ADMIN';
 

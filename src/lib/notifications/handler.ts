@@ -82,6 +82,18 @@ export function duongDanTuThongBao(
       return projectId ? `/chat/${projectId}` : null;
     }
 
+    /*
+      Được thêm vào dự án, hoặc (với Leader) có người vừa vào nhóm qua link mời:
+      mở chat của dự án đó. Trước 02/10/2026 chạm `PROJECT_MEMBER_ADDED` không
+      làm gì. Dự án ở không gian khác vẫn mở được — màn chat tự tra không gian
+      từ tin nhắn.
+    */
+    case 'PROJECT_MEMBER_ADDED':
+    case 'PROJECT_MEMBER_JOINED': {
+      const projectId = chuoi(kho, 'projectId');
+      return projectId ? `/chat/${projectId}` : null;
+    }
+
     case 'FRIEND_REQUEST':
     case 'FRIEND_ACCEPTED':
       return '/chat/friends';

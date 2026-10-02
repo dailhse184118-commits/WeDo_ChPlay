@@ -130,3 +130,21 @@ describe('duongDanTuThongBao', () => {
     expect(duongDanTuThongBao(makeResponse({ type: 'PROJECT_MESSAGE' }))).toBeNull();
   });
 });
+
+describe('duongDanTuThongBao — thành viên dự án', () => {
+  it('được Leader thêm vào dự án: mở chat dự án (trước đây chạm không làm gì)', () => {
+    expect(
+      duongDanTuThongBao(makeResponse({ type: 'PROJECT_MEMBER_ADDED', projectId: 'p1', workspaceId: 'w1' })),
+    ).toBe('/chat/p1');
+  });
+
+  it('có người vào nhóm qua link mời: mở chat dự án', () => {
+    expect(
+      duongDanTuThongBao(makeResponse({ type: 'PROJECT_MEMBER_JOINED', projectId: 'p1', notificationId: 'n1' })),
+    ).toBe('/chat/p1');
+  });
+
+  it('thiếu projectId thì không mở gì', () => {
+    expect(duongDanTuThongBao(makeResponse({ type: 'PROJECT_MEMBER_JOINED' }))).toBeNull();
+  });
+});

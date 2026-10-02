@@ -21,6 +21,7 @@ const LOOK: Record<
   MEETING_SCHEDULED: { icon: 'videocam-outline', tone: 'info' },
   SUBSCRIPTION_RENEWAL_DUE: { icon: 'card-outline', tone: 'deadline' },
   PAYMENT_CONFIRMED: { icon: 'receipt-outline', tone: 'done' },
+  PROJECT_MEMBER_JOINED: { icon: 'people-outline', tone: 'info' },
 };
 
 const FALLBACK = { icon: 'notifications-outline' as const, tone: 'info' as IconTileTone };

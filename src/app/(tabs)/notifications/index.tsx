@@ -123,6 +123,12 @@ export default function NotificationsScreen() {
         return;
       }
 
+      // Có người vào nhóm qua link mời: mở chat của dự án đó.
+      if (item.type === 'PROJECT_MEMBER_JOINED' && item.projectId) {
+        router.push(`/chat/${item.projectId}`);
+        return;
+      }
+
       /*
         Trước 23/09/2026 chạm vào thông báo cuộc họp không có gì xảy ra: nhánh
         trên chỉ biết `taskId`. Thông báo cũ không kèm id thì mở danh sách.
