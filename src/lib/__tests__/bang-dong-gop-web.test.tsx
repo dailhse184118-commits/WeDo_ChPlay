@@ -24,6 +24,8 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
 jest.mock('../api/tasks', () => ({ getContributions: jest.fn() }));
+// Màn có khối Xuất báo cáo, khối đó đọc danh sách dự án của không gian.
+jest.mock('../api/projects', () => ({ listProjects: jest.fn().mockResolvedValue([]) }));
 jest.mock('../workspace/workspace-context');
 
 const mockedBang = getContributions as jest.MockedFunction<typeof getContributions>;
@@ -68,5 +70,16 @@ describe('Bảng đóng góp — nút mở web', () => {
 
     await waitFor(() => expect(man.getByText('Lê Hữu Đại')).toBeTruthy());
     expect(man.queryByText('Xem đầy đủ trên web')).toBeNull();
+  });
+
+  it('có khối "Xuất báo cáo đóng góp" ở đầu màn', async () => {
+    const man = await renderScreen(
+      <QueryClientProvider client={queryClient}>
+        <ManDongGop />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(man.getByText('Lê Hữu Đại')).toBeTruthy());
+    expect(man.getByText('Xuất báo cáo đóng góp')).toBeTruthy();
   });
 });
