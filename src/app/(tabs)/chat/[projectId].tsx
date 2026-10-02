@@ -16,6 +16,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { EmptyChat } from '../../../components/chat/EmptyChat';
 import { ImageViewer } from '../../../components/chat/ImageViewer';
 import { MessageComposer } from '../../../components/chat/MessageComposer';
+import { NutMoiVaoNhom } from '../../../components/chat/NutMoiVaoNhom';
 import {
   TaskSuggestionSheet,
   type TaskSuggestionValues,
@@ -672,6 +673,11 @@ export default function ChatThreadScreen() {
     workspaces?.find((item) => item.id === project?.workspaceId) ?? active;
   const duocDungAI = !project || laLeaderDuAn(user?.id ?? '', project, khongGianCuaDuAn);
 
+  // Chỉ khi biết chắc dự án và vai trò: khác AI, nút mời giấu nhầm không làm mất gì.
+  const nutMoi = project ? (
+    <NutMoiVaoNhom meId={user?.id ?? ''} project={project} workspace={khongGianCuaDuAn} />
+  ) : undefined;
+
   /*
     Nhấn giữ một tin: chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem
     `useDongYAI`. Tin còn đang gửi hoặc gửi hỏng chưa tồn tại trên máy chủ (mã
@@ -808,7 +814,7 @@ export default function ChatThreadScreen() {
   return (
     <View style={styles.screen}>
       {/* Trạng thái "đang gõ" vẫn nằm sát ô soạn tin, không đưa lên header. */}
-      <GradientHeader title={projectName} onBack={goBack} dense />
+      <GradientHeader title={projectName} onBack={goBack} dense right={nutMoi} />
 
       {/*
         `KeyboardAvoidingView` này lấy từ `react-native-keyboard-controller`,
