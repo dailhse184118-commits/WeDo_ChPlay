@@ -17,6 +17,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 
 import { ConversationRow } from '../../../components/chat/ConversationRow';
 import { NewConversationSheet } from '../../../components/chat/NewConversationSheet';
+import { NhapMaMoiSheet } from '../../../components/chat/NhapMaMoiSheet';
 import { ProjectRow } from '../../../components/chat/ProjectRow';
 import { SegmentedTabs } from '../../../components/chat/SegmentedTabs';
 import { UpdateBanner } from '../../../components/update/UpdateBanner';
@@ -28,9 +29,11 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
 import { listConversations, startConversation } from '../../../lib/api/direct-chat';
 import { listFriends } from '../../../lib/api/friends';
+import type { KetQuaThamGia } from '../../../lib/api/loi-moi';
 import { listProjects } from '../../../lib/api/projects';
 import { getWorkspace } from '../../../lib/api/workspaces';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { saveActiveWorkspaceId } from '../../../lib/auth/token-storage';
 import { duAnCanDemChuaDoc } from '../../../lib/chat/chua-doc-du-an';
 import { useSocket } from '../../../lib/socket/socket-context';
 import { usePhienBan } from '../../../lib/version/use-phien-ban';
@@ -41,12 +44,13 @@ import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } f
 export default function ChatListScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { active, workspaces, switchTo } = useWorkspace();
+  const { active, workspaces, switchTo, refresh } = useWorkspace();
   const workspaceId = active?.id;
 
   const [query, setQuery] = useState('');
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [taoMoiOpen, setTaoMoiOpen] = useState(false);
+  const [nhapMaOpen, setNhapMaOpen] = useState(false);
   const [muc, setMuc] = useState<'du-an' | 'tin-nhan'>('du-an');
 
   const { onlineUserIds } = useSocket();
@@ -188,6 +192,22 @@ export default function ChatListScreen() {
   const openProject = useCallback(
     (projectId: string) => router.push(`/chat/${projectId}`),
     [router],
+  );
+
+  /*
+    Vừa vào nhóm bằng mã: chọn đúng không gian chứa dự án rồi mở chat của nó.
+    Lưu id trước rồi nạp lại danh sách — `switchTo` không dùng được vì không
+    gian của người lạ mời chưa có trong danh sách đang giữ.
+  */
+  const daThamGia = useCallback(
+    async (ketQua: KetQuaThamGia) => {
+      setNhapMaOpen(false);
+      await saveActiveWorkspaceId(ketQua.workspaceId);
+      await refresh();
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      router.push(`/chat/${ketQua.projectId}`);
+    },
+    [queryClient, refresh, router],
   );
 
   const firstName = user?.fullName?.split(' ').slice(-1)[0] ?? '';
@@ -347,6 +367,17 @@ export default function ChatListScreen() {
           <FlatList
             testID="ds-du-an"
             data={visible}
+            ListHeaderComponent={
+              <Pressable
+                testID="nut-nhap-ma-moi"
+                accessibilityRole="button"
+                onPress={() => setNhapMaOpen(true)}
+                style={styles.nutNhanTinMoi}
+              >
+                <Ionicons name="enter-outline" size={18} color={colors.primary} />
+                <Text style={styles.nutNhanTinMoiChu}>Nhập mã mời</Text>
+              </Pressable>
+            }
             keyExtractor={(project) => project.id}
             onViewableItemsChanged={khiDoiDongHien}
             viewabilityConfig={cauHinhDongHien}
@@ -394,6 +425,12 @@ export default function ChatListScreen() {
           />
         )}
       </View>
+
+      <NhapMaMoiSheet
+        visible={nhapMaOpen}
+        onDismiss={() => setNhapMaOpen(false)}
+        onDaThamGia={(ketQua) => void daThamGia(ketQua)}
+      />
 
       <NewConversationSheet
         visible={chonNguoiOpen}
