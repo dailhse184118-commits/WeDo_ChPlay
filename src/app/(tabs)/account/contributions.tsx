@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { XuatBaoCao } from '../../../components/dong-gop/XuatBaoCao';
 import { getContributions, type DongGopThanhVien } from '../../../lib/api/tasks';
 import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
@@ -93,6 +94,11 @@ export default function ManDongGop() {
       />
 
       <ScrollView style={styles.than} contentContainerStyle={styles.thanNoiDung}>
+        {/*
+          Đặt trên cùng: bảng bên dưới là của cả không gian làm việc, còn báo
+          cáo xuất theo từng dự án — người dùng chọn dự án ngay trong khối.
+        */}
+        {active?.id ? <XuatBaoCao workspaceId={active.id} /> : null}
         {/*
           Chỉ báo lỗi to khi KHÔNG có gì để xem. Còn dữ liệu cũ trong cache thì
           lần gọi hỏng không chặn đường.
