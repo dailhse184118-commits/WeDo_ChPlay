@@ -47,9 +47,12 @@ function TabsWithWorkspace() {
     return <KhongTaiDuocKhongGian />;
   }
 
-  // Tài khoản mới chưa có workspace phải tự tạo một cái trước khi dùng app.
+  /*
+    Tài khoản mới chưa có workspace: tự tạo một cái, HOẶC nhập mã mời Leader gửi
+    để vào thẳng dự án của nhóm — trường hợp chính của người vừa đăng ký.
+  */
   if (status === 'empty') {
-    return <CreateWorkspaceForm />;
+    return <CreateWorkspaceForm choNhapMaMoi />;
   }
 
   return (
