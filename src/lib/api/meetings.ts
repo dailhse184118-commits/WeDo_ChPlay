@@ -12,7 +12,12 @@ import type { UserSummary } from '../types';
 
 export type TrangThaiHop = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
-export type TrangThaiHangMuc = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+/**
+ * Đúng enum `MeetingActionItemStatus` của máy chủ. Từng khai nhầm `ACCEPTED`
+ * (giá trị của trạng thái NHẬN VIỆC, không phải hạng mục họp), nên hạng mục đã
+ * duyệt rơi xuống nhãn mặc định "Chờ nhận".
+ */
+export type TrangThaiHangMuc = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface HangMucHanhDong {
   id: string;

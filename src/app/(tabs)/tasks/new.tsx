@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '../../../components/ui/Button';
@@ -15,9 +15,10 @@ import {
   dungInputTaoTask,
   type FormTaoTask,
 } from '../../../lib/tasks/tao-task';
+import { useAuth } from '../../../lib/auth/auth-context';
 import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
-import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
+import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
 
 /**
  * Hàng chọn một-trong-nhiều, dạng chip bấm được.
@@ -64,6 +65,7 @@ function HangChon<T extends { id: string }>({
               onPress={() => onChon(chon ? null : item.id)}
               style={[styles.chip, chon && styles.chipChon]}
               accessibilityRole="button"
+              accessibilityLabel={nhanCua(item)}
               accessibilityState={{ selected: chon }}
             >
               <Text style={[styles.chipChu, chon && styles.chipChuChon]}>
@@ -77,16 +79,59 @@ function HangChon<T extends { id: string }>({
   );
 }
 
+/** Một người có thể nhận việc. `id` là id NGƯỜI DÙNG — đúng thứ máy chủ cần. */
+interface NguoiNhan {
+  id: string;
+  ten: string;
+}
+
+/**
+ * Gom danh sách người nhận việc theo id người dùng.
+ *
+ * Trước đây chip dùng id BẢN GHI thành viên còn form lưu id NGƯỜI DÙNG: hai thứ
+ * không bao giờ bằng nhau, nên chip không sáng và bấm lại không bỏ chọn được.
+ * Dùng thẳng id người dùng làm khoá thì so sánh và gửi đi là cùng một thứ.
+ */
+function gomNguoiNhan(
+  thanhVien: Array<{ user: { id: string; fullName?: string | null; email?: string | null } }>,
+): NguoiNhan[] {
+  const theoNguoi = new Map<string, NguoiNhan>();
+  for (const { user } of thanhVien) {
+    if (!user?.id || theoNguoi.has(user.id)) continue;
+    // Email có thể là null với người chưa kết bạn — máy chủ giấu đi.
+    theoNguoi.set(user.id, { id: user.id, ten: user.fullName || user.email || 'Thành viên' });
+  }
+  return Array.from(theoNguoi.values());
+}
+
 export default function ManTaoCongViec() {
   const router = useRouter();
   /* Tạo xong hay bỏ ngang đều về danh sách việc — không dùng `router.back()`, xem `useQuayLai`. */
   const quayLai = useQuayLai(useCallback(() => router.navigate('/tasks'), [router]));
   const queryClient = useQueryClient();
-  const { active } = useWorkspace();
+  const { active, workspaces } = useWorkspace();
+  const { user } = useAuth();
   const workspaceId = active?.id ?? null;
 
   const [form, setForm] = useState<FormTaoTask>(FORM_TAO_TASK_RONG);
   const [loi, setLoi] = useState<string | null>(null);
+
+  const lamTrongForm = useCallback(() => {
+    setForm(FORM_TAO_TASK_RONG);
+    setLoi(null);
+  }, []);
+
+  /*
+    Màn này là một tab ẩn, sống suốt phiên: bấm "+" lần sau là CÙNG một màn, giữ
+    nguyên mọi thứ gõ lần trước — kể cả người được giao. Dọn lúc RỜI màn (không
+    phải lúc quay lại) để lần mở sau không loé lên form cũ trong một khung hình.
+  */
+  useFocusEffect(useCallback(() => lamTrongForm, [lamTrongForm]));
+
+  /* Dự án và người nhận của không gian cũ không có nghĩa gì ở không gian mới. */
+  useEffect(() => {
+    lamTrongForm();
+  }, [workspaceId, lamTrongForm]);
 
   const capNhat = <K extends keyof FormTaoTask>(khoa: K, gia_tri: FormTaoTask[K]) =>
     setForm((truoc) => ({ ...truoc, [khoa]: gia_tri }));
@@ -103,9 +148,32 @@ export default function ManTaoCongViec() {
     enabled: !!workspaceId,
   });
 
+  const duAnDangChon = (duAn.data ?? []).find((d) => d.id === form.projectId) ?? null;
+
+  /*
+    Đã chọn dự án thì chỉ người trong dự án đó nhận được việc — máy chủ từ chối
+    người ngoài dự án. Chưa chọn thì là cả không gian làm việc.
+  */
+  const nguoiNhan = useMemo(
+    () => gomNguoiNhan(duAnDangChon ? (duAnDangChon.members ?? []) : (thanhVien.data?.members ?? [])),
+    [duAnDangChon, thanhVien.data],
+  );
+
+  /*
+    Máy chủ chỉ cho Leader dự án (hoặc chủ không gian) tạo việc trong dự án. Nói
+    trước, đừng để người dùng gõ xong mới nhận câu từ chối.
+  */
+  const khongPhaiLeader = Boolean(
+    duAnDangChon &&
+      user &&
+      workspaces.find((ws) => ws.id === workspaceId)?.ownerId !== user.id &&
+      !duAnDangChon.members?.some((m) => m.role === 'LEADER' && m.user.id === user.id),
+  );
+
   const taoMoi = useMutation({
     mutationFn: createTask,
     onSuccess: () => {
+      lamTrongForm();
       /*
         Làm mới danh sách trước khi quay lại, để việc vừa tạo có mặt ngay. Không
         làm thì người dùng quay về màn cũ và không thấy gì, tưởng tạo hỏng.
@@ -175,24 +243,27 @@ export default function ManTaoCongViec() {
           danhSach={duAn.data ?? []}
           dangChon={form.projectId}
           nhanCua={(d) => d.name}
-          onChon={(id) => capNhat('projectId', id)}
+          // Người đã chọn ở dự án cũ có thể không thuộc dự án mới — bỏ chọn luôn.
+          onChon={(id) => setForm((truoc) => ({ ...truoc, projectId: id, assigneeId: null }))}
           nhanKhiRong="Không gian làm việc này chưa có dự án nào."
         />
 
+        {khongPhaiLeader ? (
+          <Text testID="ghi-chu-khong-phai-leader" style={styles.ghiChu}>
+            Chỉ Leader của dự án này mới tạo được công việc trong dự án. Bỏ chọn dự án để tạo
+            việc riêng cho bạn.
+          </Text>
+        ) : null}
+
         <HangChon
           nhan="Giao cho"
-          danhSach={thanhVien.data?.members ?? []}
+          danhSach={nguoiNhan}
           dangChon={form.assigneeId}
-          nhanCua={(m) => m.user.fullName || m.user.email}
-          onChon={(id) => {
-            /*
-              `members` có id riêng của bản ghi thành viên, còn máy chủ cần id
-              NGƯỜI DÙNG. Lấy nhầm thì máy chủ báo không tìm thấy người nhận.
-            */
-            const chon = thanhVien.data?.members.find((m) => m.id === id);
-            capNhat('assigneeId', chon ? chon.user.id : null);
-          }}
-          nhanKhiRong="Chưa tải được danh sách thành viên."
+          nhanCua={(nguoi) => nguoi.ten}
+          onChon={(id) => capNhat('assigneeId', id)}
+          nhanKhiRong={
+            duAnDangChon ? 'Dự án này chưa có thành viên nào.' : 'Chưa tải được danh sách thành viên.'
+          }
         />
 
         <Button
@@ -213,6 +284,7 @@ const styles = StyleSheet.create({
   nhom: { gap: spacing.sm },
   nhanNhom: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
   trong: { fontSize: fontSize.sm, color: colors.textMuted },
+  ghiChu: { fontSize: fontSize.sm, color: colors.warningText, lineHeight: lineHeight.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     paddingHorizontal: spacing.md,

@@ -71,11 +71,23 @@ export function capNhatThongTinCaNhan(thongTin: ThongTinCaNhan): Promise<UserPro
       fullName: thongTin.fullName,
       phone: thongTin.phone,
       /*
-        Bỏ hẳn khoá khi không có ngày sinh, thay vì gửi `null`. DTO máy chủ khai
-        `dob` là `@IsDateString()` — `null` sẽ bị bộ kiểm tra chặn lại, còn
-        thiếu khoá thì `@IsOptional()` cho qua.
+        LUÔN gửi `dob`, kể cả `null`. Máy chủ phân biệt: không gửi khoá = giữ
+        nguyên, `null` = gỡ ngày sinh đã lưu (`@IsOptional()` cho `null` qua,
+        `@IsDateString()` chỉ kiểm khi có chuỗi). Trước đây bỏ hẳn khoá khi ô
+        trống, nên xoá ngày sinh rồi Lưu thì báo "Đã lưu" mà ngày cũ vẫn còn.
       */
-      ...(thongTin.dob ? { dob: thongTin.dob } : {}),
+      dob: thongTin.dob,
     },
+  });
+}
+
+/**
+ * Cho phép, hoặc thôi cho phép, gửi tin nhắn đã chọn tới nhà cung cấp AI.
+ *
+ * Gọi lại khi đã đồng ý thì máy chủ giữ nguyên mốc cũ; rút lại thì trả `null`.
+ */
+export function datDongYAI(choPhep: boolean): Promise<{ aiConsentAt: string | null }> {
+  return apiRequest<{ aiConsentAt: string | null }>('/users/me/ai-consent', {
+    method: choPhep ? 'POST' : 'DELETE',
   });
 }

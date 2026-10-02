@@ -9,6 +9,7 @@ import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { ApiError } from '../../../lib/api/client';
 import {
   chiTietCuocHop,
   moPhongHop,
@@ -29,9 +30,10 @@ function ngayDayDu(iso: string): string {
   });
 }
 
+/* Cùng chữ với web và bản tóm tắt gửi vào chat. */
 const TEN_TRANG_THAI_HANG_MUC: Record<HangMucHanhDong['status'], string> = {
-  PENDING: 'Chờ nhận',
-  ACCEPTED: 'Đã nhận',
+  PENDING: 'Chờ Leader duyệt',
+  APPROVED: 'Đã duyệt',
   REJECTED: 'Đã từ chối',
 };
 
@@ -57,8 +59,8 @@ function HangMuc({ muc }: { muc: HangMucHanhDong }) {
         <Text style={styles.mucTieuDe}>{muc.title}</Text>
         <Text style={styles.mucPhu}>
           {muc.assignee?.fullName ?? 'Chưa giao'}
-          {' · '}
-          {TEN_TRANG_THAI_HANG_MUC[muc.status] ?? 'Chờ nhận'}
+          {/* Trạng thái lạ (máy chủ thêm giá trị mới) thì thôi không ghi, đừng đoán. */}
+          {TEN_TRANG_THAI_HANG_MUC[muc.status] ? ` · ${TEN_TRANG_THAI_HANG_MUC[muc.status]}` : ''}
           {muc.task ? ' · đã thành công việc' : ''}
         </Text>
       </View>
@@ -135,11 +137,37 @@ export default function ManChiTietHop() {
   const hop = hopQuery.data;
 
   if (!hop) {
+    /*
+      Chỉ 404/403 mới là "không tìm thấy / không có quyền". Mất mạng, hết giờ chờ,
+      máy chủ lỗi 5xx thì nói đúng lỗi đó và cho thử lại — trước đây mọi lỗi đều
+      thành "không có quyền xem", người dùng tưởng cuộc họp đã bị xoá.
+    */
+    const loi = hopQuery.error;
+    const khongCo =
+      !hopQuery.isError ||
+      (loi instanceof ApiError && (loi.status === 404 || loi.status === 403));
     return (
       <View style={styles.man}>
         <GradientHeader title="Cuộc họp" onBack={quayLai} dense />
         <View style={styles.giua}>
-          <ErrorBanner message="Không tìm thấy cuộc họp này, hoặc bạn không có quyền xem." />
+          {khongCo ? (
+            <ErrorBanner message="Không tìm thấy cuộc họp này, hoặc bạn không có quyền xem." />
+          ) : (
+            <>
+              <ErrorBanner
+                message={loi instanceof Error ? loi.message : 'Không tải được cuộc họp.'}
+              />
+              <View style={styles.nut}>
+                <Button
+                  testID="meeting-retry"
+                  label="Thử lại"
+                  variant="secondary"
+                  onPress={() => void hopQuery.refetch()}
+                  loading={hopQuery.isFetching}
+                />
+              </View>
+            </>
+          )}
         </View>
       </View>
     );

@@ -15,6 +15,13 @@
  * Vì thế `duongDanWeb` CHẶN các đường dẫn thanh toán ngay tại đây, thay vì chỉ
  * ghi một dòng chú thích rồi tin rằng người sau sẽ đọc. Có test riêng cho chốt
  * này — xoá nó đi là test đỏ.
+ *
+ * Lọc theo CHỮ trong đường dẫn là chưa đủ: mọi màn của ứng dụng web đều nằm
+ * trong khung có thanh bên "Nâng cấp gói", và #/contributions mở vào màn Cài
+ * đặt sát tab "Quản lý gói và thanh toán" mà không chứa chữ nào bị cấm. Nên giờ
+ * chỉ mở được các TRANG TĨNH trong `TRANG_DUOC_MO` — không có khung ứng dụng,
+ * không có liên kết sang bảng giá. Thêm trang nào vào đó thì mở trang đó ra
+ * xem trước: không được có lối nào dẫn tiếp sang trang mua.
  * ===========================================================================
  */
 
@@ -56,14 +63,47 @@ const TU_CAM = [
  */
 const CUM_CAM = ['nang-cap', 'thanh-toan', 'mua-goi'];
 
+/**
+ * Trang tĩnh trong `public/` của web: tự đứng một mình, không có khung ứng dụng
+ * (thanh bên, Cài đặt, bảng giá) và không liên kết sang trang mua.
+ *
+ * Cố tình KHÔNG có `chinh-sach-thanh-toan.html`: cả trang nói về mua gói.
+ */
+export const TRANG_DUOC_MO = [
+  'dieu-khoan.html',
+  'privacy.html',
+  'ho-tro.html',
+  'xoa-tai-khoan.html',
+] as const;
+
 export class DuongDanBiCamError extends Error {
-  constructor(duongDan: string) {
+  constructor(duongDan: string, lyDo: 'thanh-toan' | 'ngoai-danh-sach' = 'thanh-toan') {
     super(
-      `Đường dẫn "${duongDan}" dính tới thanh toán. App Android không được dẫn ` +
-        'người dùng ra ngoài để mua hàng hoá số — xem chính sách Google Play.',
+      lyDo === 'thanh-toan'
+        ? `Đường dẫn "${duongDan}" dính tới thanh toán. App Android không được dẫn ` +
+            'người dùng ra ngoài để mua hàng hoá số — xem chính sách Google Play.'
+        : `Đường dẫn "${duongDan}" không nằm trong danh sách trang được mở từ app. ` +
+            'Màn ứng dụng web nào cũng có lối sang trang mua — xem `TRANG_DUOC_MO`.',
     );
     this.name = 'DuongDanBiCamError';
   }
+}
+
+/** Tách "trang#mốc" thành trang (không có dấu gạch đầu) và mốc (kể cả dấu #, có thể rỗng). */
+function tachTrang(duongDan: string): { trang: string; moc: string } {
+  const sach = duongDan.replace(/^\/+/, '');
+  const viTri = sach.indexOf('#');
+  return viTri < 0
+    ? { trang: sach, moc: '' }
+    : { trang: sach.slice(0, viTri), moc: sach.slice(viTri) };
+}
+
+/** Đường dẫn có nằm trong danh sách trang tĩnh được mở không. */
+export function laTrangDuocMo(duongDan: string): boolean {
+  const { trang, moc } = tachTrang(duongDan);
+  // Mốc chỉ là tên mục trong trang (#muc-10); "#/..." là một màn của ứng dụng web.
+  if (moc && !/^#[a-z0-9-]*$/i.test(moc)) return false;
+  return (TRANG_DUOC_MO as readonly string[]).includes(trang.toLowerCase());
 }
 
 /** Đường dẫn có chạm tới mua bán không. So theo từng mảnh, không so chuỗi con. */
@@ -82,24 +122,28 @@ export function laDuongDanThanhToan(duongDan: string): boolean {
 }
 
 /**
- * Dựng địa chỉ đầy đủ tới một trang trên web WeDo.
+ * Dựng địa chỉ đầy đủ tới một trang tĩnh trên web WeDo, ví dụ
+ * `duongDanWeb('privacy.html#muc-10')`.
  *
- * Ném lỗi khi đường dẫn dính tới thanh toán, và khi chưa cấu hình
- * `EXPO_PUBLIC_WEB_URL` — im lặng trả chuỗi rỗng thì nút bấm không làm gì cả và
- * không ai biết vì sao.
+ * Ném lỗi khi đường dẫn dính tới thanh toán, khi trang không nằm trong
+ * `TRANG_DUOC_MO` (mọi màn của ứng dụng web, kể cả trang chủ), và khi chưa cấu
+ * hình `EXPO_PUBLIC_WEB_URL` — im lặng trả chuỗi rỗng thì nút bấm không làm gì
+ * cả và không ai biết vì sao.
  */
 export function duongDanWeb(duongDan: string): string {
   if (laDuongDanThanhToan(duongDan)) {
     throw new DuongDanBiCamError(duongDan);
+  }
+  if (!laTrangDuocMo(duongDan)) {
+    throw new DuongDanBiCamError(duongDan, 'ngoai-danh-sach');
   }
   const goc = gocWeb();
   if (!goc) {
     throw new Error('Thiếu EXPO_PUBLIC_WEB_URL. Kiểm tra file .env.');
   }
 
-  const sach = duongDan.replace(/^\/+/, '');
-  // Web dùng điều hướng theo hash, nên đường dẫn nằm sau dấu #.
-  return sach ? `${goc}/#/${sach}` : goc;
+  const { trang, moc } = tachTrang(duongDan);
+  return `${goc.replace(/\/+$/, '')}/${trang}${moc}`;
 }
 
 /** Đã cấu hình web chưa. Giao diện dùng để ẩn nút thay vì hiện nút chết. */

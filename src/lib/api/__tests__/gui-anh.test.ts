@@ -1,5 +1,6 @@
 import { sendProjectFiles } from '../chat';
 import { sendDirectFiles } from '../direct-chat';
+import { LoiGuiDoDang } from '../chat-files';
 import { taiMotTepLen } from '../tai-tep';
 
 jest.mock('../tai-tep', () => ({ taiMotTepLen: jest.fn() }));
@@ -81,5 +82,37 @@ describe('gửi ảnh vào chat', () => {
       'bat-dau:b.png',
       'xong:b.png',
     ]);
+  });
+});
+
+/*
+  Mỗi ảnh là một tin nhắn thật. Ảnh thứ hai hỏng mà chỉ ném lỗi thì màn hình
+  không biết ảnh đầu đã tới, giữ nguyên cả lô — bấm Gửi lại là người nhận thấy
+  ảnh đầu hai lần.
+*/
+describe('gửi dở dang', () => {
+  const ANH_3 = { uri: 'file:///cache/c.jpg', name: 'c.jpg', mimeType: 'image/jpeg' };
+
+  it('ảnh giữa lô hỏng thì báo kèm những tin đã gửi được', async () => {
+    taiLen
+      .mockResolvedValueOnce({ id: 'tin-1' } as never)
+      .mockRejectedValueOnce(new Error('Không gửi được tệp. Kiểm tra mạng và thử lại.'));
+
+    const loi = await sendDirectFiles('c1', [ANH, ANH_2, ANH_3], 'chú thích').catch((e) => e);
+
+    expect(loi).toBeInstanceOf(LoiGuiDoDang);
+    expect(loi.daGui).toEqual([{ id: 'tin-1' }]);
+    expect(loi.tongSo).toBe(3);
+    expect(loi.message).toMatch(/1\/3/);
+    expect(loi.message).toMatch(/Kiểm tra mạng/);
+    // Dừng ngay ở ảnh hỏng, không gửi tiếp ảnh thứ ba.
+    expect(taiLen).toHaveBeenCalledTimes(2);
+  });
+
+  it('hỏng ngay ảnh đầu thì ném nguyên lỗi gốc — chưa có gì để giữ lại', async () => {
+    const goc = new Error('Ảnh quá lớn');
+    taiLen.mockRejectedValueOnce(goc);
+
+    await expect(sendDirectFiles('c1', [ANH, ANH_2], '')).rejects.toBe(goc);
   });
 });

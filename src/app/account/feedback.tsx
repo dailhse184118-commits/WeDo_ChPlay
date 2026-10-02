@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../components/ui/GradientHeader';
 import { TextField } from '../../components/ui/TextField';
-import { getMyFeedback, submitFeedback } from '../../lib/api/feedback';
+import { getFeedbackStatus, submitFeedback } from '../../lib/api/feedback';
 import { kiemTraDanhGia, soKyTuConLai } from '../../lib/feedback/kiem-tra';
 import { colors, fontSize, radius, scale, spacing } from '../../theme/tokens';
 
@@ -58,11 +58,29 @@ export default function ManGopY() {
   const [noiDung, setNoiDung] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
 
-  const daGui = useQuery({ queryKey: ['feedback-mine'], queryFn: getMyFeedback });
+  /*
+    Đọc `/feedback/status`, không phải `/feedback/mine`: chỉ lượt này biết quản
+    trị đã mở khoá cho gửi lại. Trước đây thấy bản cũ là hiện thẻ khoá và bảo
+    người dùng nhắn đội ngũ — trong khi đội ngũ đã mở rồi.
+  */
+  const trangThai = useQuery({ queryKey: ['feedback-status'], queryFn: getFeedbackStatus });
+
+  /*
+    Được mở khoá để sửa thì điền sẵn bản cũ: người dùng thường chỉ muốn chỉnh
+    vài chữ hay đổi số sao, không muốn gõ lại từ đầu.
+  */
+  const banCu = trangThai.data?.canSubmit ? trangThai.data.feedback : null;
+  useEffect(() => {
+    if (!banCu) return;
+    setSao(banCu.rating);
+    setNoiDung(banCu.comment);
+    // react-query giữ nguyên tham chiếu khi dữ liệu không đổi, nên nạp lại không ghi đè chữ đang sửa.
+  }, [banCu]);
 
   const gui = useMutation({
     mutationFn: () => submitFeedback(sao, noiDung.trim()),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['feedback-status'] });
       void queryClient.invalidateQueries({ queryKey: ['feedback-mine'] });
       setLoi(null);
     },
@@ -81,7 +99,8 @@ export default function ManGopY() {
   };
 
   const conLai = soKyTuConLai(noiDung);
-  const cu = daGui.data;
+  // Thẻ "đã gửi" chỉ khi máy chủ nói CÒN KHOÁ.
+  const cu = trangThai.data?.locked ? trangThai.data.feedback : null;
 
   return (
     <View style={styles.man}>
@@ -92,7 +111,13 @@ export default function ManGopY() {
         contentContainerStyle={styles.thanNoiDung}
         keyboardShouldPersistTaps="handled"
       >
-        {cu ? (
+        {/*
+          Chưa biết còn khoá hay không thì chờ — hiện form trước là để người dùng
+          gõ dở rồi mới bị thay bằng thẻ khoá.
+        */}
+        {trangThai.isLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : cu ? (
           /*
             Đã gửi rồi thì hiện lại bản cũ thay vì form trống. Máy chủ chỉ cho
             mỗi người một lượt; đưa form trống ra là mời người dùng gõ một đoạn

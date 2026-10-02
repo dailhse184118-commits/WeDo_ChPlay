@@ -3,7 +3,8 @@ import { Text, Pressable } from 'react-native';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import { AuthProvider, useAuth } from '../auth-context';
-import { ApiError, apiRequest, giaHanMotLuot } from '../../api/client';
+import { ApiError, MA_PHAN_HOI_LA, apiRequest, giaHanMotLuot } from '../../api/client';
+import * as donThongBao from '../../notifications/don-khi-dang-xuat';
 import * as pushToken from '../../notifications/push-token';
 import * as authApi from '../../api/auth';
 import * as googleSignIn from '../google-signin';
@@ -14,6 +15,9 @@ jest.mock('../../api/auth');
 jest.mock('../token-storage');
 jest.mock('../google-signin');
 jest.mock('../../query', () => ({ xoaCacheBenBi: jest.fn() }));
+jest.mock('../../notifications/don-khi-dang-xuat', () => ({
+  donThongBaoKhiDangXuat: jest.fn(async () => undefined),
+}));
 jest.mock('../../notifications/push-token', () => ({
   huyDangKyPushToken: jest.fn(async () => undefined),
   dongBoPushToken: jest.fn(async () => undefined),
@@ -24,6 +28,7 @@ const mockedStorage = tokenStorage as jest.Mocked<typeof tokenStorage>;
 const mockedGoogle = googleSignIn as jest.Mocked<typeof googleSignIn>;
 const mockedQuery = query as jest.Mocked<typeof query>;
 const mockedPush = pushToken as jest.Mocked<typeof pushToken>;
+const mockedDonThongBao = donThongBao as jest.Mocked<typeof donThongBao>;
 
 const profile = { id: 'u1', email: 'a@b.c', fullName: 'Lê Hữu Đại' };
 
@@ -405,6 +410,99 @@ describe('AuthProvider', () => {
     mockedStorage.loadToken.mockResolvedValue('tok-1');
     mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
     mockedAuthApi.getMe.mockRejectedValue(new ApiError('Service Unavailable', 503));
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedStorage.clearToken).not.toHaveBeenCalled();
+  });
+  /*
+    Lịch nhắc hạn hẹn trên máy và lần chạm thông báo gần nhất sống ngoài phiên.
+    Không dọn thì máy vẫn nhắc việc của người vừa đăng xuất (kể cả tài khoản vừa
+    xoá), và người đăng nhập tiếp theo bị mở lại màn của người trước.
+  */
+  it('đăng xuất dọn thông báo trên máy TRƯỚC khi về signedOut', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+    const thuTu: string[] = [];
+    mockedDonThongBao.donThongBaoKhiDangXuat.mockImplementation(async () => {
+      thuTu.push('don');
+    });
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    thuTu.length = 0;
+
+    await fireEvent.press(getByTestId('signout'));
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    expect(mockedDonThongBao.donThongBaoKhiDangXuat).toHaveBeenCalledTimes(1);
+    expect(thuTu).toEqual(['don']);
+  });
+
+  /*
+    Phiên chết lúc mở app (refresh token bị thu hồi, tài khoản bị khoá hay bị
+    xoá từ máy khác): cache trên đĩa vừa được nạp lại vẫn là của người cũ.
+  */
+  it('phiên chết lúc mở app (4xx) thì xoá cache và dọn thông báo như đăng xuất', async () => {
+    mockedStorage.loadToken.mockResolvedValue('het-han');
+    mockedAuthApi.getMe.mockRejectedValue(new ApiError('Unauthorized', 401));
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+    expect(mockedQuery.xoaCacheBenBi).toHaveBeenCalledTimes(1);
+    expect(mockedDonThongBao.donThongBaoKhiDangXuat).toHaveBeenCalledTimes(1);
+  });
+
+  it('mất mạng lúc mở app thì KHÔNG xoá cache — đó là thứ để đọc ngoại tuyến', async () => {
+    mockedStorage.loadToken.mockResolvedValue('con-tot');
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.getMe.mockRejectedValue(new ApiError('Không thể kết nối máy chủ.', 0));
+
+    const { getByTestId } = await renderProbe();
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedQuery.xoaCacheBenBi).not.toHaveBeenCalled();
+  });
+
+  it('người khác đăng nhập trên máy đang giữ hồ sơ cũ thì xoá cache trước khi vào', async () => {
+    mockedStorage.loadUserProfile.mockResolvedValue({ ...profile, id: 'nguoi-truoc' } as never);
+    mockedAuthApi.login.mockResolvedValue({ message: 'ok', accessToken: 'tok-2', user: profile } as never);
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedQuery.xoaCacheBenBi).toHaveBeenCalledTimes(1);
+  });
+
+  it('đúng người đang có hồ sơ trên máy đăng nhập lại thì giữ cache', async () => {
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.login.mockResolvedValue({ message: 'ok', accessToken: 'tok-2', user: profile } as never);
+    mockedAuthApi.getMe.mockResolvedValue(profile as never);
+
+    const { getByTestId } = await renderProbe();
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedOut'));
+
+    await fireEvent.press(getByTestId('signin'));
+
+    await waitFor(() => expect(getByTestId('status').props.children).toBe('signedIn'));
+    expect(mockedQuery.xoaCacheBenBi).not.toHaveBeenCalled();
+  });
+  /*
+    Cổng Azure có thể trả trang HTML kèm mã 4xx (403 lúc ứng dụng bị dừng chẳng
+    hạn). Thân lạ không nói gì về phiên: giữ phiên như lỗi tạm thời.
+  */
+  it('trang lỗi của cổng (thân không phải JSON) lúc mở app thì giữ phiên', async () => {
+    mockedStorage.loadToken.mockResolvedValue('tok-1');
+    mockedStorage.loadUserProfile.mockResolvedValue(profile as never);
+    mockedAuthApi.getMe.mockRejectedValue(
+      new ApiError('Máy chủ đang bận hoặc đang khởi động lại (mã 403). Thử lại sau ít phút.', 403, MA_PHAN_HOI_LA),
+    );
 
     const { getByTestId } = await renderProbe();
 

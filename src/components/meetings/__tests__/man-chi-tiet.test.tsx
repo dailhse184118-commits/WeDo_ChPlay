@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { renderScreen } from '../../../test-utils/render';
 import ManChiTietHop from '../../../app/(tabs)/meetings/[id]';
+import { ApiError } from '../../../lib/api/client';
 import { chiTietCuocHop, moPhongHop, type CuocHop } from '../../../lib/api/meetings';
 
 jest.mock('../../../lib/api/meetings');
@@ -125,13 +126,18 @@ describe('màn chi tiết cuộc họp', () => {
     expect(huy.queryByTestId('meeting-join')).toBeNull();
   });
 
-  it('hiện hạng mục hành động kèm dấu đã thành công việc', async () => {
+  /*
+    Máy chủ ghi 'APPROVED' khi Leader duyệt hạng mục thành công việc (enum
+    MeetingActionItemStatus: PENDING | APPROVED | REJECTED). Trước đây app khai
+    nhầm 'ACCEPTED' nên hạng mục đã duyệt hiện "Chờ nhận · đã thành công việc".
+  */
+  it('hạng mục đã duyệt hiện "Đã duyệt", không phải "Chờ nhận"', async () => {
     const man = await moMan({
       actionItems: [
         {
           id: 'a-1',
           title: 'Gửi bản nháp cho cả nhóm',
-          status: 'ACCEPTED',
+          status: 'APPROVED',
           assignee: { id: 'u-2', fullName: 'Trần Thảo Quyên', email: 'q@f.edu.vn' },
           task: { id: 't-1', title: 'Gửi bản nháp', status: 'IN_PROGRESS' },
         },
@@ -139,11 +145,20 @@ describe('màn chi tiết cuộc họp', () => {
     });
 
     expect(man.getByText('Gửi bản nháp cho cả nhóm')).toBeTruthy();
+    expect(man.getByText(/Đã duyệt/)).toBeTruthy();
     expect(man.getByText(/đã thành công việc/)).toBeTruthy();
+    expect(man.queryByText(/Chờ nhận/)).toBeNull();
+  });
+
+  it('hạng mục còn chờ thì nói rõ là chờ Leader duyệt', async () => {
+    const man = await moMan({
+      actionItems: [{ id: 'a-2', title: 'Đặt phòng', status: 'PENDING', assignee: null }],
+    });
+    expect(man.getByText(/Chờ Leader duyệt/)).toBeTruthy();
   });
 
   it('báo rõ khi không tìm thấy hoặc không có quyền xem', async () => {
-    mockedChiTiet.mockRejectedValue(new Error('Không tìm thấy cuộc họp'));
+    mockedChiTiet.mockRejectedValue(new ApiError('Không tìm thấy cuộc họp', 404));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const man = await renderScreen(
       <QueryClientProvider client={client}>
@@ -152,6 +167,30 @@ describe('màn chi tiết cuộc họp', () => {
     );
 
     await waitFor(() => expect(man.getByText(/không có quyền xem/)).toBeTruthy());
+  });
+
+  /*
+    Mất mạng hay máy chủ lỗi KHÔNG có nghĩa là cuộc họp đã bị xoá. Trước đây mọi
+    lỗi đều thành "Không tìm thấy cuộc họp này, hoặc bạn không có quyền xem",
+    không có cách thử lại — người dùng tưởng mình mất quyền.
+  */
+  it('lỗi mạng thì nói đúng lỗi mạng và cho thử lại', async () => {
+    mockedChiTiet.mockRejectedValueOnce(
+      new ApiError('Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.', 0),
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const man = await renderScreen(
+      <QueryClientProvider client={client}>
+        <ManChiTietHop />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(man.getByText(/Không thể kết nối máy chủ/)).toBeTruthy());
+    expect(man.queryByText(/không có quyền xem/)).toBeNull();
+
+    mockedChiTiet.mockResolvedValueOnce(HOP);
+    await fireEvent.press(man.getByTestId('meeting-retry'));
+    await waitFor(() => expect(man.getByTestId('meeting-title')).toBeTruthy());
   });
 
   /*

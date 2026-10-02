@@ -8,11 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import * as WebBrowser from 'expo-web-browser';
-
-import { coWeb, duongDanWeb } from '../../../lib/web-link';
 
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
@@ -153,22 +149,13 @@ export default function ManDongGop() {
             ) : null}
 
             {/*
-              Bảng đầy đủ có nhiều cột hơn hẳn — đọc trên màn hình dọc rất mệt.
-              Mobile giữ bản rút gọn, ai cần chi tiết thì mở web.
-
-              `duongDanWeb` chặn sẵn mọi đường dẫn dính thanh toán, nên nút này
-              không thể vô tình trở thành lối lách Google Play Billing.
+              Từng có nút "Xem đầy đủ trên web" ở đây, mở #/contributions. Trang
+              đó là màn Cài đặt của web: ngay cạnh tab Bảng đóng góp là tab "Quản
+              lý gói và thanh toán", thanh bên có "Nâng cấp gói" — một lối dẫn
+              ra trang mua ngoài Google Play Billing (nhánh ios đã ẩn vì đúng lý
+              do này với App Store). Bỏ trên mọi nền tảng; `duongDanWeb` giờ chỉ
+              cho mở các trang tĩnh trong danh sách cho phép.
             */}
-            {coWeb() ? (
-              <Pressable
-                onPress={() => void WebBrowser.openBrowserAsync(duongDanWeb('contributions'))}
-                style={styles.nutWeb}
-                accessibilityRole="link"
-              >
-                <Ionicons name="open-outline" size={16} color={colors.primary} />
-                <Text style={styles.nutWebChu}>Xem đầy đủ trên web</Text>
-              </Pressable>
-            ) : null}
           </>
         )}
       </ScrollView>
@@ -220,16 +207,4 @@ const styles = StyleSheet.create({
   traLai: { fontSize: fontSize.xs, color: colors.warning },
   nutPhu: { alignItems: 'center', paddingVertical: spacing.sm },
   nutPhuChu: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '500' },
-  nutWeb: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  nutWebChu: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '500' },
 });

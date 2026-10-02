@@ -31,15 +31,36 @@ export function startConversation(targetUserId: string): Promise<DirectConversat
   });
 }
 
+/** Số tin `GET /messages` trả về — máy chủ cố định `take: 40`. Đủ số này thì có thể còn tin cũ hơn. */
+export const SO_TIN_RIENG_MOI_NHAT = 40;
+
 /**
  * Phần tin nhắn gần nhất của một hội thoại.
  *
- * Máy chủ còn có `/history` phân trang bằng con trỏ, nhưng dùng nó cần cả hạ
- * tầng cuộn ngược. Lấy phần gần nhất là đủ cho bản đầu, và thêm phân trang sau
- * không phải sửa gì ở tầng giao diện.
+ * LƯU Ý: máy chủ coi lượt gọi này là "đã đọc" (`markDirectRead`). Chỉ gọi khi
+ * người dùng thật sự đang nhìn hội thoại — xem màn `dm/[conversationId]`.
  */
 export function getDirectMessages(conversationId: string): Promise<DirectMessage[]> {
   return apiRequest<DirectMessage[]>(duongDan(conversationId, '/messages'));
+}
+
+export interface TrangTinRieng {
+  /** Cũ trước, mới sau — như `getDirectMessages`. */
+  items: DirectMessage[];
+  /** `null` khi đã hết lịch sử. */
+  nextCursor: string | null;
+}
+
+/**
+ * Một trang tin CŨ HƠN tin có mã `truocTin`.
+ *
+ * Khác `getDirectMessages`: máy chủ KHÔNG đánh dấu đã đọc ở đây, nên cuộn lên
+ * xem lại không làm đổi gì về huy hiệu.
+ */
+export function getDirectHistory(conversationId: string, truocTin: string): Promise<TrangTinRieng> {
+  return apiRequest<TrangTinRieng>(
+    duongDan(conversationId, `/history?before=${encodeURIComponent(truocTin)}`),
+  );
 }
 
 export function sendDirectMessage(

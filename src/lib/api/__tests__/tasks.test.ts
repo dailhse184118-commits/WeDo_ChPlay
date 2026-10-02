@@ -3,6 +3,7 @@ import {
   approveReview,
   rejectReview,
   submitForReview,
+  updateTaskStatus,
   uploadSubmissions,
 } from '../tasks';
 import { taiMotTepLen } from '../tai-tep';
@@ -115,5 +116,23 @@ describe('chuyển trạng thái duyệt bài', () => {
     // RejectReviewDto phia may chu doi toi thieu 3 ky tu.
     await expect(rejectReview('t1', 'ok')).rejects.toThrow('ít nhất 3 ký tự');
     expect(mockedRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateTaskStatus', () => {
+  beforeEach(() => mockedRequest.mockClear());
+
+  it('PATCH /tasks/:id chỉ kèm trạng thái mới', async () => {
+    await updateTaskStatus('t1', 'IN_PROGRESS');
+
+    expect(mockedRequest).toHaveBeenCalledWith('/tasks/t1', {
+      method: 'PATCH',
+      body: { status: 'IN_PROGRESS' },
+    });
+  });
+
+  it('mã hoá id trước khi ghép vào đường dẫn', async () => {
+    await updateTaskStatus('t 1', 'IN_PROGRESS');
+    expect(lastCall()[0]).toBe('/tasks/t%201');
   });
 });

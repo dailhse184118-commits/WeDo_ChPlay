@@ -5,8 +5,11 @@ import type { ChatMessage } from '../types';
  * Cùng một tin nhắn có thể đến từ cả REST lẫn socket, nên khử trùng theo id là bắt buộc.
  * Bản đến sau thắng vì nó mới hơn.
  */
-export function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
-  const byId = new Map<string, ChatMessage>();
+export function mergeMessages<T extends Pick<ChatMessage, 'id' | 'createdAt'>>(
+  existing: T[],
+  incoming: T[],
+): T[] {
+  const byId = new Map<string, T>();
   for (const message of existing) {
     byId.set(message.id, message);
   }

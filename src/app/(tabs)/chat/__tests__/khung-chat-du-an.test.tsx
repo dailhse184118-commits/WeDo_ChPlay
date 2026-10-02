@@ -8,8 +8,13 @@ import {
   getProjectHistory,
   getProjectMessages,
   markProjectRead,
+  requestTaskSuggestion,
+  sendProjectFiles,
   sendProjectMessage,
 } from '../../../../lib/api/chat';
+import { LoiGuiDoDang } from '../../../../lib/api/chat-files';
+import { chonAnh } from '../../../../lib/images/pick-images';
+import { createTaskFromMessage } from '../../../../lib/chat/create-task-from-message';
 import { listProjects } from '../../../../lib/api/projects';
 import { getEntitlements } from '../../../../lib/api/entitlements';
 import { useAuth } from '../../../../lib/auth/auth-context';
@@ -73,18 +78,29 @@ jest.mock('../../../../lib/workspace/workspace-context');
 jest.mock('../../../../lib/chat/use-header-tep', () => ({ useHeaderTep: () => undefined }));
 jest.mock('../../../../lib/images/pick-images', () => ({ chonAnh: jest.fn(), chupAnh: jest.fn() }));
 jest.mock('../../../../lib/observability/sentry', () => ({ baoLoi: jest.fn(), moTaTep: jest.fn() }));
+jest.mock('../../../../lib/chat/create-task-from-message', () => ({ createTaskFromMessage: jest.fn() }));
 
 /* Thành phần giao diện nặng thay bằng bản tối giản — kiểm thử này soi LOGIC nạp tin. */
 jest.mock('../../../../components/chat/MessageBubble', () => {
   const { Text: T } = jest.requireActual('react-native');
-  return { MessageBubble: ({ message }: { message: { content: string } }) => <T>{message.content}</T> };
+  return {
+    MessageBubble: ({
+      message,
+      onLongPress,
+    }: {
+      message: { content: string };
+      onLongPress?: () => void;
+    }) => <T onLongPress={onLongPress}>{message.content}</T>,
+  };
 });
 /* Giữ lại props của ô soạn tin để kiểm thử gõ và gửi như người dùng. */
 let mockSoanTin: {
   value: string;
   sending: boolean;
+  anhDaChon: unknown[];
   onChangeText: (v: string) => void;
   onSend: () => void;
+  onChonAnh: () => void;
 } | null = null;
 jest.mock('../../../../components/chat/MessageComposer', () => ({
   MessageComposer: (props: never) => {
@@ -93,7 +109,18 @@ jest.mock('../../../../components/chat/MessageComposer', () => ({
   },
 }));
 jest.mock('../../../../components/chat/ImageViewer', () => ({ ImageViewer: () => null }));
-jest.mock('../../../../components/chat/TaskSuggestionSheet', () => ({ TaskSuggestionSheet: () => null }));
+/* Giữ lại props của phiếu đề xuất AI để kiểm thử bấm "Tạo công việc". */
+let mockPhieu: {
+  visible: boolean;
+  members: Array<{ id: string; fullName: string }>;
+  onConfirm: (values: { title: string; assigneeId?: string }) => void;
+} | null = null;
+jest.mock('../../../../components/chat/TaskSuggestionSheet', () => ({
+  TaskSuggestionSheet: (props: never) => {
+    mockPhieu = props;
+    return null;
+  },
+}));
 jest.mock('../../../../components/chat/EmptyChat', () => {
   const { Text: T } = jest.requireActual('react-native');
   return { EmptyChat: () => <T>trống</T> };
@@ -107,6 +134,8 @@ const mockedTin = getProjectMessages as jest.MockedFunction<typeof getProjectMes
 const mockedLichSu = getProjectHistory as jest.MockedFunction<typeof getProjectHistory>;
 const mockedDaDoc = markProjectRead as jest.MockedFunction<typeof markProjectRead>;
 const mockedGui = sendProjectMessage as jest.MockedFunction<typeof sendProjectMessage>;
+const mockedGoiY = requestTaskSuggestion as jest.MockedFunction<typeof requestTaskSuggestion>;
+const mockedTaoViec = createTaskFromMessage as jest.MockedFunction<typeof createTaskFromMessage>;
 const mockedDuAn = listProjects as jest.MockedFunction<typeof listProjects>;
 const mockedHanMuc = getEntitlements as jest.MockedFunction<typeof getEntitlements>;
 const mockedAuth = useAuth as jest.MockedFunction<typeof useAuth>;
@@ -195,6 +224,7 @@ beforeEach(() => {
   mockDon = undefined;
   mockThamSo = { projectId: 'p1' };
   mockSoanTin = null;
+  mockPhieu = null;
   socket = socketGia();
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   // Giả như danh sách đang hiện huy hiệu 1 cho dự án này.
@@ -579,5 +609,91 @@ describe('khung chat dự án', () => {
       await cuonLenDinh(man, 700);
       expect(mockedLichSu).toHaveBeenLastCalledWith('p1', 'b20');
     });
+  });
+});
+
+/*
+  Mở khung chat của một dự án thuộc KHÔNG GIAN KHÁC (chạm thông báo đẩy khi đang
+  đứng ở không gian A). Trước đây màn tra dự án trong danh sách của không gian
+  đang chọn: không thấy thì danh sách người nhận rỗng, và tạo việc gửi kèm
+  workspaceId của A — máy chủ từ chối "Dự án không thuộc workspace này" SAU khi
+  đã tiêu một lượt AI.
+*/
+describe('tạo việc bằng AI ở dự án thuộc không gian khác', () => {
+  it('lấy không gian và thành viên theo đúng dự án của tin nhắn', async () => {
+    /*
+      u1 là CHỦ không gian w1 của dự án, không phải Leader trong dự án, và đang
+      đứng ở không gian khác. Máy chủ (`ensureProjectLeader`) cho chủ không gian
+      dùng AI, nên quyền phải xét theo không gian của dự án chứ không theo không
+      gian đang chọn — xét nhầm thì nhấn giữ không làm gì cả.
+    */
+    mockedAuth.mockReturnValue({
+      user: { id: 'u1', fullName: 'Lê Hữu Đại', aiConsentAt: '2026-09-30T00:00:00.000Z' },
+    } as never);
+    mockedWorkspace.mockReturnValue({
+      active: { id: 'w-khac', ownerId: 'u9' },
+      workspaces: [
+        { id: 'w-khac', ownerId: 'u9' },
+        { id: 'w1', ownerId: 'u1' },
+      ],
+    } as never);
+    mockedDuAn.mockImplementation(async (workspaceId?: string) =>
+      workspaceId === 'w1'
+        ? ([
+            {
+              id: 'p1',
+              name: 'Đồ án',
+              workspaceId: 'w1',
+              members: [{ id: 'pm2', role: 'MEMBER', user: { id: 'u2', fullName: 'Minh Anh' } }],
+            },
+          ] as never)
+        : ([] as never),
+    );
+    mockedTin.mockResolvedValue([tin('m1', 'Minh Anh làm slide nhé', 1)]);
+    mockedGoiY.mockResolvedValue({ hasTask: true, title: 'Làm slide', confidence: 'high' });
+    mockedTaoViec.mockResolvedValue({ outcome: 'failed', error: new Error('dừng ở đây') });
+
+    const man = await render(dung());
+    await waitFor(() => expect(man.getByText('Minh Anh làm slide nhé')).toBeTruthy());
+
+    await fireEvent(man.getByText('Minh Anh làm slide nhé'), 'longPress');
+    await waitFor(() => expect(mockPhieu?.visible).toBe(true));
+    await waitFor(() => expect(mockPhieu?.members.map((m) => m.id)).toEqual(['u2']));
+
+    await act(async () => mockPhieu?.onConfirm({ title: 'Làm slide', assigneeId: 'u2' }));
+
+    expect(mockedTaoViec).toHaveBeenCalledWith(
+      expect.objectContaining({ projectId: 'p1', workspaceId: 'w1', assigneeId: 'u2' }),
+    );
+  });
+});
+
+/*
+  Mỗi ảnh là một tin nhắn thật. Ảnh thứ hai hỏng mà màn giữ nguyên cả ba ảnh
+  trong ô soạn thì bấm Gửi lại là cả nhóm thấy ảnh đầu hai lần.
+*/
+describe('gửi nhiều ảnh hỏng giữa chừng', () => {
+  it('bỏ ảnh đã tới khỏi ô soạn, giữ phần chưa gửi, nói rõ đã gửi bao nhiêu', async () => {
+    const ANH = [1, 2, 3].map((i) => ({ uri: `file:///a${i}.jpg`, name: `a${i}.jpg` }));
+    (chonAnh as jest.Mock).mockResolvedValue(ANH);
+    const daToi = { ...tin('anh-1', 'ảnh một kèm chú thích', 40), authorId: 'u1' };
+    (sendProjectFiles as jest.Mock).mockRejectedValue(
+      new LoiGuiDoDang([daToi], 3, new Error('Không gửi được tệp. Kiểm tra mạng và thử lại.')),
+    );
+    mockedTin.mockResolvedValue([tin('m1', 'Dạ', 1)]);
+
+    const man = await render(dung());
+    await waitFor(() => expect(man.getByText('Dạ')).toBeTruthy());
+
+    await act(async () => mockSoanTin?.onChangeText('chú thích'));
+    await act(async () => mockSoanTin?.onChonAnh());
+    await waitFor(() => expect(mockSoanTin?.anhDaChon).toHaveLength(3));
+    await act(async () => mockSoanTin?.onSend());
+
+    await waitFor(() => expect(mockSoanTin?.anhDaChon).toEqual([ANH[1], ANH[2]]));
+    // Chú thích đã đi cùng ảnh đầu — để lại là gửi lặp.
+    expect(mockSoanTin?.value).toBe('');
+    expect(man.getByText('ảnh một kèm chú thích')).toBeTruthy();
+    expect(man.getByText(/Đã gửi 1\/3 ảnh/)).toBeTruthy();
   });
 });

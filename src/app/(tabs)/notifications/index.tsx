@@ -17,6 +17,7 @@ import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import {
+  getUnreadCount,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -52,6 +53,18 @@ export default function NotificationsScreen() {
   });
 
   useRefetchOnScreenFocus(notificationsQuery.refetch);
+
+  /*
+    Số chưa đọc của MÁY CHỦ — cùng khoá với huy hiệu trên thanh tab. Danh sách
+    chỉ có 50 thông báo mới nhất; đếm trên danh sách thì chưa đọc nằm ngoài 50 mục
+    làm nút "Đọc hết" biến mất trong khi huy hiệu vẫn đỏ, không cách nào tắt.
+  */
+  const chuaDocQuery = useQuery({
+    queryKey: ['notifications-unread'],
+    queryFn: getUnreadCount,
+    staleTime: 30_000,
+  });
+  useRefetchOnScreenFocus(chuaDocQuery.refetch);
 
   // Đọc trạng thái quyền khi mở tab. KHÔNG gọi thẳng hộp thoại hệ thống ở đây:
   // Android chỉ cho hỏi một lần, từ chối là mất luôn. Phải giải thích trước.
@@ -110,6 +123,12 @@ export default function NotificationsScreen() {
         return;
       }
 
+      // Có người vào nhóm qua link mời: mở chat của dự án đó.
+      if (item.type === 'PROJECT_MEMBER_JOINED' && item.projectId) {
+        router.push(`/chat/${item.projectId}`);
+        return;
+      }
+
       /*
         Trước 23/09/2026 chạm vào thông báo cuộc họp không có gì xảy ra: nhánh
         trên chỉ biết `taskId`. Thông báo cũ không kèm id thì mở danh sách.
@@ -136,7 +155,8 @@ export default function NotificationsScreen() {
   }, [refreshBadge]);
 
   const items = notificationsQuery.data ?? [];
-  const unreadCount = items.filter((item) => !item.readAt).length;
+  const unreadCount =
+    chuaDocQuery.data?.count ?? items.filter((item) => !item.readAt).length;
   const showPrompt = permission === 'undetermined' && !dismissedPrompt;
 
   return (

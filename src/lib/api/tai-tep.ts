@@ -1,6 +1,14 @@
 import { File, UploadType } from 'expo-file-system';
 
-import { ApiError, apiRequest, baseUrl } from './client';
+import {
+  ApiError,
+  MA_PHAN_HOI_LA,
+  apiRequest,
+  baseUrl,
+  docThanJson,
+  extractCode,
+  thongBaoMayChuBan,
+} from './client';
 import { loadToken } from '../auth/token-storage';
 import type { TepChon } from './tasks';
 
@@ -60,7 +68,15 @@ async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string)
     parameters: noiDung ? { content: noiDung } : undefined,
   });
 
-  const payload = ketQua.body ? (JSON.parse(ketQua.body) as unknown) : undefined;
+  /*
+    Máy chủ đã trả lời — dù bằng một trang lỗi của cổng. Ném ApiError mang mã
+    thật để `taiMotTepLen` dừng, không coi là mất mạng mà gửi lại lần nữa.
+  */
+  const than = docThanJson(ketQua.body ?? '');
+  if (!than.hopLe) {
+    throw new ApiError(thongBaoMayChuBan(ketQua.status), ketQua.status, MA_PHAN_HOI_LA);
+  }
+  const payload = than.giaTri;
 
   /*
     `upload` KHÔNG ném lỗi với mã 4xx/5xx — nó trả về nguyên phản hồi. Không tự
@@ -72,7 +88,11 @@ async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string)
         ? String((payload as { message: unknown }).message)
         : `Máy chủ trả lỗi ${ketQua.status}.`;
 
-    throw new ApiError(message, ketQua.status);
+    /*
+      Giữ cả `code` như `apiRequest`: màn gửi ảnh phân biệt lỗi bằng mã (chặn
+      nhau là `BLOCKED`), và đường dự phòng không được mất thứ đường chính có.
+    */
+    throw new ApiError(message, ketQua.status, extractCode(payload));
   }
 
   return payload as T;

@@ -8,7 +8,8 @@ import {
   register as registerRequest,
 } from '../api/auth';
 import type { RegisterInput } from '../api/auth';
-import { ApiError, batDauPhien, ketThucPhien, onUnauthorized } from '../api/client';
+import { ApiError, MA_PHAN_HOI_LA, batDauPhien, ketThucPhien, onUnauthorized } from '../api/client';
+import { donThongBaoKhiDangXuat } from '../notifications/don-khi-dang-xuat';
 import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
 import { xoaCacheBenBi } from '../query';
 import type { UserProfile } from '../types';
@@ -97,6 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     */
     await xoaCacheBenBi();
 
+    /*
+      Lịch nhắc hạn đã hẹn, thông báo trên khay và lần chạm thông báo gần nhất
+      đều sống ngoài phiên — không dọn thì máy vẫn nhắc việc của người vừa ra,
+      và người đăng nhập tiếp theo bị mở lại màn của họ. Phải xong TRƯỚC khi đổi
+      trạng thái: (tabs) dựng lại là đọc ngay lần chạm gần nhất.
+    */
+    await donThongBaoKhiDangXuat();
+
     setUser(null);
     setStatus('signedOut');
 
@@ -171,7 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           !(err instanceof ApiError) ||
           err.status === 0 ||
           err.status === 429 ||
-          err.status >= 500;
+          err.status >= 500 ||
+          // Trang lỗi của cổng (kể cả mang mã 4xx) không nói gì về phiên.
+          err.code === MA_PHAN_HOI_LA;
 
         if (matMang) {
           const luuSan = await loadUserProfile();
@@ -195,8 +206,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           Tầng API đã tự thử gia hạn bằng refresh token trước khi ném lỗi tới
           đây. Tới được chỗ này nghĩa là cả refresh token cũng hết hạn hoặc bị
           thu hồi, hoặc tài khoản đã bị xoá.
+
+          Dọn như một lần đăng xuất: cache trên đĩa vừa được nạp lại khi mở app
+          vẫn là của người cũ, và người đăng nhập tiếp theo trên máy này sẽ thấy
+          nó trước khi lượt gọi mạng đầu tiên kịp về.
         */
         await clearToken();
+        await xoaCacheBenBi();
+        await donThongBaoKhiDangXuat();
         if (!cancelled) setStatus('signedOut');
       }
     })();
@@ -236,7 +253,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (refreshToken) {
       await saveRefreshToken(refreshToken);
     }
+    const hoSoCu = await loadUserProfile();
     const profile = await getMe();
+    /*
+      Người vào không phải người có hồ sơ đang lưu trên máy — hoặc máy không còn
+      hồ sơ nào để biết — thì cache trên đĩa có thể là của người khác (phiên cũ
+      chết ngang mà chưa kịp dọn chẳng hạn). Xoá trước khi vào app.
+    */
+    if (hoSoCu?.id !== profile.id) {
+      await xoaCacheBenBi();
+    }
     setUser(profile);
     setStatus('signedIn');
     // Lưu để lần mở app sau không có mạng vẫn vào được.

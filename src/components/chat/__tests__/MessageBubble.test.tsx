@@ -50,6 +50,17 @@ describe('MessageBubble', () => {
     expect(onLongPress).toHaveBeenCalledTimes(1);
   });
 
+  /*
+    Thành viên thường không được dùng AI: không có thao tác nhấn giữ thì không
+    được hứa với trình đọc màn hình là nhấn giữ sẽ tạo công việc.
+  */
+  it('không truyền onLongPress: không hứa thao tác nhấn giữ', async () => {
+    const { getByTestId } = await render(<MessageBubble message={makeMessage()} isMine={false} />);
+
+    expect(getByTestId('message-m1').props.accessibilityHint).toBeUndefined();
+    await fireEvent(getByTestId('message-m1'), 'longPress');
+  });
+
   it('hiện chữ thu hồi thay cho nội dung cũ', async () => {
     const { getByText, queryByText } = await render(
       <MessageBubble

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   View,
+  type ViewToken,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 
 import { ConversationRow } from '../../../components/chat/ConversationRow';
 import { NewConversationSheet } from '../../../components/chat/NewConversationSheet';
+import { NhapMaMoiSheet } from '../../../components/chat/NhapMaMoiSheet';
 import { ProjectRow } from '../../../components/chat/ProjectRow';
 import { SegmentedTabs } from '../../../components/chat/SegmentedTabs';
 import { UpdateBanner } from '../../../components/update/UpdateBanner';
@@ -27,27 +29,28 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
 import { listConversations, startConversation } from '../../../lib/api/direct-chat';
 import { listFriends } from '../../../lib/api/friends';
+import type { KetQuaThamGia } from '../../../lib/api/loi-moi';
 import { listProjects } from '../../../lib/api/projects';
 import { getWorkspace } from '../../../lib/api/workspaces';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { saveActiveWorkspaceId } from '../../../lib/auth/token-storage';
+import { duAnCanDemChuaDoc } from '../../../lib/chat/chua-doc-du-an';
 import { useSocket } from '../../../lib/socket/socket-context';
 import { usePhienBan } from '../../../lib/version/use-phien-ban';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } from '../../../theme/tokens';
 
-/** Giới hạn để tránh N+1 request bắn cùng lúc trên mạng di động. */
-const MAX_UNREAD_QUERIES = 6;
-
 export default function ChatListScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { active, workspaces, switchTo } = useWorkspace();
+  const { active, workspaces, switchTo, refresh } = useWorkspace();
   const workspaceId = active?.id;
 
   const [query, setQuery] = useState('');
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [taoMoiOpen, setTaoMoiOpen] = useState(false);
+  const [nhapMaOpen, setNhapMaOpen] = useState(false);
   const [muc, setMuc] = useState<'du-an' | 'tin-nhan'>('du-an');
 
   const { onlineUserIds } = useSocket();
@@ -128,12 +131,42 @@ export default function ChatListScreen() {
   useRefetchOnScreenFocus(projectsQuery.refetch);
 
   const projects = projectsQuery.data ?? [];
-  const tracked = projects.slice(0, MAX_UNREAD_QUERIES);
+
+  // Lọc ngay trên danh sách đã tải. Không có endpoint tìm dự án, mà nhóm sinh viên
+  // hiếm khi có quá vài chục dự án nên lọc cục bộ là đủ và tức thì.
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return projects;
+    return projects.filter((project) => project.name.toLowerCase().includes(needle));
+  }, [projects, query]);
+
+  /*
+    Dòng nào đang hiện trên màn. Số chưa đọc được hỏi cho vài dòng đầu CỘNG với
+    những dòng này — trước đây chỉ 6 dự án đầu có huy hiệu, dự án thứ 7 trở đi có
+    tin mới cũng không bao giờ hiện. Xem `duAnCanDemChuaDoc`.
+
+    FlatList không cho đổi `onViewableItemsChanged` sau lần dựng đầu, nên giữ
+    hàm trong một ref cố định.
+  */
+  const [dangHien, setDangHien] = useState<ReadonlySet<string>>(() => new Set());
+  const khiDoiDongHien = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const moi = new Set(
+      viewableItems
+        .map((dong) => (dong.item as { id?: string } | null)?.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    setDangHien((cu) =>
+      cu.size === moi.size && [...moi].every((id) => cu.has(id)) ? cu : moi,
+    );
+  }).current;
+  const cauHinhDongHien = useRef({ itemVisiblePercentThreshold: 50 }).current;
+
+  const tracked = useMemo(() => duAnCanDemChuaDoc(visible, dangHien), [visible, dangHien]);
 
   const unreadQueries = useQueries({
-    queries: tracked.map((project) => ({
-      queryKey: ['chat-unread', project.id],
-      queryFn: () => getProjectUnreadCount(project.id),
+    queries: tracked.map((projectId) => ({
+      queryKey: ['chat-unread', projectId],
+      queryFn: () => getProjectUnreadCount(projectId),
       staleTime: 15_000,
     })),
   });
@@ -152,21 +185,29 @@ export default function ChatListScreen() {
   useRefetchOnScreenFocus(lamMoiChuaDoc);
 
   const unreadById = new Map<string, number>();
-  tracked.forEach((project, index) => {
-    unreadById.set(project.id, unreadQueries[index]?.data?.count ?? 0);
+  tracked.forEach((projectId, index) => {
+    unreadById.set(projectId, unreadQueries[index]?.data?.count ?? 0);
   });
-
-  // Lọc ngay trên danh sách đã tải. Không có endpoint tìm dự án, mà nhóm sinh viên
-  // hiếm khi có quá vài chục dự án nên lọc cục bộ là đủ và tức thì.
-  const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return projects;
-    return projects.filter((project) => project.name.toLowerCase().includes(needle));
-  }, [projects, query]);
 
   const openProject = useCallback(
     (projectId: string) => router.push(`/chat/${projectId}`),
     [router],
+  );
+
+  /*
+    Vừa vào nhóm bằng mã: chọn đúng không gian chứa dự án rồi mở chat của nó.
+    Lưu id trước rồi nạp lại danh sách — `switchTo` không dùng được vì không
+    gian của người lạ mời chưa có trong danh sách đang giữ.
+  */
+  const daThamGia = useCallback(
+    async (ketQua: KetQuaThamGia) => {
+      setNhapMaOpen(false);
+      await saveActiveWorkspaceId(ketQua.workspaceId);
+      await refresh();
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      router.push(`/chat/${ketQua.projectId}`);
+    },
+    [queryClient, refresh, router],
   );
 
   const firstName = user?.fullName?.split(' ').slice(-1)[0] ?? '';
@@ -324,8 +365,22 @@ export default function ChatListScreen() {
           </View>
         ) : (
           <FlatList
+            testID="ds-du-an"
             data={visible}
+            ListHeaderComponent={
+              <Pressable
+                testID="nut-nhap-ma-moi"
+                accessibilityRole="button"
+                onPress={() => setNhapMaOpen(true)}
+                style={styles.nutNhanTinMoi}
+              >
+                <Ionicons name="enter-outline" size={18} color={colors.primary} />
+                <Text style={styles.nutNhanTinMoiChu}>Nhập mã mời</Text>
+              </Pressable>
+            }
             keyExtractor={(project) => project.id}
+            onViewableItemsChanged={khiDoiDongHien}
+            viewabilityConfig={cauHinhDongHien}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             renderItem={({ item, index }) => (
@@ -370,6 +425,12 @@ export default function ChatListScreen() {
           />
         )}
       </View>
+
+      <NhapMaMoiSheet
+        visible={nhapMaOpen}
+        onDismiss={() => setNhapMaOpen(false)}
+        onDaThamGia={(ketQua) => void daThamGia(ketQua)}
+      />
 
       <NewConversationSheet
         visible={chonNguoiOpen}

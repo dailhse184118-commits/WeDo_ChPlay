@@ -34,8 +34,37 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Mã gắn cho phản hồi có thân KHÔNG phải JSON — trang lỗi HTML của cổng Azure
+ * lúc máy chủ khởi động lại (502/503), "Bad Gateway" dạng chữ trơn…
+ *
+ * Máy chủ WeDo luôn trả JSON, nên thân lạ nghĩa là lớp hạ tầng đã trả lời thay:
+ * KHÔNG nói được gì về phiên đăng nhập. Ai phân loại lỗi (khôi phục phiên lúc
+ * mở app chẳng hạn) phải coi nó là lỗi tạm thời, kể cả khi mã HTTP là 4xx.
+ */
+export const MA_PHAN_HOI_LA = 'PHAN_HOI_KHONG_PHAI_JSON';
+
+/** Câu báo cho người dùng khi máy chủ trả về thứ không đọc được. */
+export function thongBaoMayChuBan(status: number): string {
+  return `Máy chủ đang bận hoặc đang khởi động lại (mã ${status}). Thử lại sau ít phút.`;
+}
+
+/**
+ * Đọc thân phản hồi. Thân rỗng là `undefined` hợp lệ; thân không phải JSON thì
+ * `hopLe: false` thay vì để `JSON.parse` ném một SyntaxError tiếng Anh thẳng ra
+ * màn hình ("JSON Parse error: Unexpected character: <").
+ */
+export function docThanJson(raw: string): { hopLe: true; giaTri: unknown } | { hopLe: false } {
+  if (!raw) return { hopLe: true, giaTri: undefined };
+  try {
+    return { hopLe: true, giaTri: JSON.parse(raw) as unknown };
+  } catch {
+    return { hopLe: false };
+  }
+}
+
 /** Đọc `code` do máy chủ gắn kèm, nếu có. */
-function extractCode(payload: unknown): string | undefined {
+export function extractCode(payload: unknown): string | undefined {
   if (payload && typeof payload === 'object' && 'code' in payload) {
     const code = (payload as { code: unknown }).code;
     if (typeof code === 'string') return code;
@@ -201,8 +230,15 @@ async function giaHanPhien(): Promise<string | null> {
   }
 
   // Đọc bằng `text()` rồi tự parse, giống hệt phần còn lại của tệp này.
-  const raw = await response.text();
-  const payload = (raw ? JSON.parse(raw) : {}) as {
+  const than = docThanJson(await response.text());
+  /*
+    200 mà thân không đọc được: không biết phiên còn hay mất. Ném lỗi tạm thời —
+    trả `null` ở đây là đá người dùng ra màn đăng nhập vì một trang lỗi của cổng.
+  */
+  if (!than.hopLe) {
+    throw new ApiError(thongBaoMayChuBan(response.status), response.status, MA_PHAN_HOI_LA);
+  }
+  const payload = (than.giaTri ?? {}) as {
     accessToken?: string;
     refreshToken?: string;
   };
@@ -273,8 +309,18 @@ export async function apiRequest<T = unknown>(
     );
   }
 
-  const raw = await response.text();
-  const payload = raw ? (JSON.parse(raw) as unknown) : undefined;
+  const than = docThanJson(await response.text());
+
+  /*
+    Thân không phải JSON: lớp hạ tầng trả lời thay máy chủ (Azure khởi động lại,
+    cổng hết giờ chờ…). Báo bằng tiếng Việt kèm mã, và KHÔNG đi tiếp vào nhánh
+    401 bên dưới: một trang lỗi của cổng không nói gì về phiên đăng nhập, gia
+    hạn hay đăng xuất vì nó đều sai.
+  */
+  if (!than.hopLe) {
+    throw new ApiError(thongBaoMayChuBan(response.status), response.status, MA_PHAN_HOI_LA);
+  }
+  const payload = than.giaTri;
 
   if (!response.ok) {
     /*

@@ -30,7 +30,7 @@ describe('TaskSuggestionSheet', () => {
         onDismiss={() => {}}
       />,
     );
-    expect(getByText('Đang phân tích tin nhắn…')).toBeTruthy();
+    expect(getByText('AI đang đọc tin nhắn…')).toBeTruthy();
   });
 
   it('điền sẵn tiêu đề từ đề xuất', async () => {
@@ -267,8 +267,70 @@ describe('TaskSuggestionSheet', () => {
     expect(getByText('Không phân tích được tin nhắn.')).toBeTruthy();
   });
 
-  it('gọi onReport khi báo đề xuất sai', async () => {
-    const onReport = jest.fn();
+  /*
+    Nút này từng báo "đã ghi nhận" mà không gửi gì đi đâu — một lời hứa giả
+    (Guideline 2.3.1). Không có máy chủ nhận thì không được có nút.
+  */
+  it('không có nút "Đề xuất này không đúng"', async () => {
+    const { queryByTestId, queryByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    expect(queryByTestId('suggestion-report')).toBeNull();
+    expect(queryByText('Đề xuất này không đúng')).toBeNull();
+  });
+
+  /*
+    Hạn chót gõ sai dạng trước đây bị bỏ đi trong im lặng: việc tạo ra không có
+    hạn, không có nhắc, mà màn vẫn báo "Đã tạo công việc".
+  */
+  it('báo lỗi ngay trên phiếu và không gửi khi ngày hết hạn sai', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId, getByText } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await fireEvent.changeText(getByTestId('suggestion-due-date'), '31/02/2026');
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(getByText(/Ngày hết hạn chưa đúng/)).toBeTruthy();
+  });
+
+  it('nhận ngày/tháng/năm và giờ kiểu 8:00', async () => {
+    const onConfirm = jest.fn();
+    const { getByTestId } = await render(
+      <TaskSuggestionSheet
+        visible
+        suggestion={suggestion}
+        members={members}
+        onConfirm={onConfirm}
+        onDismiss={() => {}}
+      />,
+    );
+
+    await fireEvent.changeText(getByTestId('suggestion-due-date'), '30/09/2026');
+    await fireEvent.changeText(getByTestId('suggestion-due-time'), '8:00');
+    await fireEvent.press(getByTestId('suggestion-confirm'));
+
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ dueDate: '30/09/2026', dueTime: '8:00' }),
+    );
+  });
+
+  it('hiện ngày AI đề xuất theo dạng ngày/tháng/năm như mọi ô ngày khác', async () => {
     const { getByTestId } = await render(
       <TaskSuggestionSheet
         visible
@@ -276,11 +338,9 @@ describe('TaskSuggestionSheet', () => {
         members={members}
         onConfirm={() => {}}
         onDismiss={() => {}}
-        onReport={onReport}
       />,
     );
 
-    await fireEvent.press(getByTestId('suggestion-report'));
-    expect(onReport).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(getByTestId('suggestion-due-date').props.value).toBe('10/08/2026'));
   });
 });

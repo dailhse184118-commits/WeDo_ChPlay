@@ -12,7 +12,8 @@ export type NotificationType =
   | 'TASK_DEADLINE_REMINDER'
   | 'MEETING_SCHEDULED'
   | 'SUBSCRIPTION_RENEWAL_DUE'
-  | 'PAYMENT_CONFIRMED';
+  | 'PAYMENT_CONFIRMED'
+  | 'PROJECT_MEMBER_JOINED';
 
 export type PlatformRole = 'USER' | 'ADMIN';
 
@@ -28,6 +29,11 @@ export interface UserProfile extends UserSummary {
   dob?: string | null;
   platformRole?: PlatformRole;
   createdAt?: string;
+  /**
+   * Lúc cho phép gửi tin nhắn tới AI, chuỗi ISO; `null` là chưa cho phép hoặc
+   * đã rút lại. Tuỳ chọn vì hồ sơ lưu từ bản app cũ không có khoá này.
+   */
+  aiConsentAt?: string | null;
 }
 
 /** Hình dạng phản hồi của POST /auth/login và POST /auth/register. */
@@ -135,6 +141,11 @@ export interface Task {
   projectId?: string | null;
   workspaceId: string;
   assigneeId?: string | null;
+  /**
+   * Người tạo việc. Máy chủ cũ không trả trường này, nên phải tuỳ chọn — thiếu
+   * thì coi như không biết, đừng đoán là mình.
+   */
+  creatorId?: string | null;
   createdAt: string;
   updatedAt: string;
   assignee?: UserSummary | null;

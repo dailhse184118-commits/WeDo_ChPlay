@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui/Button';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { TextField } from '../ui/TextField';
+import { docHanChotAI } from '../../lib/chat/create-task-from-message';
 import type { ChatTaskSuggestion, UserSummary } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, shadows, spacing } from '../../theme/tokens';
 
@@ -36,7 +37,6 @@ interface TaskSuggestionSheetProps {
   error?: string;
   onConfirm: (values: TaskSuggestionValues) => void;
   onDismiss: () => void;
-  onReport?: () => void;
   submitting?: boolean;
 }
 
@@ -49,6 +49,15 @@ const CONFIDENCE_LABEL: Record<ChatTaskSuggestion['confidence'], string> = {
 /** Sinh viên hầu như luôn để hạn cuối ngày, nên đây là mặc định hợp lý nhất. */
 const DEFAULT_DUE_TIME = '23:59';
 
+/**
+ * Máy chủ trả ngày dạng `yyyy-mm-dd`; mọi ô ngày khác của app hiện
+ * ngày/tháng/năm. Đổi lúc điền sẵn để người dùng sửa theo đúng thói quen.
+ */
+function ngayDeHien(iso?: string): string {
+  const khop = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso ?? '');
+  return khop ? `${khop[3]}/${khop[2]}/${khop[1]}` : (iso ?? '');
+}
+
 export function TaskSuggestionSheet({
   visible,
   loading = false,
@@ -59,7 +68,6 @@ export function TaskSuggestionSheet({
   error,
   onConfirm,
   onDismiss,
-  onReport,
   submitting = false,
 }: TaskSuggestionSheetProps) {
   const [title, setTitle] = useState('');
@@ -74,7 +82,7 @@ export function TaskSuggestionSheet({
     setTitle(suggestion.title ?? '');
     setDescription(suggestion.description ?? '');
     setAssigneeId(suggestion.assigneeId);
-    setDueDate(suggestion.dueDate ?? '');
+    setDueDate(ngayDeHien(suggestion.dueDate));
     // AI thường trả ngày mà không trả giờ. Để trống thì hoá ra 00:00, tức hết hạn
     // ngay đầu ngày — trái hẳn ý người viết tin nhắn.
     // Máy chủ trả CHUỖI RỖNG chứ không phải undefined khi không đoán được giờ,
@@ -97,6 +105,16 @@ export function TaskSuggestionSheet({
     const date = dueDate.trim();
     const time = dueTime.trim();
 
+    /*
+      Kiểm ngay tại đây. Trước đây ngày gõ sai dạng bị bỏ đi trong im lặng: việc
+      tạo ra không có hạn chót mà màn vẫn báo "Đã tạo công việc".
+    */
+    const han = docHanChotAI(date, date ? time || DEFAULT_DUE_TIME : undefined);
+    if (han.loi) {
+      setLocalError(han.loi);
+      return;
+    }
+
     onConfirm({
       title: title.trim(),
       description: description.trim() || undefined,
@@ -118,7 +136,8 @@ export function TaskSuggestionSheet({
             <View style={styles.spinnerRing}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
-            <Text style={styles.loadingTitle}>Đang phân tích tin nhắn…</Text>
+            {/* Nói rõ là AI: người dùng phải biết tin nhắn đang được gửi đi đâu. */}
+            <Text style={styles.loadingTitle}>AI đang đọc tin nhắn…</Text>
             <Text style={styles.loadingBody}>
               Thường mất vài giây. Bạn có thể đóng lại và làm việc khác.
             </Text>
@@ -229,7 +248,7 @@ export function TaskSuggestionSheet({
                   label="Ngày hết hạn"
                   value={dueDate}
                   onChangeText={setDueDate}
-                  placeholder="2026-08-20"
+                  placeholder="30/09/2026"
                 />
               </View>
               <View style={styles.dueSpacer} />
@@ -252,16 +271,16 @@ export function TaskSuggestionSheet({
               disabled={!title.trim()}
             />
 
+            {/*
+              Từng có nút "Đề xuất này không đúng" ở đây: bấm vào báo "đã ghi
+              nhận" mà không gửi gì đi đâu cả. Một lời hứa giả như vậy trái
+              Guideline 2.3.1, và dễ bị lẫn với nút Báo cáo nội dung thật. Muốn
+              có lại thì phải có máy chủ nhận phản hồi trước.
+            */}
             <View style={styles.footer}>
               <Pressable testID="suggestion-cancel" onPress={onDismiss}>
                 <Text style={styles.footerLink}>Huỷ</Text>
               </Pressable>
-
-              {onReport ? (
-                <Pressable testID="suggestion-report" onPress={onReport}>
-                  <Text style={styles.footerLinkMuted}>Đề xuất này không đúng</Text>
-                </Pressable>
-              ) : null}
             </View>
           </ScrollView>
         )}
@@ -373,5 +392,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   footerLink: { color: colors.primary, fontSize: fontSize.sm, fontWeight: '600' },
-  footerLinkMuted: { color: colors.textMuted, fontSize: fontSize.xs },
 });

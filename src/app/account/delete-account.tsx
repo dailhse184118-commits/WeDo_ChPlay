@@ -25,6 +25,9 @@ function WhatGetsDeleted() {
   const items = [
     'Hồ sơ, email và mật khẩu của bạn',
     'Tin nhắn bạn đã gửi trong mọi kênh chat dự án',
+    // Máy chủ xoá cả tệp trên kho lưu trữ sau khi xoá tài khoản. Không nhắc gói
+    // trả phí ở đây: app iPhone không được nói chuyện mua bán (3.1.3(f)).
+    'Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên',
     'Việc bạn đang phụ trách sẽ trở thành chưa giao',
     'Không gian làm việc chỉ có mình bạn, cùng toàn bộ dự án và công việc bên trong',
   ];
@@ -86,7 +89,7 @@ function BlockerCard({
 export default function DeleteAccountScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { signOut } = useAuth();
+  const { signOut, status } = useAuth();
 
   const [confirmText, setConfirmText] = useState('');
   const [actionError, setActionError] = useState('');
@@ -94,6 +97,12 @@ export default function DeleteAccountScreen() {
   const blockersQuery = useQuery({
     queryKey: ['deletion-blockers'],
     queryFn: getDeletionBlockers,
+    /*
+      Đăng xuất xoá sạch cache, và query đang gắn trên màn lập tức tự tải lại —
+      bằng một phiên đã mất, nên màn hiện "Không tải được thông tin tài khoản"
+      ngay sau khi xoá thành công. Tắt nó khi đã đăng xuất.
+    */
+    enabled: status !== 'signedOut',
   });
 
   const transferMutation = useMutation({
@@ -110,8 +119,15 @@ export default function DeleteAccountScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteAccount,
-    // Xoá xong thì token trỏ tới một tài khoản không còn tồn tại, phải đăng xuất ngay.
-    onSuccess: () => void signOut(),
+    /*
+      Xoá xong thì token trỏ tới một tài khoản không còn tồn tại, phải đăng xuất
+      ngay. `VeDangNhapKhiDangXuat` ở layout gốc đưa về màn Đăng nhập; báo một câu
+      để người dùng — và người duyệt của Apple — thấy rõ việc xoá đã thành công.
+    */
+    onSuccess: async () => {
+      await signOut();
+      Alert.alert('Đã xoá tài khoản', 'Tài khoản WeDo của bạn và dữ liệu đi kèm đã được xoá vĩnh viễn.');
+    },
     onError: (err) =>
       setActionError(err instanceof Error ? err.message : 'Không xoá được tài khoản.'),
   });
@@ -162,7 +178,24 @@ export default function DeleteAccountScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {blockersQuery.isError ? <ErrorBanner message="Không tải được thông tin tài khoản." /> : null}
+          {/*
+            Hỏng thì phải có nút thử lại: thiếu dữ liệu này là không có nút xoá,
+            và người dùng kẹt lại không có đường xoá tài khoản nào trong app.
+          */}
+          {blockersQuery.isError ? (
+            <>
+              <ErrorBanner message="Không tải được thông tin tài khoản." />
+              <View style={styles.thuLai}>
+                <Button
+                  testID="delete-retry"
+                  label="Thử lại"
+                  variant="secondary"
+                  loading={blockersQuery.isRefetching}
+                  onPress={() => void blockersQuery.refetch()}
+                />
+              </View>
+            </>
+          ) : null}
           {actionError ? <ErrorBanner message={actionError} /> : null}
 
           <WhatGetsDeleted />
@@ -255,4 +288,5 @@ const styles = StyleSheet.create({
   candidateName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
   candidateEmail: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xxs },
   confirmField: { marginTop: spacing.sm },
+  thuLai: { marginBottom: spacing.md },
 });

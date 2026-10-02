@@ -147,6 +147,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
 
+/**
+ * Như `useSocket` nhưng trả `null` khi không nằm trong `SocketProvider`, thay vì
+ * ném lỗi. Dành cho nơi chỉ muốn nghe "vừa nối lại được" nếu có socket.
+ */
+export function useSocketNeuCo(): SocketState | null {
+  return useContext(SocketContext);
+}
+
 export function useSocket(): SocketState {
   const context = useContext(SocketContext);
   if (!context) {
