@@ -27,6 +27,8 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
     if (!visible) return;
     let huy = false;
     setDangTai(true);
+    // Xoá link của dự án trước: tải lỗi thì không được hiện hay chia sẻ nhầm link cũ.
+    setLoiMoi(null);
     setLoi(null);
     layLoiMoi(projectId)
       .then(
