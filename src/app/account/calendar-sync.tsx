@@ -47,7 +47,17 @@ function NoiDungDongBoLich() {
   const queryClient = useQueryClient();
   const [loi, setLoi] = useState<string | null>(null);
 
-  const trangThai = useQuery({ queryKey: KHOA_TRANG_THAI, queryFn: layDongBoLich });
+  /*
+    Link là "chìa khoá" đọc lịch: không ghi xuống máy, và rời màn là bỏ khỏi bộ
+    nhớ (`gcTime: 0`). Nhờ vậy mở lại lúc mất mạng sẽ báo lỗi thay vì hiện một
+    link cũ có thể đã bị đổi trên web.
+  */
+  const trangThai = useQuery({
+    queryKey: KHOA_TRANG_THAI,
+    queryFn: layDongBoLich,
+    gcTime: 0,
+    meta: { luuXuongMay: false },
+  });
 
   const tao = useMutation({
     mutationFn: () => taoLinkDongBoLich(),

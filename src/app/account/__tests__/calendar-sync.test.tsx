@@ -12,6 +12,7 @@ import {
   tatDongBoLich,
   type TrangThaiDongBoLich,
 } from '../../../lib/api/dong-bo-lich';
+import { nenLuuXuongMay } from '../../../lib/query';
 import { renderScreen } from '../../../test-utils/render';
 
 /*
@@ -241,5 +242,15 @@ describe('màn Đồng bộ lịch', () => {
     expect(mockedRedirect.mock.calls[0][0]).toEqual({ href: '/account' });
     expect(mockedLay).not.toHaveBeenCalled();
     expect(man.queryByText('Đồng bộ lịch')).toBeNull();
+  });
+
+  it('link bí mật không bị ghi xuống máy cùng cache', async () => {
+    mockedLay.mockResolvedValue(CO_LINK);
+    const man = await moMan();
+    await waitFor(() => expect(man.getByTestId('link-dong-bo-lich').props.children).toBe(URL_A));
+
+    const truyVan = queryClient.getQueryCache().find({ queryKey: ['calendar-feed'] });
+    expect(truyVan).toBeDefined();
+    expect(nenLuuXuongMay(truyVan!)).toBe(false);
   });
 });
