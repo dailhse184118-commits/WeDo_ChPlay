@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, defaultShouldDehydrateQuery, type Query } from '@tanstack/react-query';
 
 import { xoaDanhSachKhongGian } from './workspace/danh-sach-luu';
 
@@ -53,6 +53,15 @@ export const cacheBenBi = createAsyncStoragePersister({
 });
 
 export const HAN_CACHE_BEN_BI_MS = HAN_CACHE_MS;
+
+/**
+ * Truy vấn nào được ghi xuống máy. Truy vấn đặt `meta: { luuXuongMay: false }`
+ * thì chỉ sống trong bộ nhớ: link đồng bộ lịch là "chìa khoá" — ai cầm là đọc
+ * được lịch — nên không được nằm trong AsyncStorage suốt bảy ngày.
+ */
+export function nenLuuXuongMay(query: Query): boolean {
+  return defaultShouldDehydrateQuery(query) && query.meta?.luuXuongMay !== false;
+}
 
 /**
  * Xoá sạch cache đã ghi xuống đĩa. PHẢI gọi lúc đăng xuất.

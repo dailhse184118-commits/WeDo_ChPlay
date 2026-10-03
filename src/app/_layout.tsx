@@ -13,7 +13,7 @@ import { AuthProvider } from '../lib/auth/auth-context';
 import { bridgeAppStateToQueryFocus } from '../lib/app-focus';
 import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
-import { HAN_CACHE_BEN_BI_MS, cacheBenBi, queryClient } from '../lib/query';
+import { HAN_CACHE_BEN_BI_MS, cacheBenBi, nenLuuXuongMay, queryClient } from '../lib/query';
 import { usePhienBan } from '../lib/version/use-phien-ban';
 
 /*
@@ -110,7 +110,11 @@ export default function RootLayout() {
         */}
         <PersistQueryClientProvider
           client={queryClient}
-          persistOptions={{ persister: cacheBenBi, maxAge: HAN_CACHE_BEN_BI_MS }}
+          persistOptions={{
+            persister: cacheBenBi,
+            maxAge: HAN_CACHE_BEN_BI_MS,
+            dehydrateOptions: { shouldDehydrateQuery: nenLuuXuongMay },
+          }}
         >
           <AuthProvider>
             <StatusBar style="dark" />
