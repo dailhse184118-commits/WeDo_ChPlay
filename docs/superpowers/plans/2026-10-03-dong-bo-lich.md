@@ -3633,15 +3633,15 @@ Mọi lệnh của phần này chạy trong `D:\WEDO_PC\wt\fe-lich` bằng Git B
 **Files:** không sửa tệp nào trong repo.
 
 **Interfaces:**
-- Consumes: `origin/main` của FE đã chứa `origin/fix/menu-chat-va-don-landing` (sửa `src/trang-cong-khai.test.ts`, `src/App.tsx`, `scripts/chuoi-duoc-phep.ts`, `public/gioi-thieu/index.html`, xoá `LandingView`).
+- Consumes: `origin/main` của FE đã chứa PR #6 (`12258e6`, từ nhánh `fix/menu-chat-va-don-landing`) (sửa `src/trang-cong-khai.test.ts`, `src/App.tsx`, `scripts/chuoi-duoc-phep.ts`, `public/gioi-thieu/index.html`, xoá `LandingView`).
 - Produces: worktree `D:\WEDO_PC\wt\fe-lich` (nhánh `feat/dong-bo-lich`) có `node_modules` thật của riêng nó; mốc xanh ghi lại.
 
 - [ ] **Step 1: Kiểm nhánh dọn landing đã vào `main`**
 
 ```bash
 git -C D:/WEDO_PC/FE_WEDO fetch origin
-git -C D:/WEDO_PC/FE_WEDO merge-base --is-ancestor origin/fix/menu-chat-va-don-landing origin/main; echo "da merge: $?"
-git -C D:/WEDO_PC/FE_WEDO log --oneline origin/main..origin/fix/menu-chat-va-don-landing
+git -C D:/WEDO_PC/FE_WEDO merge-base --is-ancestor 12258e6 origin/main; echo "da co PR #6: $?"
+# (Commit 27509fc — biểu tượng tab trang giới thiệu — có thể chưa vào main; nó chỉ sửa public/gioi-thieu/index.html và thêm assets/wedo-logo.svg, KHÔNG chặn kế hoạch này. Chỉ cần dòng trên in 0.)
 ```
 
 Expected: `da merge: 0` và lệnh `log` không in gì. Nếu ra `da merge: 1`: DỪNG, báo chủ dự án kèm danh sách commit lệnh `log` in ra (lúc viết kế hoạch còn `27509fc fix(web): bieu tuong tab cua trang gioi thieu la logo WeDo mau xanh` chưa vào `main`), chờ chủ dự án merge rồi chạy lại bước này. Không tự merge, không tự push.
@@ -6283,7 +6283,7 @@ Ghi vào báo cáo cho người giao việc: ba commit, kết quả `tsc`/`jest`
 
 Chủ dự án làm (không agent nào push hay deploy):
 
-1. **Trước khi chạy W0:** merge PR biểu tượng tab (`fix/menu-chat-va-don-landing` còn commit `27509fc` chưa vào `main`), vì W0 dừng nếu nhánh đó chưa vào `main`.
+1. **PR biểu tượng tab** (commit `27509fc` trên `fix/menu-chat-va-don-landing`) merge lúc nào cũng được; không chặn kế hoạch này (W0 chỉ cần `main` đã có PR #6 = `12258e6`). Nếu lúc merge web mà PR đó chưa vào, hai PR không đụng cùng tệp.
 2. **Backend:** push `feat/dong-bo-lich` của `D:\WEDO_PC\wt\be-lich` lên nhánh remote `feat/dong-bo-lich-backend` (backend và web chung repo GitHub), mở PR vào `backend`, merge (Create a merge commit). Migration chỉ thêm nên qua cổng "Block destructive database changes". Chờ workflow deploy Azure xanh. Kiểm: `GET https://api-wedo-backend-dai-g7fbbabzgce0aefc.eastasia-01.azurewebsites.net/calendar-feed/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics` trả 404 dạng chữ; `GET /calendar-feed` không đăng nhập trả 401.
 3. **Web:** push lên `feat/dong-bo-lich-web`, PR vào `main`, merge. Chờ Vercel. Kiểm: màn Lịch có nút "Đồng bộ với lịch của bạn"; tài khoản Pro tạo được link; mở `https://wedofpt.com.vn/lich/<mã>.ics` thấy tệp lịch; bảng giá không còn "Sắp ra mắt" ở Đồng bộ lịch.
 4. **Android:** push `feat/dong-bo-lich` (repo WeDo_ChPlay), PR vào `main`, merge. Ở `D:\WeDo_ChPlay`: `git pull origin main`, `git log --oneline -1` phải là commit merge; `npx expo-updates fingerprint:generate --platform android` phải ra `82cd990037afe065754c48a9a004f293c0d84be9`; rồi `npx eas-cli@latest update --branch production --platform android --environment production --message "Dong bo lich"` và đối chiếu dòng Commit trong kết quả.
