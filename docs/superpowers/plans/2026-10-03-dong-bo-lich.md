@@ -3644,7 +3644,7 @@ git -C D:/WEDO_PC/FE_WEDO merge-base --is-ancestor 12258e6 origin/main; echo "da
 # (Commit 27509fc — biểu tượng tab trang giới thiệu — có thể chưa vào main; nó chỉ sửa public/gioi-thieu/index.html và thêm assets/wedo-logo.svg, KHÔNG chặn kế hoạch này. Chỉ cần dòng trên in 0.)
 ```
 
-Expected: `da merge: 0` và lệnh `log` không in gì. Nếu ra `da merge: 1`: DỪNG, báo chủ dự án kèm danh sách commit lệnh `log` in ra (lúc viết kế hoạch còn `27509fc fix(web): bieu tuong tab cua trang gioi thieu la logo WeDo mau xanh` chưa vào `main`), chờ chủ dự án merge rồi chạy lại bước này. Không tự merge, không tự push.
+Expected: `da co PR #6: 0`. Nếu ra 1: DỪNG, báo chủ dự án (PR #6 chưa vào main). Không tự merge, không tự push.
 
 - [ ] **Step 2: Tạo worktree và cài**
 
