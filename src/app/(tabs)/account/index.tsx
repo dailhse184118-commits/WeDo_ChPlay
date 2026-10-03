@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -261,6 +262,21 @@ export default function AccountScreen() {
             hint="Ai làm bao nhiêu, ai đúng hạn"
             onPress={() => router.push('/account/contributions')}
           />
+          {/*
+            Ẩn hẳn trên iPhone: app iPhone luôn tính là gói Miễn phí (Apple
+            3.1.1), hiện ra chỉ để thấy một tính năng bị khoá. Màn đích cũng tự
+            quay về đây nếu lỡ mở trên iPhone.
+          */}
+          {Platform.OS !== 'ios' ? (
+            <MenuRow
+              testID="account-calendar-sync"
+              icon="calendar-outline"
+              tone="info"
+              label="Đồng bộ lịch"
+              hint="Đưa hạn chót và cuộc họp sang Google Calendar, Lịch Apple"
+              onPress={() => router.push('/account/calendar-sync')}
+            />
+          ) : null}
           <MenuRow
             testID="account-feedback"
             icon="chatbox-ellipses-outline"
