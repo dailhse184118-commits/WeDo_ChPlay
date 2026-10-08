@@ -13,6 +13,7 @@ Thư mục này gom mọi thứ cần để nộp bản iPhone đầu tiên củ
 | [07-trang-ho-tro.md](07-trang-ho-tro.md) | Trang Hỗ trợ (Support URL) |
 | [08-sua-code-truoc-khi-nop.md](08-sua-code-truoc-khi-nop.md) | Danh sách việc mã, trạng thái, **thứ tự đưa lên (deploy)** |
 | [12-in-app-purchase.md](12-in-app-purchase.md) | Tạo sản phẩm In-App Purchase, khoá và webhook trên App Store Connect, biến môi trường Azure |
+| [13-notes-duyet-iap.md](13-notes-duyet-iap.md) | Notes mới cho người duyệt (bản có In-App Purchase) và các bước build, nộp bản 1.0.15 |
 
 ## Các quyết định đã chốt
 
