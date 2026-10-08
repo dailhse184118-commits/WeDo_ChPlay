@@ -55,11 +55,20 @@ export default function ManNangCap() {
   */
   const xuLyRef = useRef<(purchase: Purchase) => Promise<void>>(async () => undefined);
   const dangGui = useRef(new Set<string>());
+  /*
+    Workspace chọn LÚC BẤM MUA, theo mã gói. Giao dịch có thể về sau khi người
+    dùng đã đổi chip, nên không đọc lại chip lúc nhận.
+  */
+  const workspaceLucMua = useRef(new Map<string, string>());
+  const phuongAnRef = useRef<string | undefined>(undefined);
+  /* Giao dịch phát lại (mở app, Khôi phục) không có workspace đã ghi nhớ. */
+  phuongAnRef.current = cuaToi.length === 1 ? cuaToi[0].id : (workspaceChon ?? undefined);
 
   const { connected, subscriptions, fetchProducts, requestPurchase, finishTransaction, getAvailablePurchases } = useIAP({
     onPurchaseSuccess: (p) => void xuLyRef.current(p),
     onPurchaseError: (e) => {
       setDangMua(null);
+      setThongBao('');
       setLoi(loiNhanMua(e));
     },
     /*
@@ -71,14 +80,24 @@ export default function ManNangCap() {
 
   xuLyRef.current = async (purchase: Purchase) => {
     const jws = purchase.purchaseToken;
-    if (!jws) return;
+    if (!jws) {
+      setDangMua(null);
+      setThongBao('');
+      setLoi('Không đọc được giao dịch từ App Store.');
+      return;
+    }
     // Cùng một giao dịch về hai lần (nghe sự kiện + khôi phục) thì chỉ gửi một.
     if (dangGui.current.has(purchase.id)) return;
     dangGui.current.add(purchase.id);
+    setThongBao('');
     setDangKichHoat(true);
     try {
       const laTeam = purchase.productId.startsWith('team_');
-      await guiGiaoDichApple({ jws, workspaceId: laTeam ? (workspaceTeam ?? undefined) : undefined });
+      await guiGiaoDichApple({ jws, workspaceId: laTeam
+          ? (workspaceLucMua.current.get(purchase.productId) ?? phuongAnRef.current)
+          : undefined,
+      });
+      workspaceLucMua.current.delete(purchase.productId);
       await finishTransaction({ purchase });
       await queryClient.invalidateQueries({ queryKey: ['entitlements'] });
       setLoi('');
@@ -105,11 +124,14 @@ export default function ManNangCap() {
 
   async function mua(sku: MaGoi) {
     setLoi('');
+    setThongBao('');
+    if (sku.startsWith('team_') && workspaceTeam) workspaceLucMua.current.set(sku, workspaceTeam);
     setDangMua(sku);
     try {
       const { appAccountToken } = await layAppAccountToken();
       await requestPurchase({ type: 'subs', request: { apple: { sku, appAccountToken } } });
     } catch (e) {
+      workspaceLucMua.current.delete(sku);
       setDangMua(null);
       setLoi(loiNhanMua(e));
     }

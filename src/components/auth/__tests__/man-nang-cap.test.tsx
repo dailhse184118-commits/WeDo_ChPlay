@@ -94,15 +94,59 @@ it('máy chủ hỏng: KHÔNG finishTransaction, hiện đang kích hoạt', asy
   mockedGui.mockRejectedValue(new Error('500'));
   const { findByText } = await renderManHinh();
   await act(async () => mockOnPurchaseSuccess?.({ id: 'tx', productId: 'pro_monthly', purchaseToken: 'JWS', transactionDate: 1 }));
-  expect(await findByText(/đang kích hoạt/i)).toBeTruthy();
+  expect(await findByText(/Mở lại app nếu chưa thấy gói/)).toBeTruthy();
   expect(mockFinishTransaction).not.toHaveBeenCalled();
 });
 
-it('Team: gửi workspaceId của workspace mình làm chủ', async () => {
+const haiWorkspace = {
+  status: 'ready',
+  active: { id: 'ws-1', name: 'Nhóm 5', ownerId: 'u1' },
+  workspaces: [
+    { id: 'ws-1', name: 'Nhóm 5', ownerId: 'u1' },
+    { id: 'ws-3', name: 'Đồ án', ownerId: 'u1' },
+    { id: 'ws-2', name: 'Lớp', ownerId: 'u2' },
+  ],
+  refresh: jest.fn(), create: jest.fn(), switchTo: jest.fn(),
+} as any;
+
+it('Team: gửi workspaceId của workspace mình làm chủ đã chọn', async () => {
+  mockedWs.mockReturnValue(haiWorkspace);
   mockedGui.mockResolvedValue({ transactionId: 'tx', subscription: null });
-  const { findByTestId } = await renderManHinh();
+  const { findByTestId, getByText } = await renderManHinh();
+  await fireEvent.press(getByText('Đồ án'));
   await fireEvent.press(await findByTestId('mua-team_monthly'));
   await waitFor(() => expect(mockRequestPurchase).toHaveBeenCalled());
   await act(async () => mockOnPurchaseSuccess?.({ id: 'tx', productId: 'team_monthly', purchaseToken: 'JWS', transactionDate: 1 }));
+  await waitFor(() => expect(mockedGui).toHaveBeenCalledWith({ jws: 'JWS', workspaceId: 'ws-3' }));
+});
+
+it('Team: đổi chip khi đang mở App Store vẫn gửi workspace lúc bấm mua', async () => {
+  mockedWs.mockReturnValue(haiWorkspace);
+  mockedGui.mockResolvedValue({ transactionId: 'tx', subscription: null });
+  const { findByTestId, getByText } = await renderManHinh();
+  await fireEvent.press(await findByTestId('mua-team_monthly'));
+  await waitFor(() => expect(mockRequestPurchase).toHaveBeenCalled());
+  await fireEvent.press(getByText('Đồ án'));
+  await act(async () => mockOnPurchaseSuccess?.({ id: 'tx', productId: 'team_monthly', purchaseToken: 'JWS', transactionDate: 1 }));
   await waitFor(() => expect(mockedGui).toHaveBeenCalledWith({ jws: 'JWS', workspaceId: 'ws-1' }));
+});
+
+it('Giao dịch Team phát lại (không có workspace đã nhớ): dùng chip đang chọn', async () => {
+  mockedWs.mockReturnValue(haiWorkspace);
+  mockedGui.mockResolvedValue({ transactionId: 'tx', subscription: null });
+  const { getByText } = await renderManHinh();
+  await fireEvent.press(getByText('Đồ án'));
+  await act(async () => mockOnPurchaseSuccess?.({ id: 'tx', productId: 'team_yearly', purchaseToken: 'JWS', transactionDate: 1 }));
+  await waitFor(() => expect(mockedGui).toHaveBeenCalledWith({ jws: 'JWS', workspaceId: 'ws-3' }));
+});
+
+it('Thiếu JWS: báo lỗi và mở lại nút mua', async () => {
+  const { findByTestId, findByText } = await renderManHinh();
+  await fireEvent.press(await findByTestId('mua-pro_monthly'));
+  await waitFor(() => expect(mockRequestPurchase).toHaveBeenCalled());
+  await act(async () => mockOnPurchaseSuccess?.({ id: 'tx', productId: 'pro_monthly', purchaseToken: null, transactionDate: 1 }));
+  expect(await findByText('Không đọc được giao dịch từ App Store.')).toBeTruthy();
+  await fireEvent.press(await findByTestId('mua-pro_yearly'));
+  await waitFor(() => expect(mockRequestPurchase).toHaveBeenCalledTimes(2));
+  expect(mockedGui).not.toHaveBeenCalled();
 });
