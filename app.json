@@ -2,7 +2,7 @@
   "expo": {
     "name": "WeDo",
     "slug": "wedo",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wedo",
@@ -12,7 +12,7 @@
     },
     "ios": {
       "bundleIdentifier": "vn.wedo.app",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "icon": "./assets/images/icon.png",
@@ -78,6 +78,7 @@
         }
       ],
       "expo-apple-authentication",
+      "expo-iap",
       [
         "expo-image-picker",
         {
