@@ -87,7 +87,7 @@ Thư viện: `expo-iap` (StoreKit 2, có config plugin cho Expo SDK 57). Thêm m
 | `transactionId` | giao dịch mới nhất đã ghi |
 | `productId` | mã sản phẩm |
 | `environment` | `Sandbox` / `Production` |
-| `appAccountToken` | UUID gắn người dùng |
+| `appAccountToken` | UUID ngẫu nhiên do máy chủ cấp qua `POST /payments/apple/account-token`, sinh một lần, lưu ở `User.appleAccountToken` |
 | `status` | enum `AppleSubscriptionStatus { ACTIVE, EXPIRED, BILLING_RETRY, GRACE_PERIOD, REVOKED }` |
 | `expiresAt`, `purchasedAt` | từ Apple |
 | `autoRenew` | người dùng còn bật gia hạn không |
