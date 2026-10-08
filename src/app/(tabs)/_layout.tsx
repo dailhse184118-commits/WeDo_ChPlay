@@ -164,6 +164,11 @@ function TabsWithWorkspace() {
       */}
       <Tabs.Screen name="account/contributions" options={{ href: null }} />
       {/*
+        Màn Nâng cấp (mua gói qua App Store, chỉ iOS) cũng gọi `useWorkspace()`,
+        nên cùng luật: nằm trong nhóm này và khai `href: null`.
+      */}
+      <Tabs.Screen name="account/nang-cap" options={{ href: null }} />
+      {/*
         Cuộc họp cũng PHẢI nằm trong nhóm này, cùng lý do với Bảng đóng góp ở
         trên: màn danh sách và màn tạo mới gọi `useWorkspace()`. Ngày 23/09/2026
         ba màn này được đặt ở src/app/meetings/ và đã lên máy người thử nghiệm
