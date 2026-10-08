@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deepLinkToSubscriptions, useIAP, type Purchase } from 'expo-iap';
 
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { guiGiaoDichApple, layAppAccountToken } from '../../../lib/api/apple-iap';
+import { getEntitlements } from '../../../lib/api/entitlements';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { PRIVACY_URL, TERMS_URL, openLegalLink } from '../../../lib/legal-links';
 import { ghepTheGoi, loiNhanMua, MA_GOI, workspaceMinhLamChu, type MaGoi, type TheGoi } from '../../../lib/payments/mua-goi';
+import { docWorkspaceLucMua, ghiWorkspaceLucMua, xoaWorkspaceLucMua } from '../../../lib/payments/workspace-luc-mua';
 import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, radius, spacing } from '../../../theme/tokens';
@@ -22,12 +25,18 @@ const MA_LOI_NGHIEP_VU = new Set([
   'TRANSACTION_OWNED_BY_OTHER_USER',
   'WORKSPACE_OWNER_REQUIRED',
   'APPLE_IAP_DISABLED',
+  'APPLE_TRANSACTION_INVALID',
 ]);
+
+/* Chưa kết nối được StoreKit sau ngần này thì thôi chờ, hiện nút Thử lại. */
+const CHO_KET_NOI_MS = 15_000;
+
+type TrangThaiGia = 'dang-tai' | 'loi' | 'xong';
 
 /**
  * Màn Nâng cấp (chỉ iOS). Mọi giá lấy từ StoreKit. Giao dịch về thì gửi máy
  * chủ xác minh, máy chủ xác nhận rồi mới `finishTransaction`: máy chủ hỏng thì
- * giữ giao dịch, StoreKit đưa lại ở lần mở sau và ta gửi lại.
+ * giữ giao dịch, StoreKit đưa lại ở lần mở màn này sau và ta gửi lại.
  *
  * Màn này gọi `useWorkspace()` nên PHẢI nằm trong nhóm `(tabs)` và được khai
  * `href: null` ở `_layout.tsx`. Đường dẫn vẫn là /account/nang-cap.
@@ -37,13 +46,31 @@ export default function ManNangCap() {
   /* Màn ẩn của nhóm (tabs): không dùng `router.back()`, xem `useQuayLai`. */
   const quayLai = useQuayLai(useCallback(() => router.navigate('/account'), [router]));
   const { user } = useAuth();
-  const { workspaces } = useWorkspace();
+  const { active, workspaces } = useWorkspace();
   const queryClient = useQueryClient();
   const [dangMua, setDangMua] = useState<MaGoi | null>(null);
   const [dangKichHoat, setDangKichHoat] = useState(false);
+  const [dangKhoiPhuc, setDangKhoiPhuc] = useState(false);
+  const [daKhoiPhuc, setDaKhoiPhuc] = useState(false);
   const [loi, setLoi] = useState('');
-  const [thongBao, setThongBao] = useState('');
   const [workspaceChon, setWorkspaceChon] = useState<string | null>(null);
+  const [trangThaiGia, setTrangThaiGia] = useState<TrangThaiGia>('dang-tai');
+
+  /*
+    Cùng khoá với tab Tài khoản (invalidate ['entitlements'] sau khi mua).
+    Người dùng đang có gói payOS còn hạn mà mua thêm qua Apple thì Apple vẫn thu
+    tiền, nhưng máy chủ trả 409 SUBSCRIPTION_CONFLICT: mất tiền hai lần. Nên khoá
+    nút mua ngay từ đây.
+  */
+  const goiQuery = useQuery({
+    queryKey: ['entitlements', active?.id],
+    queryFn: () => getEntitlements(active?.id),
+  });
+  const goiHienTai = goiQuery.data?.subscription ?? null;
+  const conGoiWeb =
+    goiHienTai?.provider === 'PAYOS' && Date.parse(goiHienTai.currentPeriodEnd) > Date.now();
+  /* Đang tải thì chưa biết có gói web không: khoá luôn cho chắc, chỉ vài trăm ms. */
+  const khoaMua = conGoiWeb || goiQuery.isLoading;
 
   const cuaToi = useMemo(() => workspaceMinhLamChu(workspaces, user?.id ?? ''), [workspaces, user?.id]);
   const workspaceTeam = workspaceChon ?? cuaToi[0]?.id ?? null;
@@ -55,21 +82,37 @@ export default function ManNangCap() {
   */
   const xuLyRef = useRef<(purchase: Purchase) => Promise<void>>(async () => undefined);
   const dangGui = useRef(new Set<string>());
+  const dangMuaRef = useRef<MaGoi | null>(null);
+  dangMuaRef.current = dangMua;
   /*
-    Workspace chọn LÚC BẤM MUA, theo mã gói. Giao dịch có thể về sau khi người
-    dùng đã đổi chip, nên không đọc lại chip lúc nhận.
+    Giao dịch Team phát lại mà bộ nhớ bền không ghi workspace (mua từ máy khác,
+    bộ nhớ hỏng): dùng đúng workspace đang tô sáng trên màn.
   */
-  const workspaceLucMua = useRef(new Map<string, string>());
   const phuongAnRef = useRef<string | undefined>(undefined);
-  /* Giao dịch phát lại (mở app, Khôi phục) không có workspace đã ghi nhớ. */
-  phuongAnRef.current = cuaToi.length === 1 ? cuaToi[0].id : (workspaceChon ?? undefined);
+  phuongAnRef.current = workspaceTeam ?? undefined;
+  const ketNoiRef = useRef(false);
 
-  const { connected, subscriptions, fetchProducts, requestPurchase, finishTransaction, getAvailablePurchases } = useIAP({
+  const {
+    connected,
+    subscriptions,
+    availablePurchases,
+    fetchProducts,
+    reconnect,
+    requestPurchase,
+    finishTransaction,
+    restorePurchases,
+  } = useIAP({
     onPurchaseSuccess: (p) => void xuLyRef.current(p),
     onPurchaseError: (e) => {
+      const sku = dangMuaRef.current;
+      if (sku) void xoaWorkspaceLucMua(sku);
       setDangMua(null);
-      setThongBao('');
+      setDaKhoiPhuc(false);
       setLoi(loiNhanMua(e));
+    },
+    // Không kết nối được StoreKit thì không có giá nào để hiện.
+    onError: () => {
+      if (!ketNoiRef.current) setTrangThaiGia('loi');
     },
     /*
       Giao dịch gửi máy chủ hỏng thì không finish; "Khôi phục mua hàng" phải đưa
@@ -77,37 +120,57 @@ export default function ManNangCap() {
     */
     purchaseUpdatedListenerOptions: { dedupeTransactionIOS: false },
   });
+  ketNoiRef.current = connected;
 
   xuLyRef.current = async (purchase: Purchase) => {
     const jws = purchase.purchaseToken;
     if (!jws) {
       setDangMua(null);
-      setThongBao('');
+      setDaKhoiPhuc(false);
       setLoi('Không đọc được giao dịch từ App Store.');
       return;
     }
     // Cùng một giao dịch về hai lần (nghe sự kiện + khôi phục) thì chỉ gửi một.
     if (dangGui.current.has(purchase.id)) return;
     dangGui.current.add(purchase.id);
-    setThongBao('');
+    setDaKhoiPhuc(false);
     setDangKichHoat(true);
+    const sku = purchase.productId;
     try {
-      const laTeam = purchase.productId.startsWith('team_');
-      await guiGiaoDichApple({ jws, workspaceId: laTeam
-          ? (workspaceLucMua.current.get(purchase.productId) ?? phuongAnRef.current)
-          : undefined,
-      });
-      workspaceLucMua.current.delete(purchase.productId);
+      const workspaceId = sku.startsWith('team_')
+        ? ((await docWorkspaceLucMua(sku)) ?? phuongAnRef.current)
+        : undefined;
+      await guiGiaoDichApple({ jws, workspaceId });
       await finishTransaction({ purchase });
+      await xoaWorkspaceLucMua(sku);
       await queryClient.invalidateQueries({ queryKey: ['entitlements'] });
       setLoi('');
     } catch (e) {
-      // Không finish: StoreKit sẽ đưa lại giao dịch, ta gửi lại lần mở sau.
       const ma = (e as { code?: string } | null)?.code;
+      if (ma === 'TRANSACTION_OWNED_BY_OTHER_USER') {
+        /*
+          Gói đã thuộc một tài khoản WeDo khác: gửi lại bao nhiêu lần cũng bị từ
+          chối, và không ai mất gì. Finish để khỏi báo lỗi mỗi lần mở màn.
+        */
+        setLoi(loiNhanMua(e));
+        try {
+          await finishTransaction({ purchase });
+          await xoaWorkspaceLucMua(sku);
+        } catch {
+          // Finish hỏng thì lần sau StoreKit đưa lại, ta lại báo đúng câu này.
+        }
+        return;
+      }
+      /*
+        Không finish: StoreKit sẽ đưa lại giao dịch khi mở lại màn này hoặc bấm
+        Khôi phục. Sai chủ workspace thì quên workspace đã ghi, để lần gửi lại
+        dùng workspace người dùng chọn lại trên màn.
+      */
+      if (ma === 'WORKSPACE_OWNER_REQUIRED') await xoaWorkspaceLucMua(sku);
       setLoi(
         ma && MA_LOI_NGHIEP_VU.has(ma)
           ? loiNhanMua(e)
-          : 'Đã thanh toán, đang kích hoạt gói… Mở lại app nếu chưa thấy gói.',
+          : 'Đã thanh toán, đang kích hoạt gói… Mở lại màn Nâng cấp nếu chưa thấy gói.',
       );
     } finally {
       dangGui.current.delete(purchase.id);
@@ -116,22 +179,66 @@ export default function ManNangCap() {
     }
   };
 
+  /*
+    Lấy giá từ StoreKit. Hỏng (chưa kết nối, sản phẩm chưa duyệt, chưa ký Paid
+    Apps Agreement) thì phải nói ra, không để thẻ trống không nút.
+  */
+  const dangTaiGia = useRef(false);
+  const daTaiKhiKetNoi = useRef(false);
+  const taiGia = useCallback(
+    async (ketNoiLai: boolean) => {
+      if (dangTaiGia.current) return;
+      dangTaiGia.current = true;
+      setTrangThaiGia('dang-tai');
+      try {
+        if (ketNoiLai && !(await reconnect())) throw new Error('chua-ket-noi');
+        await fetchProducts({ skus: [...MA_GOI], type: 'subs' });
+        setTrangThaiGia('xong');
+      } catch {
+        setTrangThaiGia('loi');
+      } finally {
+        dangTaiGia.current = false;
+      }
+    },
+    [fetchProducts, reconnect],
+  );
+
   useEffect(() => {
-    if (connected) void fetchProducts({ skus: [...MA_GOI], type: 'subs' });
-  }, [connected, fetchProducts]);
+    if (!connected || daTaiKhiKetNoi.current) return;
+    daTaiKhiKetNoi.current = true;
+    void taiGia(false);
+  }, [connected, taiGia]);
+
+  useEffect(() => {
+    if (connected) return;
+    const hen = setTimeout(() => {
+      if (!dangTaiGia.current) setTrangThaiGia((s) => (s === 'dang-tai' ? 'loi' : s));
+    }, CHO_KET_NOI_MS);
+    return () => clearTimeout(hen);
+  }, [connected]);
+
+  /* Tab ẩn không bao giờ gỡ: quay lại màn thì xoá câu báo của lần trước. */
+  useFocusEffect(
+    useCallback(() => {
+      setLoi('');
+      setDaKhoiPhuc(false);
+    }, []),
+  );
 
   const the = useMemo(() => ghepTheGoi(subscriptions), [subscriptions]);
+  const khongCoGia = the.every((t) => !t.thang && !t.nam);
+  const loiGia = trangThaiGia === 'loi' || (trangThaiGia === 'xong' && khongCoGia);
 
   async function mua(sku: MaGoi) {
     setLoi('');
-    setThongBao('');
-    if (sku.startsWith('team_') && workspaceTeam) workspaceLucMua.current.set(sku, workspaceTeam);
+    setDaKhoiPhuc(false);
     setDangMua(sku);
     try {
+      if (sku.startsWith('team_') && workspaceTeam) await ghiWorkspaceLucMua(sku, workspaceTeam);
       const { appAccountToken } = await layAppAccountToken();
       await requestPurchase({ type: 'subs', request: { apple: { sku, appAccountToken } } });
     } catch (e) {
-      workspaceLucMua.current.delete(sku);
+      void xoaWorkspaceLucMua(sku);
       setDangMua(null);
       setLoi(loiNhanMua(e));
     }
@@ -139,27 +246,71 @@ export default function ManNangCap() {
 
   async function khoiPhuc() {
     setLoi('');
-    setThongBao('');
+    setDaKhoiPhuc(false);
+    setDangKhoiPhuc(true);
     try {
-      // Phát lại các giao dịch còn hiệu lực qua `onPurchaseSuccess` để gửi máy chủ.
-      await getAvailablePurchases({ alsoPublishToEventListenerIOS: true });
-      setThongBao('Đã kiểm tra các gói đã mua.');
+      /*
+        `restorePurchases` gọi AppStore.sync rồi phát lại các giao dịch còn hiệu
+        lực qua `onPurchaseSuccess` để gửi máy chủ.
+      */
+      await restorePurchases({ alsoPublishToEventListenerIOS: true });
+      setDaKhoiPhuc(true);
     } catch {
       setLoi('Chưa khôi phục được. Bạn thử lại sau nhé.');
+    } finally {
+      setDangKhoiPhuc(false);
+    }
+  }
+
+  async function quanLy() {
+    try {
+      await deepLinkToSubscriptions();
+    } catch {
+      setLoi('Chưa mở được trang quản lý đăng ký. Vào Cài đặt → [tên bạn] → Đăng ký nhé.');
     }
   }
 
   if (Platform.OS !== 'ios') return null;
 
+  /* Chỉ báo kết quả khôi phục khi đã có kết quả và không có lỗi nào sau đó. */
+  const thongBao =
+    daKhoiPhuc && !loi
+      ? availablePurchases.length > 0
+        ? 'Đã kiểm tra các gói đã mua.'
+        : 'Không tìm thấy gói nào.'
+      : '';
+
   return (
     <View style={styles.man}>
       <GradientHeader title="Nâng cấp" onBack={quayLai} dense />
       <ScrollView style={styles.than} contentContainerStyle={styles.noiDung}>
+        {conGoiWeb && goiHienTai ? (
+          <View testID="chan-goi-web" style={styles.hop}>
+            <Text style={styles.nhan}>
+              {loiNhanMua({ code: 'SUBSCRIPTION_CONFLICT', currentPeriodEnd: goiHienTai.currentPeriodEnd })}
+            </Text>
+          </View>
+        ) : null}
+        {trangThaiGia === 'dang-tai' ? (
+          <View testID="dang-tai-gia" style={styles.hop}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={styles.chipChu}>Đang lấy giá từ App Store…</Text>
+          </View>
+        ) : null}
+        {loiGia ? (
+          <View testID="loi-gia" style={styles.hop}>
+            <Text style={styles.loi}>Chưa lấy được gói từ App Store.</Text>
+            <Pressable testID="thu-lai-gia" accessibilityRole="button" onPress={() => void taiGia(!connected)}>
+              <Text style={styles.lienKet}>Thử lại</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {the.map((t) => (
           <TheNangCap
             key={t.plan}
             the={t}
             dangMua={dangMua}
+            khoaMua={khoaMua}
             khoaTeam={t.plan === 'TEAM_GROWTH' && cuaToi.length === 0}
             onMua={mua}
           />
@@ -170,6 +321,8 @@ export default function ManNangCap() {
             {cuaToi.map((w) => (
               <Pressable
                 key={w.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: workspaceTeam === w.id }}
                 onPress={() => setWorkspaceChon(w.id)}
                 style={[styles.chip, workspaceTeam === w.id && styles.chipChon]}
               >
@@ -186,15 +339,29 @@ export default function ManNangCap() {
         ) : null}
         {loi ? <Text style={styles.loi}>{loi}</Text> : null}
         {thongBao ? <Text style={styles.thongBao}>{thongBao}</Text> : null}
-        <Pressable testID="khoi-phuc" onPress={() => void khoiPhuc()}>
-          <Text style={styles.lienKet}>Khôi phục mua hàng</Text>
+        <Pressable
+          testID="khoi-phuc"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: dangKhoiPhuc }}
+          disabled={dangKhoiPhuc}
+          onPress={() => void khoiPhuc()}
+        >
+          <Text style={styles.lienKet}>{dangKhoiPhuc ? 'Đang khôi phục…' : 'Khôi phục mua hàng'}</Text>
         </Pressable>
-        <Pressable testID="quan-ly" onPress={() => void deepLinkToSubscriptions()}>
+        <Pressable testID="quan-ly" accessibilityRole="button" onPress={() => void quanLy()}>
           <Text style={styles.lienKet}>Quản lý đăng ký</Text>
         </Pressable>
+        <View style={styles.hangLienKet}>
+          <Pressable testID="nang-cap-dieu-khoan" accessibilityRole="link" onPress={() => void openLegalLink(TERMS_URL)}>
+            <Text style={styles.lienKetNho}>Điều khoản sử dụng</Text>
+          </Pressable>
+          <Pressable testID="nang-cap-rieng-tu" accessibilityRole="link" onPress={() => void openLegalLink(PRIVACY_URL)}>
+            <Text style={styles.lienKetNho}>Chính sách riêng tư</Text>
+          </Pressable>
+        </View>
         <Text style={styles.phapLy}>
-          Gói tự gia hạn theo kỳ đã chọn và tính vào tài khoản Apple ID của bạn, trừ khi bạn huỷ ít nhất 24 giờ trước
-          khi hết kỳ. Quản lý và huỷ trong Cài đặt → Apple ID → Đăng ký.
+          Tiền được trừ vào Apple ID khi xác nhận mua. Gói tự gia hạn theo kỳ đã chọn và tính vào Apple ID của bạn, trừ
+          khi bạn huỷ ít nhất 24 giờ trước khi hết kỳ. Quản lý và huỷ trong Cài đặt → [tên bạn] → Đăng ký.
         </Text>
       </ScrollView>
     </View>
@@ -204,14 +371,17 @@ export default function ManNangCap() {
 function TheNangCap({
   the,
   dangMua,
+  khoaMua,
   khoaTeam,
   onMua,
 }: {
   the: TheGoi;
   dangMua: MaGoi | null;
+  khoaMua: boolean;
   khoaTeam: boolean;
   onMua: (sku: MaGoi) => void;
 }) {
+  const khoa = khoaMua || khoaTeam || dangMua !== null;
   return (
     <View style={[styles.the, khoaTeam && styles.theMo]}>
       <Text style={styles.ten}>{the.ten}</Text>
@@ -227,9 +397,11 @@ function TheNangCap({
             <Pressable
               key={o.sku}
               testID={`mua-${o.sku}`}
-              disabled={khoaTeam || dangMua !== null}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: khoa, busy: dangMua === o.sku }}
+              disabled={khoa}
               onPress={() => onMua(o.sku)}
-              style={styles.nut}
+              style={[styles.nut, khoa && !khoaTeam && styles.nutMo]}
             >
               <Text style={styles.nutChu}>
                 {dangMua === o.sku ? 'Đang mở App Store…' : `${o.gia} / ${i === 0 ? 'tháng' : 'năm'}`}
@@ -253,6 +425,7 @@ const styles = StyleSheet.create({
   ghiChu: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 4 },
   hangNut: { flexDirection: 'row', gap: 10, marginTop: 10 },
   nut: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, alignItems: 'center' },
+  nutMo: { opacity: 0.5 },
   nutChu: { color: '#fff', fontWeight: '700', fontSize: fontSize.sm },
   hop: { backgroundColor: colors.background, borderRadius: radius.lg, padding: 14, gap: 8 },
   nhan: { fontWeight: '700', color: colors.text },
@@ -262,5 +435,7 @@ const styles = StyleSheet.create({
   loi: { color: colors.danger, fontWeight: '600' },
   thongBao: { color: colors.success, fontWeight: '600' },
   lienKet: { color: colors.primary, fontWeight: '700', textAlign: 'center', paddingVertical: 8 },
+  hangLienKet: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
+  lienKetNho: { color: colors.primary, fontSize: fontSize.xs, fontWeight: '600', paddingVertical: 4 },
   phapLy: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: fontSize.xs * 1.4 },
 });

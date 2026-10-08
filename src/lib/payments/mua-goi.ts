@@ -56,7 +56,9 @@ export function loiNhanMua(loi: unknown): string {
     case 'TRANSACTION_OWNED_BY_OTHER_USER':
       return 'Đăng ký App Store này đang gắn với một tài khoản WeDo khác.';
     case 'WORKSPACE_OWNER_REQUIRED':
-      return 'Chỉ chủ workspace mới mua được gói Team cho workspace đó.';
+      return 'Chỉ chủ workspace mới mua được gói Team. Chọn workspace bạn làm chủ ở trên rồi bấm Khôi phục mua hàng.';
+    case 'APPLE_TRANSACTION_INVALID':
+      return 'Giao dịch App Store không hợp lệ. Bấm Khôi phục mua hàng để thử lại.';
     case 'APPLE_IAP_DISABLED':
       return 'Thanh toán qua App Store tạm chưa mở. Bạn thử lại sau nhé.';
     default:

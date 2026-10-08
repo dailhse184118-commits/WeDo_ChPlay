@@ -40,6 +40,16 @@ describe('loiNhanMua', () => {
   it('trùng gói web còn hạn → câu có ngày', () => {
     expect(loiNhanMua({ code: 'SUBSCRIPTION_CONFLICT', currentPeriodEnd: '2026-11-08T10:00:00.000Z' })).toContain('08/11/2026');
   });
+  it('giao dịch App Store không hợp lệ → bảo bấm Khôi phục', () => {
+    expect(loiNhanMua({ code: 'APPLE_TRANSACTION_INVALID' })).toBe(
+      'Giao dịch App Store không hợp lệ. Bấm Khôi phục mua hàng để thử lại.',
+    );
+  });
+  it('không phải chủ workspace → hướng dẫn chọn lại rồi Khôi phục', () => {
+    expect(loiNhanMua({ code: 'WORKSPACE_OWNER_REQUIRED' })).toContain(
+      'Chọn workspace bạn làm chủ ở trên rồi bấm Khôi phục mua hàng.',
+    );
+  });
   it('mã lạ → câu chung', () => {
     expect(loiNhanMua(new Error('x'))).toBe('Chưa mua được. Bạn thử lại sau nhé.');
   });
