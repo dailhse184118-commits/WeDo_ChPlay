@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import type { HanMucAI } from '../../api/entitlements';
 import { NGUONG_SAP_HET, ngayNapLai, trangThaiHanMuc } from '../han-muc';
 
@@ -49,6 +50,31 @@ describe('trangThaiHanMuc', () => {
     // Người dùng phải hiểu mình không bị chặn hoàn toàn: tính năng cốt lõi vẫn
     // dùng được, chỉ mất phần AI đọc hộ tin nhắn.
     expect(trangThaiHanMuc(han({ remaining: 0 })).loiNhan).toContain('thủ công');
+  });
+
+  describe('nút nâng cấp', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('hết lượt trên iOS thì có nút nâng cấp', () => {
+      jest.replaceProperty(Platform, 'OS', 'ios');
+
+      expect(trangThaiHanMuc(han({ remaining: 0 })).coNutNangCap).toBe(true);
+    });
+
+    it('hết lượt trên Android thì không có nút (không có đường mua trong app)', () => {
+      jest.replaceProperty(Platform, 'OS', 'android');
+
+      expect(trangThaiHanMuc(han({ remaining: 0 })).coNutNangCap).toBe(false);
+    });
+
+    it('chưa hết lượt thì không có nút, kể cả trên iOS', () => {
+      jest.replaceProperty(Platform, 'OS', 'ios');
+
+      expect(trangThaiHanMuc(han({ remaining: 2 })).coNutNangCap).toBe(false);
+      expect(trangThaiHanMuc(han({ remaining: 8 })).coNutNangCap).toBe(false);
+    });
   });
 
   it('coi số âm là hết, không hiện số âm cho người dùng', () => {

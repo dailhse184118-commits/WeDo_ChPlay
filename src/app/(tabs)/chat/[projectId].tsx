@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -850,6 +851,16 @@ export default function ChatThreadScreen() {
         {hanMuc && hanMuc.muc !== 'du' ? (
           <View style={hanMuc.muc === 'het' ? styles.hanMucHet : styles.hanMucSapHet}>
             <Text style={styles.hanMucChu}>{hanMuc.loiNhan}</Text>
+            {hanMuc.coNutNangCap ? (
+              <Pressable
+                testID="nut-nang-cap"
+                accessibilityRole="button"
+                onPress={() => router.push('/account/nang-cap')}
+                style={styles.hanMucNut}
+              >
+                <Text style={styles.hanMucNutChu}>Nâng cấp</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -961,6 +972,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   hanMucChu: { fontSize: fontSize.sm, color: colors.text, lineHeight: fontSize.sm * 1.5 },
+  hanMucNut: { alignSelf: 'flex-start', paddingVertical: spacing.xs, marginTop: spacing.xs },
+  hanMucNutChu: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
   // Nền khung chat xám nhạt để bong bóng trắng của người khác nổi lên.
   flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

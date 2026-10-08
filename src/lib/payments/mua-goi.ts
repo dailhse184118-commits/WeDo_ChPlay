@@ -33,7 +33,7 @@ export function workspaceMinhLamChu(
 /**
  * dd/mm/yyyy theo giờ Việt Nam (UTC+7). Tự tính, không dùng Intl: Hermes trên máy có thể thiếu ICU.
  */
-function ngayVN(iso: string): string {
+export function ngayVN(iso: string): string {
   const ms = Date.parse(iso);
   if (Number.isNaN(ms)) return '';
   const d = new Date(ms + 7 * 60 * 60 * 1000);

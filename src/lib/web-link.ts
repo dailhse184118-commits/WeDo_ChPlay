@@ -16,10 +16,9 @@
  * ghi một dòng chú thích rồi tin rằng người sau sẽ đọc. Có test riêng cho chốt
  * này — xoá nó đi là test đỏ.
  *
- * App Store còn chặt hơn: app iPhone là bản đồng hành miễn phí (Guideline
- * 3.1.3(f)) nên không được có lối nào sang trang mua, kể cả gián tiếp qua một
- * trang web vô hại có nút dẫn tiếp sang thanh toán (3.1.1(a)). Vì vậy trên iOS
- * các nút mở web WeDo bị ẩn hẳn ở chỗ gọi, không chỉ dựa vào bộ lọc dưới đây.
+ * App iPhone đã bán gói qua In-App Purchase (10/2026), nhưng Guideline 3.1.1(a)
+ * vẫn cấm dẫn người dùng ra cách mua ngoài, nên nút mở web vẫn ẩn trên iOS và
+ * bộ lọc dưới đây giữ nguyên.
  * ===========================================================================
  */
 

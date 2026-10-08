@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import Constants from 'expo-constants';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -21,6 +23,7 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
 import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { capNhatAnhDaiDien, datDongYAI } from '../../../lib/api/account';
+import { getEntitlements } from '../../../lib/api/entitlements';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
 import {
@@ -30,6 +33,7 @@ import {
   TERMS_URL,
   openLegalLink,
 } from '../../../lib/legal-links';
+import { dongGoiHienTai } from '../../../lib/payments/goi-hien-tai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
@@ -73,6 +77,13 @@ export default function AccountScreen() {
   const router = useRouter();
   const { user, signOut, capNhatHoSo } = useAuth();
   const { active } = useWorkspace();
+
+  // Cùng khoá với màn chat và màn Nâng cấp (invalidate ['entitlements']).
+  const entitlementsQuery = useQuery({
+    queryKey: ['entitlements', active?.id],
+    queryFn: () => getEntitlements(active?.id),
+    enabled: Platform.OS === 'ios' && Boolean(active?.id),
+  });
 
   const [dangLuuAnh, setDangLuuAnh] = useState(false);
   const [loiAnh, setLoiAnh] = useState('');
@@ -261,6 +272,16 @@ export default function AccountScreen() {
             hint="Ai làm bao nhiêu, ai đúng hạn"
             onPress={() => router.push('/account/contributions')}
           />
+          {Platform.OS === 'ios' ? (
+            <MenuRow
+              testID="account-nang-cap"
+              icon="diamond-outline"
+              tone="info"
+              label="Nâng cấp gói"
+              hint={dongGoiHienTai(entitlementsQuery.data?.subscription ?? null)}
+              onPress={() => router.push('/account/nang-cap')}
+            />
+          ) : null}
           <MenuRow
             testID="account-feedback"
             icon="chatbox-ellipses-outline"
