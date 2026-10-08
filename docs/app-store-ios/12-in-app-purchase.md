@@ -1,11 +1,13 @@
 # 12 — Tạo sản phẩm In-App Purchase, khóa và webhook (App Store Connect + Azure)
 
-Tài liệu này dành cho chủ dự án. Các bước dưới đây chỉ chủ tài khoản Apple Developer làm được, code đã xong ở phía máy chủ, web và app.
+Tài liệu này dành cho chủ dự án. Các bước dưới đây chỉ chủ tài khoản Apple Developer làm được, phía máy chủ đã xong (nhánh `feat/apple-iap-backend`), app và web đang làm.
 
 Thông tin dùng xuyên suốt:
 - Bundle ID: `vn.wedo.app`
 - Apple ID của app: `6816878767`
 - Team ID: `LR53W8386S`
+
+**Lưu ý quan trọng:** cách trả lời ngày 02/10 trong [chương 10](10-tra-loi-3.1.1.md) ("đường 2": không bán gì trong app) không còn là kế hoạch. Sau lần bị từ chối thứ 3 ngày 08/10, chủ dự án chọn làm In-App Purchase. Từ bản 1.0.15 (5), app bán các gói qua IAP, và phần ghi chú cho người duyệt sẽ được viết lại ở một việc sau.
 
 Làm theo đúng thứ tự 1 → 8. Mục 1 phải xong (trạng thái Active) thì các sản phẩm mới bán được.
 
@@ -26,7 +28,7 @@ Làm theo đúng thứ tự 1 → 8. Mục 1 phải xong (trạng thái Active) 
    - **Chỉ tải được MỘT lần.** Mất tệp thì phải tạo khóa mới.
 4. Ghi lại **Key ID** (chuỗi 10 ký tự cạnh tên khóa).
 5. Ghi lại **Issuer ID** (chuỗi dạng UUID ở đầu trang).
-6. Cất tệp `.p8` cùng chỗ với `AuthKey_U9G7RAS2LZ.p8`. Không gửi qua chat, không đưa vào git.
+6. Tệp `AuthKey_U9G7RAS2LZ.p8` hiện có (khóa App Store Connect API) giữ nguyên, không đổi. Khóa In-App Purchase mới là một tệp khác, tên `AuthKey_<Key ID mới>.p8`, cất cùng thư mục với tệp cũ. Không gửi qua chat, không đưa vào git.
 
 ## 3. Nhóm đăng ký và bốn sản phẩm
 
@@ -80,7 +82,7 @@ Ghi chú: hãy xác nhận tên miền trên khớp với Default domain của A
 | `APPLE_IAP_KEY_ID` | Key ID ở mục 2 |
 | `APPLE_IAP_ISSUER_ID` | Issuer ID ở mục 2 |
 | `APPLE_IAP_PRIVATE_KEY` | Nội dung tệp `.p8`, xem bên dưới |
-| `APPLE_IAP_ENVIRONMENT` | `Sandbox` khi thử, `Production` khi nộp duyệt |
+| `APPLE_IAP_ENVIRONMENT` | `Sandbox` khi thử, `Production` khi nộp duyệt. Máy chủ so khớp chính xác: viết `Sandbox` chữ S hoa, không có khoảng trắng; mọi giá trị khác đều bị hiểu là Production |
 
 3. Cách điền `APPLE_IAP_PRIVATE_KEY`: mở tệp `.p8` bằng Notepad, chép toàn bộ nội dung (gồm dòng BEGIN PRIVATE KEY và END PRIVATE KEY), rồi **thay mỗi dấu xuống dòng bằng đúng hai ký tự `\n`** để thành một dòng duy nhất. Máy chủ tự đổi `\n` về xuống dòng thật.
 4. Bấm **Apply** / **Save**, xác nhận khởi động lại ứng dụng.
@@ -88,7 +90,7 @@ Ghi chú: hãy xác nhận tên miền trên khớp với Default domain của A
 
 ### Sandbox hay Production khi nộp duyệt
 
-Người duyệt của Apple luôn mua trong Sandbox, kể cả khi họ cài đúng bản production. Máy chủ đã xử lý việc này: khi `APPLE_IAP_ENVIRONMENT=Production` mà Apple báo giao dịch không có ở Production, máy chủ tự thử lại ở Sandbox. Vì vậy:
+Người duyệt của Apple thường mua trong Sandbox, kể cả khi họ cài đúng bản production. Máy chủ đã xử lý việc này: khi `APPLE_IAP_ENVIRONMENT=Production` mà Apple báo giao dịch không có ở Production, máy chủ tự thử lại ở Sandbox. Vì vậy:
 - Lúc thử nghiệm của bạn: đặt `Sandbox`.
 - Lúc nộp duyệt và khi bán thật: đặt `Production`. Đây là giá trị đúng, không cần đổi thêm cho người duyệt.
 
