@@ -144,7 +144,7 @@ export default function NotificationsScreen() {
     }
   }, [refreshBadge]);
 
-  // iPhone giấu thông báo gói/thanh toán (Guideline 3.1.3(f)); Android giữ nguyên.
+  // iPhone giấu thông báo gói/thanh toán web (nói về payOS, app mua qua App Store); Android giữ nguyên.
   const items = locThongBaoHienThi(notificationsQuery.data ?? []);
   const unreadCount = items.filter((item) => !item.readAt).length;
   const showPrompt = permission === 'undetermined' && !dismissedPrompt;

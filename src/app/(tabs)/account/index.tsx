@@ -278,7 +278,13 @@ export default function AccountScreen() {
               icon="diamond-outline"
               tone="info"
               label="Nâng cấp gói"
-              hint={dongGoiHienTai(entitlementsQuery.data?.subscription ?? null)}
+              hint={
+                entitlementsQuery.isLoading
+                  ? 'Đang kiểm tra…'
+                  : entitlementsQuery.data
+                    ? dongGoiHienTai(entitlementsQuery.data.subscription ?? null)
+                    : 'Xem các gói'
+              }
               onPress={() => router.push('/account/nang-cap')}
             />
           ) : null}

@@ -69,8 +69,9 @@ function chuoi(data: Record<string, unknown>, ten: string): string | null {
  * `taskIdFromResponse` đã có từ trước. Trả đường dẫn cho cả hai thì màn hình
  * nhảy hai lần.
  *
- * Thông báo gói/thanh toán trên iPhone không mở đâu cả: app iPhone là bản đồng
- * hành miễn phí, không được có lối nào sang chỗ mua (Guideline 3.1.3(f)).
+ * Thông báo gói/thanh toán trên iPhone không mở đâu cả: chúng nói về gói mua
+ * trên web (payOS), mà app iPhone bán gói qua App Store và không được dẫn sang
+ * cách mua ngoài (Guideline 3.1.1).
  */
 export function duongDanTuThongBao(
   response: Notifications.NotificationResponse | null,

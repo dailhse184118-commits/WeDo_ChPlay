@@ -5,9 +5,10 @@ import type { NotificationItem } from '../types';
 /*
   Thông báo về gói và thanh toán ("Gói sắp hết hạn", "Thanh toán thành công").
 
-  App iPhone là bản đồng hành miễn phí của web (Guideline 3.1.3(f)): không bán
-  gì, không mời mua gì, kể cả gián tiếp. Một dòng "Gói Pro sắp hết hạn" trong
-  app là lời nhắc đi gia hạn — nên trên iPhone các thông báo này bị ẩn khỏi
+  App iPhone bán gói qua App Store (10/2026), nhưng các thông báo này nói về gói
+  mua trên web (payOS), mà Guideline 3.1.1 cấm dẫn người dùng ra cách mua ngoài,
+  kể cả gián tiếp. Một dòng "Gói Pro sắp hết hạn" trong app là lời nhắc đi gia
+  hạn trên web — nên trên iPhone các thông báo này bị ẩn khỏi
   danh sách, không đếm vào huy hiệu, và chạm vào push cũng không mở đâu cả.
   Người dùng vẫn nhận chúng qua email và trên web.
 

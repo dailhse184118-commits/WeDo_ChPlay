@@ -230,6 +230,35 @@ describe('hàng Nâng cấp gói', () => {
     await waitFor(() => expect(man.getByText(/qua App Store/)).toBeTruthy());
   });
 
+  it('đang tải gói hiện tại: hiện đang kiểm tra, không ghi Miễn phí', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    mockedEntitlements.mockReturnValue(new Promise(() => undefined));
+
+    const man = await renderManHinh();
+
+    expect(man.getByText('Đang kiểm tra…')).toBeTruthy();
+    expect(man.queryByText('Miễn phí')).toBeNull();
+  });
+
+  it('tải gói hỏng: không ghi Miễn phí', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    mockedEntitlements.mockRejectedValue(new Error('mạng'));
+
+    const man = await renderManHinh();
+
+    await waitFor(() => expect(man.getByText('Xem các gói')).toBeTruthy());
+    expect(man.queryByText('Miễn phí')).toBeNull();
+  });
+
+  it('chưa có gói: ghi Miễn phí', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    mockedEntitlements.mockResolvedValue({ subscription: null } as never);
+
+    const man = await renderManHinh();
+
+    await waitFor(() => expect(man.getByText('Miễn phí')).toBeTruthy());
+  });
+
   it('trên Android không hiện hàng', async () => {
     jest.replaceProperty(Platform, 'OS', 'android');
     const man = await renderManHinh();
