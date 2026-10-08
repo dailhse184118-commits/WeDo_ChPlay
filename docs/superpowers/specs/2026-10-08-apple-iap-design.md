@@ -76,7 +76,7 @@ Thư viện: `expo-iap` (StoreKit 2, có config plugin cho Expo SDK 57). Thêm m
 
 ## 5. Máy chủ NestJS
 
-### 5.1 Dữ liệu (migration `2026100xxxxx_apple_iap`)
+### 5.1 Dữ liệu (một migration Prisma tên `<mốc thời gian lúc tạo>_apple_iap`, theo đúng cách đặt tên hiện có)
 
 - `Subscription.provider`: enum `SubscriptionProvider { PAYOS, APPLE }`, mặc định `PAYOS`.
 - Bảng `AppleTransaction`:
