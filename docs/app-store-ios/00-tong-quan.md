@@ -12,6 +12,7 @@ Thư mục này gom mọi thứ cần để nộp bản iPhone đầu tiên củ
 | [06-dieu-khoan-su-dung.md](06-dieu-khoan-su-dung.md) | Điều khoản sử dụng (toàn văn), chỗ đồng ý trong app, lời hứa 24 giờ |
 | [07-trang-ho-tro.md](07-trang-ho-tro.md) | Trang Hỗ trợ (Support URL) |
 | [08-sua-code-truoc-khi-nop.md](08-sua-code-truoc-khi-nop.md) | Danh sách việc mã, trạng thái, **thứ tự đưa lên (deploy)** |
+| [12-in-app-purchase.md](12-in-app-purchase.md) | Tạo sản phẩm In-App Purchase, khoá và webhook trên App Store Connect, biến môi trường Azure |
 
 ## Các quyết định đã chốt
 

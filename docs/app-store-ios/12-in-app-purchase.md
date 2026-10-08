@@ -1,4 +1,4 @@
-# 11 — Tạo sản phẩm In-App Purchase, khóa và webhook (App Store Connect + Azure)
+# 12 — Tạo sản phẩm In-App Purchase, khóa và webhook (App Store Connect + Azure)
 
 Tài liệu này dành cho chủ dự án. Các bước dưới đây chỉ chủ tài khoản Apple Developer làm được, code đã xong ở phía máy chủ, web và app.
 
@@ -57,11 +57,11 @@ Làm theo đúng thứ tự 1 → 8. Mục 1 phải xong (trạng thái Active) 
 ## 4. Webhook App Store Server Notifications
 
 1. Vào **Apps** → **WeDo** → **App Information**, kéo xuống **App Store Server Notifications**.
-2. Ở **Production Server URL** nhập: `https://<máy chủ Azure>/payments/webhook/apple`
+2. Ở **Production Server URL** nhập: `https://api-wedo-backend-dai-g7fbbabzgce0aefc.eastasia-01.azurewebsites.net/payments/webhook/apple`
 3. Ở **Sandbox Server URL** nhập đúng cùng địa chỉ.
 4. Chọn **Version 2** cho cả hai ô, bấm **Save**.
 
-Ghi chú: các tài liệu trong thư mục này chỉ ghi tên miền web `wedofpt.com.vn`, không ghi tên miền của máy chủ Azure (backend). Hãy thay `<máy chủ Azure>` bằng tên miền backend thật (xem trong Azure App Service → Overview → Default domain, hoặc tên miền riêng nếu đã gắn).
+Ghi chú: hãy xác nhận tên miền trên khớp với Default domain của App Service trong Azure Portal (Overview) trước khi lưu.
 
 ## 5. Tài khoản thử Sandbox
 
