@@ -53,7 +53,7 @@ Thư viện: `expo-iap` (StoreKit 2, có config plugin cho Expo SDK 57). Thêm m
 - Quyền lợi của gói hiển thị từ cùng bảng với máy chủ (chép `subscription-entitlements` sang `src/lib/payments/quyen-loi.ts`: lượt AI/tháng, dung lượng, số thành viên).
 - Team: phải chọn workspace mình là chủ; không có workspace nào là chủ thì thẻ Team mờ, kèm câu "Tạo workspace rồi mới mua Team Growth".
 - Mua: `requestPurchase({ sku, appAccountToken })` → StoreKit hiện bảng Apple → nhận giao dịch qua `purchaseUpdatedListener` → gửi `POST /payments/apple/transactions` `{ jws, workspaceId? }` → máy chủ trả gói mới → app làm mới query `entitlements` → `finishTransaction`.
-  - `appAccountToken` = UUID v5 sinh từ `userId` (hàm trong `src/lib/payments/app-account-token.ts`), để Apple gắn giao dịch với người dùng WeDo.
+  - `appAccountToken` do máy chủ cấp qua `POST /payments/apple/account-token` (UUID ngẫu nhiên, sinh một lần, lưu ở `User.appleAccountToken`), để Apple gắn giao dịch với người dùng WeDo và webhook tìm ngược được người dùng.
   - Máy chủ hỏng hoặc mất mạng: **không** `finishTransaction`; hiện "Đã thanh toán, đang kích hoạt gói…". StoreKit đưa lại giao dịch ở lần mở sau; app gửi lại.
   - Người dùng huỷ bảng Apple: đóng bảng, không báo lỗi.
 - Nút **Khôi phục mua hàng**: `getAvailablePurchases` → gửi giao dịch mới nhất lên cùng endpoint.
@@ -94,11 +94,12 @@ Thư viện: `expo-iap` (StoreKit 2, có config plugin cho Expo SDK 57). Thêm m
 | `userId`, `workspaceId`, `subscriptionId` | gắn khi đã xác định được |
 | `lastNotificationType`, `lastSignedPayload` | để truy vết |
 
+- `User.appleAccountToken String? @unique`: token cấp cho app khi mua.
 - Không sửa bảng `PaymentOrder`.
 
 ### 5.2 Module `src/payments/apple/`
 
-- `apple-verifier.ts`: bọc `SignedDataVerifier` và `AppStoreServerAPIClient` của `@apple/app-store-server-library`. Cấu hình từ biến môi trường `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_IAP_ENVIRONMENT` (`Sandbox`/`Production`); `bundleId` cố định `vn.wedo.app`; chứng chỉ gốc Apple tải và cache trong bộ nhớ.
+- `apple-verifier.ts`: bọc `SignedDataVerifier` và `AppStoreServerAPIClient` của `@apple/app-store-server-library`. Người duyệt Apple mua trong Sandbox dù app là bản production: khi Production trả lỗi 4040010 (không có giao dịch) thì thử lại bằng client Sandbox. Cấu hình từ biến môi trường `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_IAP_ENVIRONMENT` (`Sandbox`/`Production`); `bundleId` cố định `vn.wedo.app`; chứng chỉ gốc Apple tải và cache trong bộ nhớ.
 - `apple-mapping.ts` (thuần hàm, test đơn vị): `productId` → gói + chu kỳ qua `payment-catalog`; trạng thái Apple → trạng thái nội bộ:
 
 | Trạng thái Apple | `AppleTransaction.status` | `Subscription.status` | `currentPeriodEnd` |
