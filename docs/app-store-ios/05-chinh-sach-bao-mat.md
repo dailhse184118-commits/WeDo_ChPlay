@@ -6,6 +6,8 @@ Tài liệu này thay toàn bộ nội dung trang `https://wedofpt.com.vn/privac
 
 **Trạng thái (28/09/2026):** bản HTML theo tài liệu này (commit `c4b98c2` và các commit sửa chữ) **đã đăng** ngày 28/09/2026, sau khi máy chủ mới chạy. Cùng ngày, trang `D:\WEDO_PC\FE_WEDO-ios\public\privacy.html` được sửa thêm cho **Sign in with Apple và Google trên iPhone** (nhánh `ios-web`, commit `3a7920c`, `7bbf0c1`) (mục 2, 3.1, 4, 5, 6, 7, 9, 10, 13, 14 và phụ lục tiếng Anh). Phần 3 dưới đây đã chép theo bản sửa đó. **Bản sửa này chưa đăng:** phải đẩy web lại trước khi nộp build có nút Apple.
 
+**Cập nhật 08/10/2026:** từ bản 1.0.15, app bán thuê bao qua Apple In-App Purchase; chính sách cần thêm đoạn nói Apple nhận thanh toán và WeDo chỉ lưu các mã giao dịch. Văn bản đề xuất (Việt và Anh): [13-notes-duyet-iap.md](13-notes-duyet-iap.md), mục 3.2.
+
 Cách dùng:
 
 1. Đọc phần 1 để biết bản mới sửa những gì.
