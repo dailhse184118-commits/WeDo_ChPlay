@@ -78,7 +78,7 @@ Tiếng Việt:
 
 ```text
 Thuê bao qua App Store
-Trên ứng dụng iPhone, bạn có thể mua gói Personal Pro hoặc Team Growth bằng thuê bao tự động gia hạn qua App Store. Khoản tiền được tính vào Apple ID của bạn khi bạn xác nhận mua. Thuê bao tự động gia hạn theo từng kỳ (tháng hoặc năm) bằng đúng giá đã hiển thị lúc mua, trừ khi bạn tắt gia hạn ít nhất 24 giờ trước khi kỳ hiện tại kết thúc. Bạn quản lý và huỷ thuê bao trong Cài đặt → [tên của bạn] → Thuê bao trên iPhone. Việc hoàn tiền cho khoản mua qua App Store do Apple xử lý theo chính sách của Apple; WeDo không hoàn tiền thay Apple. Gói mua qua App Store dùng được trên cả ứng dụng và web WeDo của cùng tài khoản.
+Trên ứng dụng iPhone, bạn có thể mua gói Personal Pro hoặc Team Growth bằng thuê bao tự động gia hạn qua App Store. Khoản tiền được tính vào Apple ID của bạn khi bạn xác nhận mua. Thuê bao tự động gia hạn theo từng kỳ (tháng hoặc năm) bằng đúng giá đã hiển thị lúc mua (Apple sẽ thông báo và xin bạn đồng ý trước khi tăng giá), trừ khi bạn tắt gia hạn ít nhất 24 giờ trước khi kỳ hiện tại kết thúc. Bạn quản lý và huỷ thuê bao trong Cài đặt → [tên của bạn] → Thuê bao trên iPhone. Việc hoàn tiền cho khoản mua qua App Store do Apple xử lý theo chính sách của Apple; WeDo không hoàn tiền thay Apple. Gói mua qua App Store dùng được trên cả ứng dụng và web WeDo của cùng tài khoản.
 ```
 
 English:
