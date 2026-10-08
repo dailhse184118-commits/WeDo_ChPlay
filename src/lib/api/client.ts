@@ -23,6 +23,14 @@ export class ApiError extends Error {
    */
   nguyenNhan?: string;
 
+  /**
+   * Thân JSON của phản hồi lỗi, nguyên văn từ máy chủ.
+   *
+   * Giữ lại để nơi bắt lỗi đọc được các trường ngoài `code`, ví dụ `currentPeriodEnd`
+   * đi kèm `SUBSCRIPTION_CONFLICT`. Không có trường này thì mất hết.
+   */
+  chiTiet?: unknown;
+
   constructor(message: string, status: number, code?: string, nguyenNhan?: string) {
     super(message);
     // Cần thiết để `instanceof ApiError` vẫn đúng sau khi transpile.
@@ -337,11 +345,13 @@ export async function apiRequest<T = unknown>(
       if (!skipAuth) ghiLyDoNeuBiKhoa(payload);
       unauthorizedHandlers.forEach((handler) => handler());
     }
-    throw new ApiError(
+    const loi = new ApiError(
       extractMessage(payload, response.status),
       response.status,
       extractCode(payload),
     );
+    loi.chiTiet = payload;
+    throw loi;
   }
 
   return payload as T;
