@@ -6,19 +6,19 @@ Việc cuối của đợt In-App Purchase. Chương này thay dòng `PAYMENTS: 
 
 Đây là **văn bản thay thế hoàn chỉnh** cho Notes cũ (khối đã dán ở [chương 09](09-ban-dien-that.md) có dòng `PAYMENTS: free; no in-app purchases`, không được để lại). Tài khoản demo theo chương 09: A `wedo.review@gmail.com` ("Lê Huân", Leader dự án "Ra mắt AppleStore"), B `dieulinh@gmail.com` ("Diệu Linh", Member). Không có tài khoản C: người duyệt tự đăng ký tài khoản mới để thử xoá. HOW TO TEST và USER-GENERATED CONTENT rút gọn từ Notes ở chương 09, giữ nguyên các sự thật.
 
-**Dài 3,729 ký tự, 3,876 byte UTF-8 (đếm theo NFC), dưới giới hạn 4.000 byte của Apple**, còn chừa chỗ cho xuống dòng. Mật khẩu **không** ghi trong khối: mật khẩu A nhập ở ô Password của Sign-In Information. Mật khẩu B: làm đúng như chương 09 (chủ dự án tự gõ), rồi sửa câu "see the demo account field (second line)" cho khớp cách bạn làm.
+**Dài 3,774 ký tự, 3,921 byte UTF-8 (đếm theo NFC), tính cả mật khẩu B giả định dài 16 ký tự, dưới giới hạn 4.000 byte của Apple**. Mật khẩu A **không** ghi trong khối: nhập ở ô Password của Sign-In Information. Mật khẩu B ghi vào Notes (xem dưới).
 
 ```text
 WeDo is a team-work app for Vietnamese students, the iPhone companion to https://wedofpt.com.vn. The app is in Vietnamese; English meanings are in brackets. Version 1.0.15 (5) sells two plans through auto-renewable In-App Purchase.
 
 DEMO ACCOUNTS (email + password; no email verification, no OTP)
 Main: wedo.review@gmail.com, "Lê Huân", Leader of the project "Ra mắt AppleStore". Password: see App Store Connect demo account field.
-Teammate: dieulinh@gmail.com, "Diệu Linh", Member, for real-time chat on a second device. Password: see the demo account field (second line).
+Teammate B: dieulinh@gmail.com, "Diệu Linh", Member, for real-time chat on a second device. Password: <OWNER PASTES HERE BEFORE SUBMITTING>
 Please keep these two accounts. Sign in with Apple and Google are also offered; a new account agrees to the Terms once, then creates a workspace (any name).
 
 IN-APP PURCHASE (Guideline 3.1.1)
 Subscription group "WeDo": pro_monthly, pro_yearly (Personal Pro), team_monthly, team_yearly (Team Growth). Plans raise the monthly AI allowance and workspace limits; core features are free.
-Upgrade screen (iPhone only): Tài khoản (Account tab) > Nâng cấp gói (Upgrade plan). It lists Personal Pro and Team Growth with a monthly/yearly selector and the price from StoreKit, then the Apple purchase sheet (Sandbox works). At the bottom: Khôi phục mua hàng (Restore Purchases), Quản lý đăng ký (Manage Subscription) and the auto-renewal disclosure with Privacy Policy and Terms links.
+Upgrade screen (iPhone only): Tài khoản (Account tab) > Nâng cấp gói (Upgrade plan). It lists Personal Pro and Team Growth with a monthly/yearly selector and the price from StoreKit, then the Apple purchase sheet. Reviewers may purchase with a Sandbox account; the server accepts Sandbox receipts. At the bottom: Khôi phục mua hàng (Restore Purchases), Quản lý đăng ký (Manage Subscription) and the auto-renewal disclosure with Privacy Policy and Terms links.
 Guideline 3.1.3(b): our service is multiplatform. A subscription bought on our website stays usable in the app, because the same plans can now also be bought in the app. The app links to no outside purchase page.
 Server: each transaction is verified with the App Store Server API (bundle ID vn.wedo.app); renewals, expirations, refunds and revocations arrive via App Store Server Notifications V2.
 The Privacy Policy and Terms will be updated with a paragraph on Apple subscriptions.
@@ -45,20 +45,21 @@ PERMISSIONS: camera and photos only for chat pictures and the avatar.
 
 Trước khi dán:
 
+- **Trước khi dán Notes, thay chỗ `<OWNER PASTES HERE BEFORE SUBMITTING>` bằng mật khẩu của B** (Notes được phép chứa mật khẩu tài khoản demo; tài liệu này thì không). Ô Sign-In Information của App Store Connect chỉ có một cặp tài khoản/mật khẩu (dùng cho A), nên mật khẩu B phải nằm trong Notes.
 - Làm lại các việc ở chương 09, mục "Việc phải xong trước khi bấm Submit": Diệu Linh gửi một tin mới có việc cần làm; Lê Huân tắt "Cho phép dùng AI" để người duyệt thấy hộp thoại đồng ý.
 - Câu cuối mục IN-APP PURCHASE ("will be updated") đúng khi đoạn ở mục 3 chưa lên web. Khi hai trang đã đăng, đổi thành "include a paragraph on Apple subscriptions".
 
 ## 2. Các bước của chủ dự án
 
-1. **Chụp ảnh Review Screenshot** của màn "Nâng cấp gói" trên iPhone thật (Tài khoản → Nâng cấp gói), thấy cả hai thẻ gói và giá. Một ảnh dùng cho cả 4 sản phẩm (mục Review Information của từng sản phẩm, như chương 12 mục 3). Ảnh phải từ bản build có màn này, nên làm sau bước 5 qua TestFlight, hoặc từ bản dev.
-2. **Đưa máy chủ và web lên trước khi build.** Bạn tự gộp hai nhánh: máy chủ `feat/apple-iap-backend`, web `feat/apple-iap-web`. Sau đó đưa lên theo thứ tự thường lệ (máy chủ trước, web sau).
-3. **Đặt `APPLE_IAP_ENVIRONMENT=Production`** trên Azure (viết đúng chữ; chương 12 mục 6), khởi động lại. Máy chủ tự thử Sandbox khi người duyệt mua bằng tài khoản Sandbox (chương 12 mục 6, phần "Sandbox hay Production").
-4. **Kiểm bốn sản phẩm** ở App Store Connect → Monetization → Subscriptions đều ở trạng thái **Ready to Submit** (đủ giá, bản địa hoá, Review Screenshot).
-5. **Build** từ thư mục `D:\WeDo_ChPlay-ios` (nhánh `ios`, bản 1.0.15, build 5):
+1. **Đưa máy chủ và web lên trước khi build.** Bạn tự gộp hai nhánh: máy chủ `feat/apple-iap-backend`, web `feat/apple-iap-web`. Sau đó đưa lên theo thứ tự thường lệ (máy chủ trước, web sau).
+2. **Đặt `APPLE_IAP_ENVIRONMENT=Production`** trên Azure (viết đúng chữ; chương 12 mục 6), khởi động lại. Máy chủ tự thử Sandbox khi người duyệt mua bằng tài khoản Sandbox (chương 12 mục 6, phần "Sandbox hay Production").
+3. **Kiểm bốn sản phẩm** ở App Store Connect → Monetization → Subscriptions đủ giá và bản địa hoá. Trạng thái **Ready to Submit** sẽ có sau khi tải Review Screenshot ở bước 6.
+4. **Build** từ thư mục `D:\WeDo_ChPlay-ios` (nhánh `ios`, bản 1.0.15, build 5):
    - `google-services.json` là tệp không nằm trong git; thư mục worktree này phải có bản chép của nó (chép từ `D:\WeDo_ChPlay`). Thiếu là build hỏng.
    - Chạy `npx expo install --check` trước và sửa mọi phiên bản lệch.
    - Rồi `eas build -p ios --profile production`.
-6. **Nộp lên App Store Connect:** `eas submit -p ios` (chọn build vừa xong). Chờ build xử lý xong trong TestFlight.
+5. **Nộp lên App Store Connect:** `eas submit -p ios` (chọn build vừa xong). Chờ build xử lý xong trong TestFlight.
+6. **Chụp ảnh Review Screenshot** của màn "Nâng cấp gói" trên iPhone thật (Tài khoản → Nâng cấp gói), thấy cả hai thẻ gói và giá. Một ảnh dùng cho cả 4 sản phẩm (mục Review Information của từng sản phẩm, như chương 12 mục 3). Làm sau khi build 5 đã xử lý xong và cài lên iPhone qua TestFlight (bước 5); sau đó tải ảnh lên Review Screenshot của cả 4 sản phẩm. Bốn sản phẩm chỉ thành Ready to Submit khi đã có ảnh này.
 7. **Trong App Store Connect**, mở phiên bản **1.0.15**:
    1. Mục Build: gắn **build 5**.
    2. Mục **In-App Purchases and Subscriptions**: bấm dấu cộng, **chọn cả 4 sản phẩm**. Lần đầu tiên, sản phẩm phải được nộp cùng bản app; thiếu thì sản phẩm không được duyệt.
@@ -84,7 +85,7 @@ English:
 
 ```text
 Subscriptions through the App Store
-In the iPhone app you can buy Personal Pro or Team Growth as an auto-renewable subscription through the App Store. Payment is charged to your Apple ID account when you confirm the purchase. The subscription renews automatically each period (monthly or yearly) at the price shown at purchase, unless you turn off auto-renewal at least 24 hours before the current period ends. You manage and cancel subscriptions in Settings → [your name] → Subscriptions on your iPhone. Refunds for App Store purchases are handled by Apple under Apple's policies; WeDo does not refund in Apple's place. A plan bought through the App Store works in both the app and the WeDo website for the same account.
+In the iPhone app you can buy Personal Pro or Team Growth as an auto-renewable subscription through the App Store. Payment is charged to your Apple ID account when you confirm the purchase. The subscription renews automatically each period (monthly or yearly) at the price shown at purchase (Apple notifies you and asks for your consent before any price increase), unless you turn off auto-renewal at least 24 hours before the current period ends. You manage and cancel subscriptions in Settings → [your name] → Subscriptions on your iPhone. Refunds for App Store purchases are handled by Apple under Apple's policies; WeDo does not refund in Apple's place. A plan bought through the App Store works in both the app and the WeDo website for the same account.
 ```
 
 ### 3.2. Chính sách quyền riêng tư (chương 05): thêm vào mục dữ liệu thanh toán

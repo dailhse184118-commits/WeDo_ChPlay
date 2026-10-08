@@ -28,6 +28,8 @@ Mật khẩu hai tài khoản demo do chủ dự án giữ và tự gõ vào App
 
 ## Notes đã dán
 
+> Đã thay thế từ 08/10/2026 bằng Notes ở chương 13 §1 (bản IAP 1.0.15).
+
 3.702 ký tự, 3.880 byte (tính cả chỗ trống 22 byte), đếm theo NFC.
 
 ```text
