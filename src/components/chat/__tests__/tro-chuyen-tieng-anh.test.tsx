@@ -11,6 +11,7 @@ import { PhieuBaoCao } from '../../moderation/PhieuBaoCao';
 import { TaskSuggestionSheet } from '../TaskSuggestionSheet';
 import { MoiVaoNhomSheet } from '../MoiVaoNhomSheet';
 import { NhapMaMoiSheet } from '../NhapMaMoiSheet';
+import { MessageBubble } from '../MessageBubble';
 import { ConversationRow } from '../ConversationRow';
 import { ProjectRow } from '../ProjectRow';
 import { MessageComposer } from '../MessageComposer';
@@ -21,7 +22,7 @@ import { ApiError } from '../../../lib/api/client';
 import { getEntitlements } from '../../../lib/api/entitlements';
 import { listFriends, searchUsers } from '../../../lib/api/friends';
 import { layLoiMoi, xemTruocLoiMoi } from '../../../lib/api/loi-moi';
-import { listBlocks, reportContent } from '../../../lib/api/moderation';
+import { MA_QUA_NHIEU_BAO_CAO, listBlocks, reportContent } from '../../../lib/api/moderation';
 import { listProjects } from '../../../lib/api/projects';
 import { LoiGuiDoDang, cauGuiDoDang } from '../../../lib/api/chat-files';
 import { useAuth } from '../../../lib/auth/auth-context';
@@ -223,6 +224,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  mockThamSo = { projectId: 'p1' };
   hopThoai.mockRestore();
   heDieuHanh?.restore();
   heDieuHanh = null;
@@ -420,7 +422,6 @@ describe('tin nhắn riêng ở tiếng Anh', () => {
     await waitFor(() => man.getByText('No messages yet'));
     expect(man.getByText('Say hi to start the conversation.')).toBeTruthy();
     expect(chuVietConSot(cay(man), BO_QUA)).toEqual([]);
-    mockThamSo = { projectId: 'p1' };
   });
 
   it('nhấn giữ tin của người kia: báo cáo và chặn bằng tiếng Anh', async () => {
@@ -432,7 +433,6 @@ describe('tin nhắn riêng ở tiếng Anh', () => {
     expect(man.getByText('Report message')).toBeTruthy();
     expect(man.getByText('Block this person')).toBeTruthy();
     expect(chuVietConSot(cay(man), [...BO_QUA, 'Chào Đại'])).toEqual([]);
-    mockThamSo = { projectId: 'p1' };
   });
 
   it('lỗi tải tin nhắn hiện câu tiếng Anh', async () => {
@@ -441,13 +441,12 @@ describe('tin nhắn riêng ở tiếng Anh', () => {
     const man = await renderScreen(boc(<ManTinNhanRieng />));
     await waitFor(() => expect(man.queryByText('Máy chủ đang bận.')).toBeNull());
     await waitFor(() => man.getByText('Couldn’t load messages.'));
-    mockThamSo = { projectId: 'p1' };
   });
 });
 
 describe('phiếu báo cáo ở tiếng Anh', () => {
   it('báo cáo người: tiêu đề, lý do, ô ghi chú và lỗi quá nhiều báo cáo', async () => {
-    mockedBaoCao.mockRejectedValue(new ApiError('Quá nhiều', 429, 'REPORT_RATE_LIMITED'));
+    mockedBaoCao.mockRejectedValue(new ApiError('Quá nhiều', 429, MA_QUA_NHIEU_BAO_CAO));
     const man = await renderScreen(
       boc(
         <PhieuBaoCao
@@ -470,6 +469,13 @@ describe('phiếu báo cáo ở tiếng Anh', () => {
     }
     expect(man.getByText('Extra notes (optional)')).toBeTruthy();
     expect(man.getByPlaceholderText('Briefly describe what concerns you')).toBeTruthy();
+    expect(chuVietConSot(cay(man), BO_QUA)).toEqual([]);
+
+    await fireEvent.press(man.getByTestId('ly-do-SPAM'));
+    await fireEvent.press(man.getByTestId('bao-cao-gui'));
+    await waitFor(() =>
+      man.getByText('You’ve sent a lot of reports in the past 24 hours. Please try again later.'),
+    );
     expect(chuVietConSot(cay(man), BO_QUA)).toEqual([]);
   });
 
@@ -637,6 +643,14 @@ describe('dòng và ô soạn tin ở tiếng Anh', () => {
 });
 
 describe('hàm thuần ở tiếng Anh', () => {
+  it('giờ tin nhắn tiếng Anh theo giờ Việt Nam, dạng 2:05 PM', async () => {
+    const man = await renderScreen(
+      <MessageBubble message={{ id: 'g1', content: 'x', createdAt: '2026-10-09T07:05:00.000Z' }} isMine />,
+    );
+    // 07:05 UTC = 14:05 giờ Việt Nam
+    expect(man.getByText(/^2:05.PM$/)).toBeTruthy();
+  });
+
   it('dấu hiệu đang nhập', () => {
     expect(typingLabel([], 'en')).toBe('');
     expect(typingLabel(['An'], 'en')).toBe('An is typing…');

@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '../ui/Avatar';
 import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
-import { MA_VUNG, type NgonNgu } from '../../i18n/ngon-ngu';
+import { dinhDangGio } from '../../i18n/dinh-dang';
+import type { NgonNgu } from '../../i18n/ngon-ngu';
 import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { tapFeedback } from '../../lib/haptics';
 import { duongDanTepDinhKem, laAnh } from '../../lib/chat/tep-dinh-kem';
@@ -68,15 +69,13 @@ interface MessageBubbleProps {
 }
 
 /**
- * Giờ của tin nhắn, theo giờ MÁY (nhìn tin lúc nào ở chỗ mình). Tiếng Việt giữ
- * dạng 24 giờ `14:05`; tiếng Anh dùng `2:05 PM`.
+ * Giờ của tin nhắn. Tiếng Việt giữ nguyên cách cũ (24 giờ `14:05`, theo giờ máy); tiếng Anh
+ * đi qua dinh-dang.ts nên luôn là giờ Việt Nam, dạng `2:05 PM`.
  */
 function formatTime(iso: string, ngonNgu: NgonNgu): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  if (ngonNgu === 'en') {
-    return new Intl.DateTimeFormat(MA_VUNG.en, { hour: 'numeric', minute: '2-digit' }).format(date);
-  }
+  if (ngonNgu === 'en') return dinhDangGio(date, 'en');
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
