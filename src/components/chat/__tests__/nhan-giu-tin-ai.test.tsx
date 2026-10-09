@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, Platform, type AlertButton } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -21,6 +21,10 @@ import type { ChatMessage } from '../../../lib/types';
 
 /*
   Nhấn giữ một tin trong chat dự án trên Android.
+
+  Từ khi gộp nhánh ios (10/2026), nhấn giữ mở bảng thao tác (AI, báo cáo, chặn
+  — Guideline 1.2); mục "Tạo công việc bằng AI" mới gửi tin cho AI. Các luật
+  dưới đây áp cho mục đó.
 
   Trước đây nhấn giữ là gửi tin cho AI ngay, với MỌI người: thành viên thường
   mở bảng gợi ý rồi ăn 403 ("Chỉ Leader dự án mới được dùng AI…"), không ai được
@@ -53,6 +57,12 @@ jest.mock('../../../lib/api/projects');
 jest.mock('../../../lib/api/entitlements', () => ({
   MA_HET_LUOT_AI: 'AI_QUOTA_EXCEEDED',
   getEntitlements: jest.fn(),
+}));
+jest.mock('../../../lib/api/moderation', () => ({
+  ...jest.requireActual('../../../lib/api/moderation'),
+  listBlocks: jest.fn(async () => []),
+  blockUser: jest.fn(),
+  reportContent: jest.fn(),
 }));
 jest.mock('../../../lib/auth/auth-context');
 jest.mock('../../../lib/socket/socket-context');
@@ -143,6 +153,7 @@ function dangNhap(aiConsentAt: string | null) {
 
 let queryClient: QueryClient;
 let nutHopThoai: AlertButton[] = [];
+let heDieuHanh: jest.ReplaceProperty<typeof Platform.OS> | undefined;
 
 function dung() {
   return (
@@ -150,6 +161,12 @@ function dung() {
       <ManChatDuAn />
     </QueryClientProvider>
   );
+}
+
+/* Nhấn giữ tin m1 rồi chọn "Tạo công việc bằng AI" trên bảng thao tác (Android). */
+async function nhanGiuRoiChonAI(man: Awaited<ReturnType<typeof render>>) {
+  await fireEvent(man.getByTestId('message-m1'), 'longPress');
+  await fireEvent.press(man.getByTestId('thao-tac-ai'));
 }
 
 async function moVaChoTin(tinNhan: ChatMessage[] = [tin('m1', 'Mai nộp báo cáo nhé')]) {
@@ -162,6 +179,7 @@ async function moVaChoTin(tinNhan: ChatMessage[] = [tin('m1', 'Mai nộp báo c�
 
 beforeEach(() => {
   jest.clearAllMocks();
+  heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
   nutHopThoai = [];
   mockSoanTin = null;
   jest.spyOn(Alert, 'alert').mockImplementation((_tieuDe, _noiDung, nut) => {
@@ -182,6 +200,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  heDieuHanh?.restore();
+  heDieuHanh = undefined;
   jest.restoreAllMocks();
   queryClient.clear();
 });
@@ -193,6 +213,9 @@ describe('nhấn giữ tin trong chat dự án', () => {
 
     await fireEvent(man.getByTestId('message-m1'), 'longPress');
 
+    // Bảng vẫn mở (Báo cáo, Chặn) nhưng không có mục AI.
+    expect(man.getByTestId('thao-tac-bao-cao')).toBeTruthy();
+    expect(man.queryByTestId('thao-tac-ai')).toBeNull();
     expect(mockedGoiY).not.toHaveBeenCalled();
     expect(Alert.alert).not.toHaveBeenCalled();
   });
@@ -201,7 +224,7 @@ describe('nhấn giữ tin trong chat dự án', () => {
     mockedDuAn.mockResolvedValue(duAn('LEADER') as never);
     const man = await moVaChoTin();
 
-    await fireEvent(man.getByTestId('message-m1'), 'longPress');
+    await nhanGiuRoiChonAI(man);
 
     await waitFor(() => expect(mockedGoiY).toHaveBeenCalledTimes(1));
     expect(mockedGoiY.mock.calls[0][0]).toBe('p1');
@@ -213,7 +236,7 @@ describe('nhấn giữ tin trong chat dự án', () => {
     mockedDuAn.mockResolvedValue(duAn('MEMBER') as never);
     const man = await moVaChoTin();
 
-    await fireEvent(man.getByTestId('message-m1'), 'longPress');
+    await nhanGiuRoiChonAI(man);
 
     await waitFor(() => expect(mockedGoiY).toHaveBeenCalledTimes(1));
   });
@@ -224,7 +247,7 @@ describe('nhấn giữ tin trong chat dự án', () => {
     mockedDuAn.mockResolvedValue(duAn('LEADER') as never);
     const man = await moVaChoTin();
 
-    await fireEvent(man.getByTestId('message-m1'), 'longPress');
+    await nhanGiuRoiChonAI(man);
 
     expect(Alert.alert).toHaveBeenCalledWith('Dùng AI để gợi ý công việc?', expect.any(String), expect.any(Array));
     expect(mockedGoiY).not.toHaveBeenCalled();
@@ -240,7 +263,7 @@ describe('nhấn giữ tin trong chat dự án', () => {
     mockedDuAn.mockResolvedValue(duAn('LEADER') as never);
     const man = await moVaChoTin();
 
-    await fireEvent(man.getByTestId('message-m1'), 'longPress');
+    await nhanGiuRoiChonAI(man);
     await act(async () => nutHopThoai.find((nut) => nut.text === 'Không, cảm ơn')?.onPress?.());
 
     expect(mockedGoiY).not.toHaveBeenCalled();

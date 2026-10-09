@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -620,7 +620,14 @@ describe('khung chat dự án', () => {
   đã tiêu một lượt AI.
 */
 describe('tạo việc bằng AI ở dự án thuộc không gian khác', () => {
+  let heDieuHanh: jest.ReplaceProperty<typeof Platform.OS> | undefined;
+  afterEach(() => {
+    heDieuHanh?.restore();
+    heDieuHanh = undefined;
+  });
+
   it('lấy không gian và thành viên theo đúng dự án của tin nhắn', async () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
     /*
       u1 là CHỦ không gian w1 của dự án, không phải Leader trong dự án, và đang
       đứng ở không gian khác. Máy chủ (`ensureProjectLeader`) cho chủ không gian
@@ -656,7 +663,9 @@ describe('tạo việc bằng AI ở dự án thuộc không gian khác', () => 
     const man = await render(dung());
     await waitFor(() => expect(man.getByText('Minh Anh làm slide nhé')).toBeTruthy());
 
+    // Nhấn giữ mở bảng thao tác (bảng của app trên Android); chọn mục AI.
     await fireEvent(man.getByText('Minh Anh làm slide nhé'), 'longPress');
+    await fireEvent.press(man.getByTestId('thao-tac-ai'));
     await waitFor(() => expect(mockPhieu?.visible).toBe(true));
     await waitFor(() => expect(mockPhieu?.members.map((m) => m.id)).toEqual(['u2']));
 

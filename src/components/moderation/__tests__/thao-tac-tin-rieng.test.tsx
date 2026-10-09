@@ -43,6 +43,8 @@ jest.mock('react-native-reanimated', () => {
 });
 
 jest.mock('../../../lib/api/direct-chat', () => ({
+  ...jest.requireActual('../../../lib/api/direct-chat'),
+  getDirectHistory: jest.fn(),
   getDirectMessages: jest.fn(),
   listConversations: jest.fn(),
   markConversationRead: jest.fn(),
@@ -56,6 +58,8 @@ jest.mock('../../../lib/api/moderation', () => ({
   reportContent: jest.fn(),
 }));
 jest.mock('../../../lib/auth/auth-context');
+/* Màn tự nạp lại khi socket nối lại (`useDongBoKhungChat`); ở đây không có socket. */
+jest.mock('../../../lib/socket/socket-context', () => ({ useSocket: () => ({ socket: null }) }));
 jest.mock('../../../lib/chat/use-header-tep', () => ({ useHeaderTep: () => undefined }));
 jest.mock('../../../lib/images/pick-images', () => ({ chonAnh: jest.fn(), chupAnh: jest.fn() }));
 jest.mock('../../../lib/observability/sentry', () => ({ baoLoi: jest.fn(), moTaTep: jest.fn() }));
