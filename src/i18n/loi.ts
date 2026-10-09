@@ -2,18 +2,6 @@ import { ApiError } from '../lib/api/client';
 import type { NgonNgu } from './ngon-ngu';
 
 /**
- * Câu báo lỗi theo ngôn ngữ đang dùng.
- *
- * Máy chủ WeDo trả câu lỗi tiếng Việt và KHÔNG đổi trong đợt này. Nên ở chế độ
- * tiếng Anh, app tự dịch những gì nó nhận ra:
- * 1. Mã lỗi máy đọc được (`code` của ApiError) — chắc chắn nhất.
- * 2. Một số câu cố định của máy chủ và của chính app, so khớp nguyên văn.
- * Câu lạ thì dùng câu dự phòng (đã đúng ngôn ngữ) của màn hình: một câu chung
- * chung bằng tiếng Anh vẫn hơn một câu tiếng Việt đoán mò.
- *
- * Chế độ tiếng Việt giữ nguyên hành vi cũ: câu của máy chủ, hoặc câu dự phòng.
- */
-/**
  * Lỗi do chính app ném ra với câu ĐÃ đúng ngôn ngữ lúc ném (ví dụ lib/auth: "Đăng
  * nhập Apple không thành công…"). `dichThongBaoLoi` trả nguyên câu, không dịch lại
  * và không thay bằng câu dự phòng.
@@ -26,6 +14,18 @@ export class LoiDaDich extends Error {
   }
 }
 
+/**
+ * Câu báo lỗi theo ngôn ngữ đang dùng.
+ *
+ * Máy chủ WeDo trả câu lỗi tiếng Việt và KHÔNG đổi trong đợt này. Nên ở chế độ
+ * tiếng Anh, app tự dịch những gì nó nhận ra:
+ * 1. Mã lỗi máy đọc được (`code` của ApiError) — chắc chắn nhất.
+ * 2. Một số câu cố định của máy chủ và của chính app, so khớp nguyên văn.
+ * Câu lạ thì dùng câu dự phòng (đã đúng ngôn ngữ) của màn hình: một câu chung
+ * chung bằng tiếng Anh vẫn hơn một câu tiếng Việt đoán mò.
+ *
+ * Chế độ tiếng Việt giữ nguyên hành vi cũ: câu của máy chủ, hoặc câu dự phòng.
+ */
 /** Nhãn trạng thái đơn mà máy chủ gửi kèm ORDER_NOT_PENDING (`currentStatus`). */
 const TRANG_THAI_DON_TIENG_ANH: Record<string, string> = {
   PENDING: 'Awaiting payment',

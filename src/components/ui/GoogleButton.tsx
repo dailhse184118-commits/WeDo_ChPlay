@@ -21,8 +21,8 @@ interface GoogleButtonProps {
  * chiều cao `sizes.control` và bo tròn `radius.pill` để đứng cạnh nút "Đăng nhập"
  * không bị lệch.
  *
- * Nhãn cố định trong component: Google yêu cầu đúng chữ "Tiếp tục với Google"
- * hoặc "Đăng nhập bằng Google", không cho tự đặt.
+ * Nhãn lấy từ từ điển nhưng chỉ được dùng đúng cách nói Google cho phép: "Tiếp tục với Google"
+ * (tiếng Anh "Continue with Google") hoặc "Đăng nhập bằng Google" ("Sign in with Google"), không tự đặt.
  */
 export function GoogleButton({ onPress, loading = false, disabled = false, testID }: GoogleButtonProps) {
   const t = useTuDien(tuDienDangNhap);
