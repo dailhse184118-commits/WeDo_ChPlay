@@ -15,8 +15,8 @@ Nhánh mobile `feat/song-ngu`. Bản iOS 1.0.16 (build 6), Android 1.0.16 (versi
 
 | Nền tảng | Hash |
 |---|---|
-| iOS | `fe8d5cecfd2dcb56f583d3951243180ddaa4bf16` |
-| Android | `995a8b2b81f2a016af45acd3b85029875d7d9796` |
+| iOS | `9617f10d6444761bd1ac7285c92db89b26f4b37b` |
+| Android | `90966ceaa2c6e561147890860c5f202a3d23a389` |
 
 Lưu ý: EAS build trên Linux với dấu xuống dòng LF. Nếu có tệp bị tính vân tay mà đang là CRLF trên Windows (git đổi LF thành CRLF khi checkout), hash tính ở đây có thể khác hash của EAS. Dùng hash chỉ để so sánh sơ bộ; hash chính thức là hash ghi trong trang build của EAS.
 

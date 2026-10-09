@@ -21,7 +21,7 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "CFBundleDevelopmentRegion": "vi",
+        "CFBundleDevelopmentRegion": "en",
         "CFBundleLocalizations": ["vi", "en"],
         "CFBundleAllowMixedLocalizations": true,
         "NSAppTransportSecurity": {

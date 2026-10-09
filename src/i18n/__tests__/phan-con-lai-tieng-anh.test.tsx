@@ -159,7 +159,7 @@ describe('nhắc cập nhật, màn chặn, không gian làm việc', () => {
 
   it('dải băng nhắc cập nhật', async () => {
     const android = jest.replaceProperty(Platform, 'OS', 'android');
-    const man = await render(<UpdateBanner phienBanMoi="1.0.16" notes="" />);
+    const man = await render(<UpdateBanner phienBanMoi="1.0.16" notes="Sửa lỗi và cải thiện tốc độ." />);
     await waitFor(() => expect(man.getByText('Update available')).toBeTruthy());
     expect(man.getByText('A new version of WeDo is available.')).toBeTruthy();
     expect(man.getByText('Update')).toBeTruthy();
@@ -171,7 +171,7 @@ describe('nhắc cập nhật, màn chặn, không gian làm việc', () => {
 
   it('màn chặn cập nhật', async () => {
     const android = jest.replaceProperty(Platform, 'OS', 'android');
-    const man = await render(<UpdateGate notes="" />);
+    const man = await render(<UpdateGate notes="Sửa lỗi và cải thiện tốc độ." />);
     expect(man.getByText('WeDo needs an update')).toBeTruthy();
     expect(man.getByText('Open Google Play to update')).toBeTruthy();
     expect(chuVietConSot(cay(man))).toEqual([]);

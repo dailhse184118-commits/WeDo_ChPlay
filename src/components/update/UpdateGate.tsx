@@ -43,7 +43,8 @@ export function UpdateGate({ notes, storeUrl }: UpdateGateProps) {
 
       <Text style={styles.than}>{t.chanNoiDung}</Text>
 
-      {notes ? <Text style={styles.ghiChu}>{notes}</Text> : null}
+      {/* Ghi chú bản mới lấy từ máy chủ, chỉ viết tiếng Việt: tiếng Anh thì không hiện. */}
+      {ngonNgu === 'vi' && notes ? <Text style={styles.ghiChu}>{notes}</Text> : null}
 
       {coNutCapNhat(storeUrl) ? (
         <View style={styles.nut}>

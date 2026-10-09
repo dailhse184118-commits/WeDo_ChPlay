@@ -61,7 +61,7 @@ export function UpdateBanner({ phienBanMoi, notes, storeUrl }: UpdateBannerProps
       <View style={styles.than}>
         <Text style={styles.tieuDe}>{t.tieuDe}</Text>
         <Text style={styles.chu} numberOfLines={3}>
-          {notes || t.macDinh}
+          {(ngonNgu === 'vi' && notes) || t.macDinh}
         </Text>
       </View>
 
