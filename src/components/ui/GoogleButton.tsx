@@ -2,6 +2,8 @@ import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import { colors, fontSize, radius, sizes, spacing } from '../../theme/tokens';
 
 interface GoogleButtonProps {
@@ -23,6 +25,7 @@ interface GoogleButtonProps {
  * hoặc "Đăng nhập bằng Google", không cho tự đặt.
  */
 export function GoogleButton({ onPress, loading = false, disabled = false, testID }: GoogleButtonProps) {
+  const t = useTuDien(tuDienDangNhap);
   const inactive = loading || disabled;
 
   return (
@@ -44,7 +47,7 @@ export function GoogleButton({ onPress, loading = false, disabled = false, testI
         <View style={styles.content}>
           <Ionicons name="logo-google" size={20} color={colors.text} />
           <Text style={[styles.label, inactive ? styles.labelInactive : null]}>
-            Tiếp tục với Google
+            {t.tiepTucVoiGoogle}
           </Text>
         </View>
       )}

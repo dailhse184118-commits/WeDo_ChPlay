@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { LoiDaDich } from '../../i18n/loi';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import type { DangNhapAppleInput } from '../api/auth';
 import { sha256Hex } from './sha256';
 
@@ -77,7 +80,7 @@ export function taoNonceGoc(): string {
     return (uuidv4() + uuidv4()).replace(/-/g, '');
   }
 
-  throw new Error('Máy chưa tạo được mã bảo mật cho đăng nhập Apple. Vui lòng thử lại.');
+  throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).appleKhongTaoDuocMa);
 }
 
 /** Máy chủ nhận họ tên tối đa 100 ký tự. */
@@ -122,7 +125,7 @@ function maNativeCuaLoi(error: unknown): string | null {
  */
 export async function layThongTinApple(): Promise<DangNhapAppleInput | null> {
   if (Platform.OS !== 'ios') {
-    throw new Error('Đăng nhập bằng Apple chỉ có trên iPhone.');
+    throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).appleChiCoTrenIphone);
   }
 
   const nonceGoc = taoNonceGoc();
@@ -143,16 +146,13 @@ export async function layThongTinApple(): Promise<DangNhapAppleInput | null> {
     // Giữ mã trong ngoặc: thứ duy nhất lần ra nguyên nhân khi người kiểm thử
     // chụp màn hình gửi về — giống cách làm với Google.
     if (ma) {
-      throw new Error(
-        `Đăng nhập Apple không thành công (${ma}). ` +
-          'Vui lòng thử lại, hoặc đăng nhập bằng email và mật khẩu.',
-      );
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).appleKhongThanhCong(ma));
     }
     throw error;
   }
 
   if (!credential.identityToken) {
-    throw new Error('Apple không trả về mã xác minh. Vui lòng thử lại.');
+    throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).appleThieuMa);
   }
 
   const thongTin: DangNhapAppleInput = {

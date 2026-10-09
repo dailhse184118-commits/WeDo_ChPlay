@@ -2,12 +2,10 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import { PRIVACY_URL, TERMS_URL, openLegalLink } from '../../lib/legal-links';
 import { colors, fontSize, lineHeight, sizes, spacing } from '../../theme/tokens';
-
-/** Câu đầy đủ của ô, đọc cho trình đọc màn hình và dùng trong kiểm thử. */
-export const CAU_DONG_Y_DIEU_KHOAN =
-  'Tôi đủ 18 tuổi và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư';
 
 interface ODongYDieuKhoanProps {
   daChon: boolean;
@@ -27,6 +25,7 @@ interface ODongYDieuKhoanProps {
  * như ô đánh dấu của hệ thống.
  */
 export function ODongYDieuKhoan({ daChon, onDoi, disabled = false }: ODongYDieuKhoanProps) {
+  const t = useTuDien(tuDienDangNhap);
   const doi = () => {
     if (!disabled) onDoi(!daChon);
   };
@@ -36,7 +35,7 @@ export function ODongYDieuKhoan({ daChon, onDoi, disabled = false }: ODongYDieuK
       <Pressable
         testID="dong-y-dieu-khoan"
         accessibilityRole="checkbox"
-        accessibilityLabel={CAU_DONG_Y_DIEU_KHOAN}
+        accessibilityLabel={t.cauDongY}
         accessibilityState={{ checked: daChon, disabled }}
         onPress={doi}
         hitSlop={10}
@@ -50,23 +49,23 @@ export function ODongYDieuKhoan({ daChon, onDoi, disabled = false }: ODongYDieuK
       </Pressable>
 
       <Text style={styles.chu} onPress={doi}>
-        Tôi đủ 18 tuổi và đồng ý với{' '}
+        {t.toiDu18}{' '}
         <Text
           testID="lien-ket-dieu-khoan"
           accessibilityRole="link"
           style={styles.lienKet}
           onPress={() => void openLegalLink(TERMS_URL)}
         >
-          Điều khoản sử dụng
+          {t.dieuKhoanSuDung}
         </Text>{' '}
-        và{' '}
+        {t.va}{' '}
         <Text
           testID="lien-ket-quyen-rieng-tu"
           accessibilityRole="link"
           style={styles.lienKet}
           onPress={() => void openLegalLink(PRIVACY_URL)}
         >
-          Chính sách quyền riêng tư
+          {t.chinhSachRiengTu}
         </Text>
       </Text>
     </View>

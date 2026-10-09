@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import { colors, fontSize, radius, sizes, spacing } from '../../theme/tokens';
 
 interface TextFieldProps {
@@ -40,6 +42,7 @@ export function TextField({
   autoComplete,
   testID,
 }: TextFieldProps) {
+  const t = useTuDien(tuDienDangNhap);
   const [focused, setFocused] = useState(false);
 
   /*
@@ -94,7 +97,7 @@ export function TextField({
           <Pressable
             testID={testID ? `${testID}-toggle` : undefined}
             accessibilityRole="button"
-            accessibilityLabel={hienMatKhau ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            accessibilityLabel={hienMatKhau ? t.anMatKhau : t.hienMatKhau}
             onPress={() => setHienMatKhau((truoc) => !truoc)}
             hitSlop={8}
             style={({ pressed }) => [styles.toggle, pressed ? styles.togglePressed : null]}

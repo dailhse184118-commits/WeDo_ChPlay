@@ -7,6 +7,8 @@ import { Button } from '../ui/Button';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { dongYDieuKhoan } from '../../lib/api/account';
 import { useAuth } from '../../lib/auth/auth-context';
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import type { UserProfile } from '../../lib/types';
 import { colors, fontSize, lineHeight, scale, spacing } from '../../theme/tokens';
 import { ODongYDieuKhoan } from './ODongYDieuKhoan';
@@ -49,17 +51,20 @@ export function CongDieuKhoan({ children }: { children: React.ReactNode }) {
 
 function ManDongYDieuKhoan() {
   const { user, capNhatHoSo, signOut } = useAuth();
+  const t = useTuDien(tuDienDangNhap);
+  const dichLoi = useDichLoi();
   const insets = useSafeAreaInsets();
 
   /* Không đánh dấu sẵn — xem `ODongYDieuKhoan`. */
   const [dongY, setDongY] = useState(false);
   const [dangGui, setDangGui] = useState(false);
-  const [loi, setLoi] = useState('');
+  // Giữ lỗi gốc, dịch lúc vẽ.
+  const [loi, setLoi] = useState<{ nguon: unknown } | null>(null);
 
   async function tiepTuc() {
     if (!dongY || !user) return;
 
-    setLoi('');
+    setLoi(null);
     setDangGui(true);
     try {
       const dau = await dongYDieuKhoan();
@@ -69,7 +74,7 @@ function ManDongYDieuKhoan() {
       */
       capNhatHoSo({ ...user, ...dau });
     } catch (err) {
-      setLoi(err instanceof Error ? err.message : 'Chưa lưu được. Vui lòng thử lại.');
+      setLoi({ nguon: err });
       setDangGui(false);
     }
   }
@@ -88,12 +93,11 @@ function ManDongYDieuKhoan() {
       </View>
 
       <Text style={styles.tieuDe} accessibilityRole="header">
-        Điều khoản sử dụng
+        {t.dieuKhoanSuDung}
       </Text>
 
       <Text style={styles.than}>
-        Trước khi tiếp tục dùng WeDo, bạn cần xác nhận đủ 18 tuổi và đồng ý với Điều khoản sử
-        dụng.
+        {t.truocKhiTiepTuc}
       </Text>
 
       {/*
@@ -102,12 +106,10 @@ function ManDongYDieuKhoan() {
         nằm sau đường dẫn.
       */}
       <Text style={styles.than}>
-        WeDo không chấp nhận nội dung phản cảm, quấy rối hay lạm dụng. Bạn có thể báo cáo tin
-        nhắn hoặc chặn người vi phạm ngay trong app, và WeDo xem xét mọi báo cáo trong vòng 24
-        giờ.
+        {t.khongKhoanNhuong}
       </Text>
 
-      {loi ? <ErrorBanner message={loi} /> : null}
+      {loi ? <ErrorBanner message={dichLoi(loi.nguon, t.chuaLuuDuoc)} /> : null}
 
       <View style={styles.o}>
         <ODongYDieuKhoan daChon={dongY} onDoi={setDongY} disabled={dangGui} />
@@ -115,7 +117,7 @@ function ManDongYDieuKhoan() {
 
       <Button
         testID="cong-dieu-khoan-dong-y"
-        label="Đồng ý và tiếp tục"
+        label={t.dongYVaTiepTuc}
         onPress={() => void tiepTuc()}
         loading={dangGui}
         disabled={!dongY}
@@ -125,7 +127,7 @@ function ManDongYDieuKhoan() {
       <View style={styles.nutPhu}>
         <Button
           testID="cong-dieu-khoan-dang-xuat"
-          label="Đăng xuất"
+          label={t.dangXuat}
           variant="secondary"
           onPress={() => void signOut()}
           disabled={dangGui}

@@ -1,6 +1,10 @@
 import { Platform } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { LoiDaDich } from '../../i18n/loi';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
+
 /**
  * Web client ID dự phòng, dùng khi bản build không khai biến môi trường.
  *
@@ -122,7 +126,7 @@ export async function getGoogleIdToken(
     đường nào khác chạm được tới SDK Google — `configure` bên dưới cũng không chạy.
   */
   if (!coDangNhapGoogle(iosClientId)) {
-    throw new Error('Bản iPhone chưa hỗ trợ đăng nhập Google. Vui lòng dùng email và mật khẩu.');
+    throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleIphoneChuaHoTro);
   }
 
   // `configure` là thao tác nhẹ và `signIn` luôn chờ nó xong, nên gọi ngay trước
@@ -141,7 +145,7 @@ export async function getGoogleIdToken(
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   } catch (error) {
     if (maNativeCuaLoi(error) === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-      throw new Error('Máy chưa có Google Play Services nên không dùng được đăng nhập Google.');
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleThieuPlayServices);
     }
     throw error;
   }
@@ -163,16 +167,10 @@ export async function getGoogleIdToken(
       người kiểm thử chụp màn hình gửi về.
     */
     if (ma === MA_DEVELOPER_ERROR_ANDROID || ma === 'DEVELOPER_ERROR') {
-      throw new Error(
-        'Google chưa chấp nhận ứng dụng này (DEVELOPER_ERROR). ' +
-          'Kiểm tra SHA-1 của chứng chỉ ký và trạng thái Publish trong Google Cloud Console.',
-      );
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleDeveloperError);
     }
     if (ma) {
-      throw new Error(
-        `Đăng nhập Google không thành công (${ma}). ` +
-          'Vui lòng thử lại, hoặc đăng nhập bằng email và mật khẩu.',
-      );
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleKhongThanhCong(ma));
     }
     throw error;
   }
@@ -182,7 +180,7 @@ export async function getGoogleIdToken(
   const idToken = response.data.idToken;
   if (!idToken) {
     // Google chỉ cấp ID token khi `webClientId` khai đúng một client dạng Web.
-    throw new Error('Google không trả về ID token. Kiểm tra lại Web client ID của ứng dụng.');
+    throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleThieuIdToken);
   }
 
   return idToken;

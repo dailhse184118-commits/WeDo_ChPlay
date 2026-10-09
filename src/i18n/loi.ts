@@ -13,6 +13,19 @@ import type { NgonNgu } from './ngon-ngu';
  *
  * Chế độ tiếng Việt giữ nguyên hành vi cũ: câu của máy chủ, hoặc câu dự phòng.
  */
+/**
+ * Lỗi do chính app ném ra với câu ĐÃ đúng ngôn ngữ lúc ném (ví dụ lib/auth: "Đăng
+ * nhập Apple không thành công…"). `dichThongBaoLoi` trả nguyên câu, không dịch lại
+ * và không thay bằng câu dự phòng.
+ */
+export class LoiDaDich extends Error {
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, LoiDaDich.prototype);
+    this.name = 'LoiDaDich';
+  }
+}
+
 /** Nhãn trạng thái đơn mà máy chủ gửi kèm ORDER_NOT_PENDING (`currentStatus`). */
 const TRANG_THAI_DON_TIENG_ANH: Record<string, string> = {
   PENDING: 'Awaiting payment',
@@ -149,6 +162,7 @@ function layChiTiet(loi: unknown): Record<string, unknown> | undefined {
  * câu ĐÚNG ngôn ngữ đang dùng (lấy từ từ điển của màn hình).
  */
 export function dichThongBaoLoi(loi: unknown, duPhong: string, ngonNgu: NgonNgu): string {
+  if (loi instanceof LoiDaDich) return loi.message;
   const cau = loi instanceof Error ? loi.message.normalize('NFC').trim() : '';
   if (ngonNgu === 'vi') return cau || duPhong;
   const ma = loi instanceof ApiError ? loi.code : undefined;

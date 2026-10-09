@@ -17,4 +17,5 @@ export const CHUOI_DUOC_PHEP: ReadonlyArray<{ tep: string; chuoi: string; lyDo: 
   { tep: 'src/i18n/dinh-dang.ts', chuoi: 'VNĐ', lyDo: 'Đơn vị tiền của bản tiếng Việt; bản tiếng Anh ghi VND trong cùng hàm.' },
   { tep: 'src/i18n/dinh-dang.ts', chuoi: 'đ', lyDo: 'Đơn vị tiền mặc định của bản tiếng Việt; bản tiếng Anh ghi VND trong cùng hàm.' },
   { tep: 'src/i18n/loi.ts', chuoi: 'Bạn không thể kết bạn với người này.', lyDo: 'Câu gốc tiếng Việt do máy chủ trả về, dùng để nhận diện lỗi; bản tiếng Anh dịch ngay trong loi.ts.' },
+  { tep: 'src/lib/auth/auth-context.tsx', chuoi: 'useAuth phải được dùng bên trong AuthProvider', lyDo: 'Lỗi lập trình viên (dùng hook sai chỗ), người dùng không bao giờ thấy.' },
 ];

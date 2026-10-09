@@ -18,12 +18,26 @@ import { GoogleButton } from '../../components/ui/GoogleButton';
 import { KhungCuonBieuMau, khungCuonTuLoBanPhim } from '../../components/ui/KhungCuonBieuMau';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import { useCoDangNhapApple } from '../../lib/auth/apple-signin';
 import { useAuth } from '../../lib/auth/auth-context';
 import { coDangNhapGoogle } from '../../lib/auth/google-signin';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
+type KhoaLoi =
+  | 'canDongYDieuKhoan'
+  | 'thieuHoTen'
+  | 'thieuEmail'
+  | 'matKhauNgan'
+  | 'dangKyThatBai'
+  | 'dangNhapGoogleThatBai'
+  | 'dangNhapAppleThatBai';
+
 export default function RegisterScreen() {
+  const t = useTuDien(tuDienDangNhap);
+  const dichLoi = useDichLoi();
   const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
   const coApple = useCoDangNhapApple();
@@ -34,7 +48,8 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   /* Không đánh dấu sẵn — xem `ODongYDieuKhoan`. */
   const [dongY, setDongY] = useState(false);
-  const [error, setError] = useState('');
+  const [loi, setLoi] = useState<NguonLoi<KhoaLoi> | null>(null);
+  const error = chuLoi(t, loi, dichLoi);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [appleSubmitting, setAppleSubmitting] = useState(false);
@@ -42,23 +57,23 @@ export default function RegisterScreen() {
   const handleSubmit = async () => {
     // Nút đã tắt khi chưa đánh dấu; chốt thêm ở đây cho chắc.
     if (!dongY) {
-      setError('Bạn cần xác nhận đủ 18 tuổi và đồng ý với Điều khoản sử dụng để tạo tài khoản.');
+      setLoi({ khoa: 'canDongYDieuKhoan' });
       return;
     }
     if (!fullName.trim()) {
-      setError('Họ và tên không được để trống');
+      setLoi({ khoa: 'thieuHoTen' });
       return;
     }
     if (!email.trim()) {
-      setError('Vui lòng nhập email');
+      setLoi({ khoa: 'thieuEmail' });
       return;
     }
     if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      setLoi({ khoa: 'matKhauNgan' });
       return;
     }
 
-    setError('');
+    setLoi(null);
     setSubmitting(true);
     try {
       await signUp({
@@ -76,19 +91,16 @@ export default function RegisterScreen() {
 
         Dùng Alert của hệ thống vì nó nổi trên cả lần điều hướng ngay sau đó.
       */
-      Alert.alert(
-        'Đăng ký thành công',
-        `Chào ${fullName.trim()}, tài khoản của bạn đã sẵn sàng. Tạo dự án đầu tiên để bắt đầu nhé.`,
-      );
+      Alert.alert(t.dangKyThanhCong, t.chaoMung(fullName.trim()));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'dangKyThatBai' });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleGoogle = async () => {
-    setError('');
+    setLoi(null);
     setGoogleSubmitting(true);
     try {
       /*
@@ -98,14 +110,14 @@ export default function RegisterScreen() {
       */
       await signInWithGoogle();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'dangNhapGoogleThatBai' });
     } finally {
       setGoogleSubmitting(false);
     }
   };
 
   const handleApple = async () => {
-    setError('');
+    setLoi(null);
     setAppleSubmitting(true);
     try {
       /*
@@ -115,7 +127,7 @@ export default function RegisterScreen() {
       */
       await signInWithApple();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đăng nhập Apple thất bại. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'dangNhapAppleThatBai' });
     } finally {
       setAppleSubmitting(false);
     }
@@ -157,21 +169,21 @@ export default function RegisterScreen() {
             ]}
           >
             <WeDoLogo testID="wedo-logo" width={140} tintColor={colors.onPrimary} />
-            <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
+            <Text style={styles.tagline}>{t.khauHieu}</Text>
           </View>
 
           <View style={styles.body}>
             <Card overlap={spacing.lg} style={styles.form}>
-              <Text style={styles.formTitle}>Tạo tài khoản</Text>
+              <Text style={styles.formTitle}>{t.taoTaiKhoan}</Text>
 
               {error ? <ErrorBanner message={error} /> : null}
 
               <TextField
                 testID="fullName"
-                label="Họ và tên"
+                label={t.hoTen}
                 value={fullName}
                 onChangeText={setFullName}
-                placeholder="Nguyễn Văn A"
+                placeholder={t.hoTenMau}
                 autoCapitalize="words"
                 textContentType="name"
                 autoComplete="name"
@@ -181,17 +193,17 @@ export default function RegisterScreen() {
                 label="Email"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="ban@example.com"
+                placeholder={t.emailMau}
                 keyboardType="email-address"
                 textContentType="username"
                 autoComplete="email"
               />
               <TextField
                 testID="password"
-                label="Mật khẩu"
+                label={t.matKhau}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Ít nhất 6 ký tự"
+                placeholder={t.matKhauGoiY}
                 secureTextEntry
                 textContentType="newPassword"
                 autoComplete="new-password"
@@ -201,7 +213,7 @@ export default function RegisterScreen() {
 
               <Button
                 testID="submit"
-                label="Đăng ký"
+                label={t.dangKy}
                 onPress={handleSubmit}
                 loading={submitting}
                 disabled={googleSubmitting || appleSubmitting || !dongY}
@@ -220,7 +232,7 @@ export default function RegisterScreen() {
                 <>
                   <View style={styles.divider}>
                     <View style={styles.dividerLine} />
-                    <Text style={styles.dividerLabel}>hoặc</Text>
+                    <Text style={styles.dividerLabel}>{t.hoac}</Text>
                     <View style={styles.dividerLine} />
                   </View>
 
@@ -248,7 +260,7 @@ export default function RegisterScreen() {
             </Card>
 
             <Link href="/login" style={styles.link}>
-              Đã có tài khoản? Đăng nhập
+              {t.daCoTaiKhoan}
             </Link>
           </View>
         </KhungCuonBieuMau>

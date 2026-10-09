@@ -18,6 +18,21 @@ const TEP_DA_DICH: string[] = [
   'src/i18n/dinh-dang.ts',
   'src/i18n/loi.ts',
   'src/i18n/ngon-ngu.ts',
+  'src/app/(auth)/login.tsx',
+  'src/app/(auth)/register.tsx',
+  'src/app/(auth)/forgot-password.tsx',
+  'src/app/(onboarding)/create-workspace.tsx',
+  'src/components/auth/CongDieuKhoan.tsx',
+  'src/components/auth/ODongYDieuKhoan.tsx',
+  'src/components/auth/VeDangNhapKhiDangXuat.tsx',
+  'src/components/ui/GoogleButton.tsx',
+  'src/components/ui/AppleButton.tsx',
+  'src/components/ui/TextField.tsx',
+  'src/components/workspace/CreateWorkspaceForm.tsx',
+  'src/lib/auth/apple-signin.ts',
+  'src/lib/auth/google-signin.ts',
+  'src/lib/auth/auth-context.tsx',
+  'src/lib/auth/nguon-loi.ts',
 ];
 
 describe('bộ quét chữ chưa dịch', () => {
