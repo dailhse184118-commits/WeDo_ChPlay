@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import { daBoQua, ghiNhoBoQua } from '../../lib/version/bo-qua';
 import { chuNutCapNhat, coNutCapNhat, moCuaHang } from '../../lib/version/mo-cua-hang';
 import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
@@ -15,8 +17,6 @@ interface UpdateBannerProps {
   storeUrl?: string | null;
 }
 
-const CAU_MAC_DINH = 'Đã có phiên bản mới của WeDo.';
-
 /**
  * Dải băng nhắc cập nhật, tắt được.
  *
@@ -28,6 +28,8 @@ const CAU_MAC_DINH = 'Đã có phiên bản mới của WeDo.';
  */
 export function UpdateBanner({ phienBanMoi, notes, storeUrl }: UpdateBannerProps) {
   const [hien, setHien] = useState(false);
+  const t = useTuDien(tuDienHeThong).capNhat;
+  const { ngonNgu } = useNgonNgu();
 
   useEffect(() => {
     let con = true;
@@ -57,9 +59,9 @@ export function UpdateBanner({ phienBanMoi, notes, storeUrl }: UpdateBannerProps
       </View>
 
       <View style={styles.than}>
-        <Text style={styles.tieuDe}>Có bản cập nhật mới</Text>
+        <Text style={styles.tieuDe}>{t.tieuDe}</Text>
         <Text style={styles.chu} numberOfLines={3}>
-          {notes || CAU_MAC_DINH}
+          {notes || t.macDinh}
         </Text>
       </View>
 
@@ -73,23 +75,23 @@ export function UpdateBanner({ phienBanMoi, notes, storeUrl }: UpdateBannerProps
           <Pressable
             testID="update-banner-cap-nhat"
             accessibilityRole="button"
-            accessibilityLabel={chuNutCapNhat()}
+            accessibilityLabel={chuNutCapNhat(ngonNgu)}
             onPress={() => void moCuaHang(storeUrl)}
             style={({ pressed }) => [styles.nut, pressed ? styles.nutNhan : null]}
           >
-            <Text style={styles.nutChu}>Cập nhật</Text>
+            <Text style={styles.nutChu}>{t.capNhat}</Text>
           </Pressable>
         ) : null}
 
         <Pressable
           testID="update-banner-tat"
           accessibilityRole="button"
-          accessibilityLabel="Bỏ qua nhắc cập nhật này"
+          accessibilityLabel={t.boQuaNhac}
           onPress={handleTat}
           hitSlop={8}
           style={styles.tat}
         >
-          <Text style={styles.tatChu}>Để sau</Text>
+          <Text style={styles.tatChu}>{t.deSau}</Text>
         </Pressable>
       </View>
     </View>

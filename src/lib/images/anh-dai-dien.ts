@@ -1,3 +1,6 @@
+import { LoiDaDich } from '../../i18n/loi';
+import { theoNgonNgu } from '../../i18n/dich';
+import { tuDienMayChon } from '../../i18n/tu-dien/may-chon';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
@@ -56,7 +59,7 @@ export async function chonAnhDaiDien(): Promise<string | null> {
     thành ảnh. Thà hỏng ngay ở đây.
   */
   if (!daLuu.base64) {
-    throw new Error('Không đọc được ảnh vừa chọn. Thử lại với ảnh khác nhé.');
+    throw new LoiDaDich(theoNgonNgu(tuDienMayChon).khongDocDuocAnhVuaChon);
   }
 
   return `data:image/jpeg;base64,${daLuu.base64}`;

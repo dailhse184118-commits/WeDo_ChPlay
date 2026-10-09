@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import { Button } from '../ui/Button';
 import { chuNutCapNhat, coNutCapNhat, moCuaHang } from '../../lib/version/mo-cua-hang';
 import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../theme/tokens';
@@ -28,18 +30,18 @@ interface UpdateGateProps {
  * chủ thiếu trang App Store; ẩn nút ở đây chỉ là chốt thứ hai.
  */
 export function UpdateGate({ notes, storeUrl }: UpdateGateProps) {
+  const t = useTuDien(tuDienHeThong).capNhat;
+  const { ngonNgu } = useNgonNgu();
+
   return (
     <View testID="update-gate" style={styles.man}>
       <View style={styles.icon}>
         <Ionicons name="arrow-up-circle" size={scale(48)} color={colors.primary} />
       </View>
 
-      <Text style={styles.tieuDe}>Cần cập nhật WeDo</Text>
+      <Text style={styles.tieuDe}>{t.chanTieuDe}</Text>
 
-      <Text style={styles.than}>
-        Phiên bản bạn đang dùng đã quá cũ so với máy chủ nên một số chức năng sẽ không chạy
-        đúng. Cập nhật xong là dùng lại được bình thường.
-      </Text>
+      <Text style={styles.than}>{t.chanNoiDung}</Text>
 
       {notes ? <Text style={styles.ghiChu}>{notes}</Text> : null}
 
@@ -47,7 +49,7 @@ export function UpdateGate({ notes, storeUrl }: UpdateGateProps) {
         <View style={styles.nut}>
           <Button
             testID="update-gate-cap-nhat"
-            label={chuNutCapNhat()}
+            label={chuNutCapNhat(ngonNgu)}
             onPress={() => void moCuaHang(storeUrl)}
           />
         </View>

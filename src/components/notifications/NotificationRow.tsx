@@ -1,6 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useTuDien, useNgonNgu } from '../../i18n/NgonNguProvider';
+import { MA_VUNG, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienThongBao } from '../../i18n/tu-dien/thong-bao';
 import { Card } from '../ui/Card';
 import { IconTile, type IconTileTone } from '../ui/IconTile';
 import type { NotificationItem, NotificationType } from '../../lib/types';
@@ -26,15 +29,19 @@ const LOOK: Record<
 
 const FALLBACK = { icon: 'notifications-outline' as const, tone: 'info' as IconTileTone };
 
-function formatWhen(iso: string): string {
+function formatWhen(iso: string, t: typeof tuDienThongBao.vi, ngonNgu: NgonNgu): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
 
   const diffMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
-  if (diffMinutes < 1) return 'Vừa xong';
-  if (diffMinutes < 60) return `${diffMinutes} phút trước`;
-  if (diffMinutes < 24 * 60) return `${Math.floor(diffMinutes / 60)} giờ trước`;
-  if (diffMinutes < 48 * 60) return 'Hôm qua';
+  if (diffMinutes < 1) return t.vuaXong;
+  if (diffMinutes < 60) return t.phutTruoc(diffMinutes);
+  if (diffMinutes < 24 * 60) return t.gioTruoc(Math.floor(diffMinutes / 60));
+  if (diffMinutes < 48 * 60) return t.homQua;
+
+  if (ngonNgu === 'en') {
+    return date.toLocaleDateString(MA_VUNG.en, { month: 'short', day: 'numeric' });
+  }
 
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -48,6 +55,8 @@ export function NotificationRow({
   item: NotificationItem;
   onPress: () => void;
 }) {
+  const t = useTuDien(tuDienThongBao);
+  const { ngonNgu } = useNgonNgu();
   const unread = !item.readAt;
   const look = LOOK[item.type] ?? FALLBACK;
 
@@ -67,7 +76,7 @@ export function NotificationRow({
           <Text style={styles.message} numberOfLines={3}>
             {item.message}
           </Text>
-          <Text style={styles.when}>{formatWhen(item.createdAt)}</Text>
+          <Text style={styles.when}>{formatWhen(item.createdAt, t, ngonNgu)}</Text>
         </View>
 
         {unread ? <View testID={`unread-dot-${item.id}`} style={styles.dot} /> : null}

@@ -131,6 +131,7 @@ const TIENG_ANH_THEO_CAU: Record<string, string> = {
   // App: phiên đăng nhập và mạng (src/lib/api/client.ts).
   'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.': 'Your session has ended. Please sign in again.',
   'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.': 'Can’t reach the server. Check your connection and try again.',
+  'Không gửi được tệp. Kiểm tra mạng và thử lại.': 'Couldn’t upload the file. Check your connection and try again.',
   'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.': 'You’re going too fast. Please try again in a few minutes.',
   // Máy chủ: cuộc họp (BE src/meetings).
   'Chỉ Leader dự án mới có thể tạo cuộc họp.': 'Only a project Leader can schedule a meeting.',

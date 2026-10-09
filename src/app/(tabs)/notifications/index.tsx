@@ -12,6 +12,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienThongBao } from '../../../i18n/tu-dien/thong-bao';
 import { NotificationRow } from '../../../components/notifications/NotificationRow';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
@@ -44,6 +46,9 @@ export default function NotificationsScreen() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { active } = useWorkspace();
+  const t = useTuDien(tuDienThongBao);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
 
   const [permission, setPermission] = useState<NotificationPermissionState | null>(null);
   const [dismissedPrompt, setDismissedPrompt] = useState(false);
@@ -86,14 +91,14 @@ export default function NotificationsScreen() {
 
     try {
       const tasks = await listTasks(active.id);
-      const plans = planReminders(tasks, user.id, new Date());
+      const plans = planReminders(tasks, user.id, new Date(), undefined, ngonNgu);
       await syncScheduledReminders(plans);
     } catch {
       // Không đặt được lịch nhắc thì thôi; danh sách thông báo vẫn dùng được.
     } finally {
       scheduling.current = false;
     }
-  }, [active?.id, user?.id]);
+  }, [active?.id, user?.id, ngonNgu]);
 
   useEffect(() => {
     if (permission === 'granted') void scheduleReminders();
@@ -174,13 +179,13 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.screen}>
       <GradientHeader
-        title="Thông báo"
-        subtitle={unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : 'Bạn đã đọc hết'}
+        title={t.tieuDe}
+        subtitle={unreadCount > 0 ? t.chuaDoc(unreadCount) : t.daDocHet}
         right={
           unreadCount > 0 ? (
             <Pressable testID="mark-all-read" onPress={handleMarkAll} style={styles.markAll}>
               <Ionicons name="checkmark-done-outline" size={16} color={colors.onPrimary} />
-              <Text style={styles.markAllText}>Đọc hết</Text>
+              <Text style={styles.markAllText}>{t.docHet}</Text>
             </Pressable>
           ) : undefined
         }
@@ -191,8 +196,8 @@ export default function NotificationsScreen() {
           <ErrorBanner
             message={
               notificationsQuery.error instanceof Error
-                ? notificationsQuery.error.message
-                : 'Không tải được thông báo.'
+                ? dichLoi(notificationsQuery.error, t.khongTai)
+                : t.khongTai
             }
           />
         ) : null}
@@ -230,26 +235,23 @@ export default function NotificationsScreen() {
                 <Card testID="permission-prompt" style={styles.prompt}>
                   <View style={styles.promptHead}>
                     <Ionicons name="alarm-outline" size={22} color={colors.primary} />
-                    <Text style={styles.promptTitle}>Nhắc bạn trước khi việc đến hạn</Text>
+                    <Text style={styles.promptTitle}>{t.nhacTieuDe}</Text>
                   </View>
-                  <Text style={styles.promptBody}>
-                    Cho phép WeDo gửi thông báo để nhắc trước hạn chót 24 giờ và đúng lúc đến hạn.
-                    Bạn tắt lại bất cứ lúc nào trong phần Cài đặt thông báo.
-                  </Text>
+                  <Text style={styles.promptBody}>{t.nhacNoiDung}</Text>
                   <View style={styles.promptActions}>
                     <Pressable
                       testID="permission-later"
                       onPress={() => setDismissedPrompt(true)}
                       style={styles.promptGhost}
                     >
-                      <Text style={styles.promptGhostText}>Để sau</Text>
+                      <Text style={styles.promptGhostText}>{t.deSau}</Text>
                     </Pressable>
                     <Pressable
                       testID="permission-enable"
                       onPress={() => void handleEnable()}
                       style={styles.promptPrimary}
                     >
-                      <Text style={styles.promptPrimaryText}>Bật thông báo</Text>
+                      <Text style={styles.promptPrimaryText}>{t.batThongBao}</Text>
                     </Pressable>
                   </View>
                 </Card>
@@ -261,11 +263,8 @@ export default function NotificationsScreen() {
                   <View style={styles.emptyIcon}>
                     <Ionicons name="notifications-outline" size={28} color={colors.primary} />
                   </View>
-                  <Text style={styles.emptyTitle}>Chưa có thông báo nào</Text>
-                  <Text style={styles.emptyBody}>
-                    Bạn sẽ nhận thông báo khi có người giao việc, khi việc được nhận hoặc bị từ
-                    chối, và khi việc sắp đến hạn.
-                  </Text>
+                  <Text style={styles.emptyTitle}>{t.trongTieuDe}</Text>
+                  <Text style={styles.emptyBody}>{t.trongNoiDung}</Text>
                 </View>
               )
             }

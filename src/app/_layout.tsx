@@ -17,7 +17,9 @@ import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
 import { HAN_CACHE_BEN_BI_MS, cacheBenBi, nenLuuXuongMay, queryClient } from '../lib/query';
 import { usePhienBan } from '../lib/version/use-phien-ban';
-import { NgonNguProvider } from '../i18n/NgonNguProvider';
+import { NgonNguProvider, useTuDien } from '../i18n/NgonNguProvider';
+import { tuDienChung } from '../i18n/tu-dien/chung';
+import { tuDienHeThong } from '../i18n/tu-dien/he-thong';
 
 /*
   Đặt trên hết: chỉ những lỗi xảy ra SAU lời gọi này mới được ghi nhận, nên nó
@@ -58,21 +60,23 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
     Đặt trong effect chứ không giữa lúc render: render phải thuần, và React có
     thể gọi lại nó nhiều lần cho cùng một lỗi.
   */
+  // Hook cũng chạy được ngoài NgonNguProvider (đọc thẳng kho ngôn ngữ), nên dùng được ở ranh giới lỗi.
+  const t = useTuDien(tuDienHeThong);
+  const tChung = useTuDien(tuDienChung);
+
   useEffect(() => {
     baoLoi(error, 'error-boundary');
   }, [error]);
 
   return (
     <View style={styles.loi}>
-      <Text style={styles.loiTieuDe}>Màn hình này gặp trục trặc</Text>
-      <Text style={styles.loiThan}>
-        Phần còn lại của WeDo vẫn dùng được. Thử mở lại, nếu vẫn lỗi thì báo giúp đội ngũ WeDo.
-      </Text>
+      <Text style={styles.loiTieuDe}>{t.manLoi.tieuDe}</Text>
+      <Text style={styles.loiThan}>{t.manLoi.noiDung}</Text>
       {/* Giữ nguyên câu lỗi gốc: đó là thứ duy nhất lần ra nguyên nhân khi người
           kiểm thử chụp màn hình gửi về. */}
       <Text style={styles.loiChiTiet}>{error.message}</Text>
       <Pressable onPress={() => void retry()} style={styles.loiNut}>
-        <Text style={styles.loiNutChu}>Thử lại</Text>
+        <Text style={styles.loiNutChu}>{tChung.thuLai}</Text>
       </Pressable>
     </View>
   );

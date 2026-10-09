@@ -1,5 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { LoiDaDich } from '../../i18n/loi';
+import { tuDienMayChon } from '../../i18n/tu-dien/may-chon';
 import type { TepChon } from '../api/tasks';
 
 /** `FilesInterceptor('files', 10, …)` phía máy chủ chỉ nhận 10 tệp mỗi lượt. */
@@ -32,13 +35,13 @@ export async function chonTaiLieu(): Promise<TepChon[]> {
   if (ketQua.canceled || !ketQua.assets) return [];
 
   if (ketQua.assets.length > GIOI_HAN_SO_TEP) {
-    throw new Error(`Mỗi lần chỉ nộp được tối đa ${GIOI_HAN_SO_TEP} tệp.`);
+    throw new LoiDaDich(theoNgonNgu(tuDienMayChon).quaNhieuTep(GIOI_HAN_SO_TEP));
   }
 
   const qua = ketQua.assets.find((tep) => (tep.size ?? 0) > GIOI_HAN_DUNG_LUONG);
   if (qua) {
-    throw new Error(
-      `Tệp "${qua.name || 'đã chọn'}" nặng quá ${doiSangMB(GIOI_HAN_DUNG_LUONG)}MB nên không nộp được.`,
+    throw new LoiDaDich(
+      theoNgonNgu(tuDienMayChon).tepQuaNang(qua.name || '', doiSangMB(GIOI_HAN_DUNG_LUONG)),
     );
   }
 

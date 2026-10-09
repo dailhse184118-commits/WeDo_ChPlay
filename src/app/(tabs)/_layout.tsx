@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
 import { KhongTaiDuocKhongGian } from '../../components/workspace/KhongTaiDuocKhongGian';
@@ -19,6 +21,7 @@ import { colors, fontSize, sizes, spacing } from '../../theme/tokens';
 
 function TabsWithWorkspace() {
   const { status } = useWorkspace();
+  const t = useTuDien(tuDienHeThong).tab;
   const insets = useSafeAreaInsets();
 
   useOpenTaskFromNotification();
@@ -86,7 +89,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="chat/index"
         options={{
-          title: 'Trò chuyện',
+          title: t.troChuyen,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
@@ -146,7 +149,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="tasks/index"
         options={{
-          title: 'Công việc',
+          title: t.congViec,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'checkbox' : 'checkbox-outline'}
@@ -165,7 +168,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="meetings/index"
         options={{
-          title: 'Cuộc họp',
+          title: t.cuocHop,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'videocam' : 'videocam-outline'}
@@ -178,7 +181,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="notifications/index"
         options={{
-          title: 'Thông báo',
+          title: t.thongBao,
           tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
           /*
             Badge dựng sẵn cao cứng 18dp và cắt phần tràn, nên ở cỡ chữ lớn chữ
@@ -206,7 +209,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="account/index"
         options={{
-          title: 'Tài khoản',
+          title: t.taiKhoan,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}

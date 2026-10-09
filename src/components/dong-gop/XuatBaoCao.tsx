@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import * as WebBrowser from 'expo-web-browser';
 import { useQuery } from '@tanstack/react-query';
 
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienBaoCao } from '../../i18n/tu-dien/bao-cao';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { xinLinkBaoCao, type DinhDangBaoCao } from '../../lib/api/bao-cao';
 import { listProjects } from '../../lib/api/projects';
@@ -30,7 +32,10 @@ export function XuatBaoCao({ workspaceId }: { workspaceId: string }) {
   const [chon, setChon] = useState<string | null>(null);
   const [dinhDang, setDinhDang] = useState<DinhDangBaoCao>('pdf');
   const [dangXuat, setDangXuat] = useState(false);
-  const [loi, setLoi] = useState('');
+  // Giữ NGUỒN lỗi, dịch lúc vẽ: đổi ngôn ngữ thì câu báo lỗi đổi theo.
+  const [loi, setLoi] = useState<{ nguon: unknown } | null>(null);
+  const t = useTuDien(tuDienBaoCao);
+  const { ngonNgu } = useNgonNgu();
 
   const ds = duAn.data ?? [];
   // Chưa chọn, hay dự án đã chọn không còn trong danh sách: lấy dự án đầu.
@@ -39,12 +44,12 @@ export function XuatBaoCao({ workspaceId }: { workspaceId: string }) {
   const xuat = async () => {
     if (!projectId || dangXuat) return;
     setDangXuat(true);
-    setLoi('');
+    setLoi(null);
     try {
       const { url } = await xinLinkBaoCao(projectId, dinhDang);
       await WebBrowser.openBrowserAsync(url);
     } catch (e) {
-      setLoi(cauLoiBaoCao(e));
+      setLoi({ nguon: e });
     } finally {
       setDangXuat(false);
     }
@@ -52,20 +57,18 @@ export function XuatBaoCao({ workspaceId }: { workspaceId: string }) {
 
   return (
     <View style={styles.khoi}>
-      <Text style={styles.tieuDe}>Xuất báo cáo đóng góp</Text>
-      <Text style={styles.moTa}>
-        Leader nhận báo cáo cả nhóm, thành viên nhận báo cáo của riêng mình. Số liệu tính từ ngày tạo dự án tới hôm nay.
-      </Text>
+      <Text style={styles.tieuDe}>{t.tieuDe}</Text>
+      <Text style={styles.moTa}>{t.moTa}</Text>
 
       {duAn.isLoading ? (
         <ActivityIndicator color={colors.primary} />
       ) : duAn.isError && !duAn.data ? (
-        <ErrorBanner message="Không tải được danh sách dự án." />
+        <ErrorBanner message={t.khongTaiDuAn} />
       ) : ds.length === 0 ? (
-        <Text style={styles.moTa}>Không gian này chưa có dự án nào.</Text>
+        <Text style={styles.moTa}>{t.chuaCoDuAn}</Text>
       ) : (
         <>
-          <Text style={styles.nhan}>Dự án</Text>
+          <Text style={styles.nhan}>{t.duAn}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hang}>
             {ds.map((p) => {
               const dangChon = p.id === projectId;
@@ -85,7 +88,7 @@ export function XuatBaoCao({ workspaceId }: { workspaceId: string }) {
             })}
           </ScrollView>
 
-          <Text style={styles.nhan}>Định dạng</Text>
+          <Text style={styles.nhan}>{t.dinhDang}</Text>
           <View style={styles.hang}>
             {DINH_DANG.map(({ giaTri, nhan }) => {
               const dangChon = giaTri === dinhDang;
@@ -103,7 +106,7 @@ export function XuatBaoCao({ workspaceId }: { workspaceId: string }) {
             })}
           </View>
 
-          {loi ? <ErrorBanner message={loi} /> : null}
+          {loi ? <ErrorBanner message={cauLoiBaoCao(loi.nguon, ngonNgu)} /> : null}
 
           <Pressable
             accessibilityRole="button"
@@ -115,7 +118,7 @@ export function XuatBaoCao({ workspaceId }: { workspaceId: string }) {
             {dangXuat ? (
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
-              <Text style={styles.nutChu}>Xuất báo cáo</Text>
+              <Text style={styles.nutChu}>{t.xuat}</Text>
             )}
           </Pressable>
         </>

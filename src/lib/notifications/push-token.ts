@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { tuDienThongBao } from '../../i18n/tu-dien/thong-bao';
 import { registerPushToken, unregisterPushToken } from '../api/notifications';
 import { checkNotificationPermission, ensureNotificationPermission } from './permission';
 
@@ -35,7 +37,7 @@ export async function taoKenhThongBaoAndroid(): Promise<void> {
   if (Platform.OS !== 'android') return;
   try {
     await Notifications.setNotificationChannelAsync(KENH_MAC_DINH, {
-      name: 'Thông báo chung',
+      name: theoNgonNgu(tuDienThongBao).kenhChung,
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   } catch {

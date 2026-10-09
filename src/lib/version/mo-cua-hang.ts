@@ -1,5 +1,8 @@
 import { Linking, Platform } from 'react-native';
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import { moChPlay } from './mo-ch-play';
 
 /**
@@ -29,8 +32,9 @@ export function coNutCapNhat(storeUrl: string | null | undefined): boolean {
 }
 
 /** Chữ trên nút cập nhật. iPhone không bao giờ được nhắc tới CH Play (2.3.10). */
-export function chuNutCapNhat(): string {
-  return Platform.OS === 'ios' ? 'Mở App Store để cập nhật' : 'Mở CH Play để cập nhật';
+export function chuNutCapNhat(ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienHeThong, ngonNgu).capNhat;
+  return Platform.OS === 'ios' ? t.moAppStore : t.moChPlay;
 }
 
 /**

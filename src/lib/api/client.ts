@@ -1,4 +1,11 @@
+import { tuDienLoiMang } from '../../i18n/tu-dien/loi-mang';
 import { loadRefreshToken, loadToken, saveRefreshToken, saveToken } from '../auth/token-storage';
+
+/*
+  Câu lỗi lớp mạng luôn ném bản TIẾNG VIỆT: `i18n/loi.ts` nhận ra chúng theo nguyên
+  văn để dịch lúc hiển thị (xem tu-dien/loi-mang.ts).
+*/
+const loiMang = tuDienLoiMang.vi;
 
 export class ApiError extends Error {
   status: number;
@@ -54,7 +61,7 @@ export const MA_PHAN_HOI_LA = 'PHAN_HOI_KHONG_PHAI_JSON';
 
 /** Câu báo cho người dùng khi máy chủ trả về thứ không đọc được. */
 export function thongBaoMayChuBan(status: number): string {
-  return `Máy chủ đang bận hoặc đang khởi động lại (mã ${status}). Thử lại sau ít phút.`;
+  return loiMang.mayChuBan(status);
 }
 
 /**
@@ -162,7 +169,7 @@ function extractMessage(payload: unknown, status: number): string {
     if (typeof message === 'string' && message.trim()) return message;
     if (Array.isArray(message) && message.length) return message.join('. ');
   }
-  return `Máy chủ trả lỗi ${status}.`;
+  return loiMang.mayChuTraLoi(status);
 }
 
 /**
@@ -245,7 +252,7 @@ async function giaHanPhien(): Promise<string | null> {
   } catch (loi) {
     // Mất mạng giữa chừng là "mất mạng" (trạng thái 0) như mọi lượt gọi khác — không phải hết phiên.
     throw new ApiError(
-      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
+      loiMang.khongKetNoi,
       0,
       undefined,
       loi instanceof Error ? loi.message : String(loi),
@@ -271,7 +278,7 @@ async function giaHanPhien(): Promise<string | null> {
     return null;
   }
   if (!response.ok) {
-    throw new ApiError(`Gia hạn phiên đăng nhập lỗi ${response.status}.`, response.status);
+    throw new ApiError(loiMang.giaHanLoi(response.status), response.status);
   }
 
   // Đọc bằng `text()` rồi tự parse, giống hệt phần còn lại của tệp này.
@@ -347,7 +354,7 @@ export async function apiRequest<T = unknown>(
       mọi sự cố mạng đều trông y hệt nhau từ phía người sửa.
     */
     throw new ApiError(
-      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
+      loiMang.khongKetNoi,
       0,
       undefined,
       loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi),

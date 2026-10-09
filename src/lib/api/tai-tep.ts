@@ -9,6 +9,7 @@ import {
   extractCode,
   thongBaoMayChuBan,
 } from './client';
+import { tuDienLoiMang } from '../../i18n/tu-dien/loi-mang';
 import { loadToken } from '../auth/token-storage';
 import type { TepChon } from './tasks';
 
@@ -86,7 +87,7 @@ async function guiBangNative<T>(duongDan: string, tep: TepChon, noiDung: string)
     const message =
       payload && typeof payload === 'object' && 'message' in payload
         ? String((payload as { message: unknown }).message)
-        : `Máy chủ trả lỗi ${ketQua.status}.`;
+        : tuDienLoiMang.vi.mayChuTraLoi(ketQua.status);
 
     /*
       Giữ cả `code` như `apiRequest`: màn gửi ảnh phân biệt lỗi bằng mã (chặn
@@ -137,7 +138,7 @@ export async function taiMotTepLen<T = unknown>(
   }
 
   throw new ApiError(
-    'Không gửi được tệp. Kiểm tra mạng và thử lại.',
+    tuDienLoiMang.vi.khongGuiDuocTep,
     0,
     undefined,
     daGap.join(' | '),

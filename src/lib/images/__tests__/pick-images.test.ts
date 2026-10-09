@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator } from 'expo-image-manipulator';
 
 import {
-  CAU_CHUA_CO_QUYEN_MAY_ANH,
+  cauChuaCoQuyenMayAnh,
   canDoiSangJpeg,
   chupAnh,
   chonAnh,
@@ -96,7 +96,7 @@ describe('chupAnh', () => {
       string,
       Array<{ text: string; onPress?: () => void }>,
     ];
-    expect(loiNhan).toBe(CAU_CHUA_CO_QUYEN_MAY_ANH);
+    expect(loiNhan).toBe(cauChuaCoQuyenMayAnh());
     expect(loiNhan).toMatch(/máy ảnh/i);
     expect(loiNhan).not.toMatch(/Ứng dụng >|Quyền/);
 

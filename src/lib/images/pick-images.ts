@@ -2,6 +2,9 @@ import { Alert, Linking, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { LoiDaDich } from '../../i18n/loi';
+import { tuDienMayChon } from '../../i18n/tu-dien/may-chon';
 import type { TepChon } from '../api/tasks';
 
 /** `FilesInterceptor('files', 5, …)` phía máy chủ chỉ nhận 5 tệp mỗi lượt. */
@@ -20,14 +23,15 @@ export const GIOI_HAN_DUNG_LUONG_ANH = 10 * 1024 * 1024;
 const CHAT_LUONG = 0.7;
 
 /**
- * Câu báo khi máy ảnh chưa được cấp quyền.
+ * Câu báo khi máy ảnh chưa được cấp quyền (theo ngôn ngữ đang dùng).
  *
  * Không chỉ đường kiểu "Cài đặt > Ứng dụng > WeDo > Quyền": đường đó chỉ có
  * trên Android, iPhone đi lối khác. Nút "Mở Cài đặt" đi kèm mở thẳng trang cài
  * đặt của WeDo trên cả hai.
  */
-export const CAU_CHUA_CO_QUYEN_MAY_ANH =
-  'WeDo chưa được phép dùng máy ảnh. Bạn có thể bật lại trong Cài đặt của điện thoại.';
+export function cauChuaCoQuyenMayAnh(): string {
+  return theoNgonNgu(tuDienMayChon).chuaCoQuyenMayAnh;
+}
 
 /** Đuôi tên của ảnh HEIC/HEIF — dạng mặc định của máy ảnh iPhone. */
 const DUOI_HEIC = /\.(heic|heif)$/i;
@@ -81,7 +85,7 @@ async function nenSangJpeg(anh: ImagePicker.ImagePickerAsset): Promise<TepChon> 
 
     return { uri: daLuu.uri, name: tenJpeg(anh.fileName), mimeType: 'image/jpeg' };
   } catch {
-    throw new Error(`Không đọc được ảnh "${anh.fileName || 'đã chọn'}". Thử lại với ảnh khác nhé.`);
+    throw new LoiDaDich(theoNgonNgu(tuDienMayChon).khongDocDuocAnh(anh.fileName || ''));
   }
 }
 
@@ -113,18 +117,19 @@ async function doiCaLoat(danhSach: ImagePicker.ImagePickerAsset[]): Promise<TepC
 function kiemTraDungLuong(danhSach: ImagePicker.ImagePickerAsset[]): void {
   const qua = danhSach.find((anh) => (anh.fileSize ?? 0) > GIOI_HAN_DUNG_LUONG_ANH);
   if (qua) {
-    throw new Error(
-      `Ảnh "${qua.fileName || 'đã chọn'}" nặng quá ${doiSangMB(GIOI_HAN_DUNG_LUONG_ANH)}MB nên không gửi được.`,
+    throw new LoiDaDich(
+      theoNgonNgu(tuDienMayChon).anhQuaNang(qua.fileName || '', doiSangMB(GIOI_HAN_DUNG_LUONG_ANH)),
     );
   }
 }
 
 /** Báo máy ảnh chưa được cấp quyền, kèm nút mở thẳng trang cài đặt của WeDo. */
 function baoChuaCoQuyenMayAnh(): void {
-  Alert.alert('Chưa có quyền dùng máy ảnh', CAU_CHUA_CO_QUYEN_MAY_ANH, [
-    { text: 'Để sau', style: 'cancel' },
+  const t = theoNgonNgu(tuDienMayChon);
+  Alert.alert(t.chuaCoQuyenMayAnhTieuDe, cauChuaCoQuyenMayAnh(), [
+    { text: t.deSau, style: 'cancel' },
     {
-      text: 'Mở Cài đặt',
+      text: t.moCaiDat,
       onPress: () => {
         Linking.openSettings().catch(() => undefined);
       },

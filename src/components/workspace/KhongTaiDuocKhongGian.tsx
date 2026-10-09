@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import { Button } from '../ui/Button';
 import { useWorkspace } from '../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, spacing } from '../../theme/tokens';
@@ -17,6 +20,8 @@ import { colors, fontSize, lineHeight, spacing } from '../../theme/tokens';
  */
 export function KhongTaiDuocKhongGian() {
   const { refresh } = useWorkspace();
+  const t = useTuDien(tuDienHeThong).khongGian;
+  const tChung = useTuDien(tuDienChung);
   const [dangThu, setDangThu] = useState(false);
 
   async function thuLai() {
@@ -31,15 +36,12 @@ export function KhongTaiDuocKhongGian() {
   return (
     <View style={styles.man} testID="workspace-error">
       <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
-      <Text style={styles.tieuDe}>Chưa kết nối được máy chủ</Text>
-      <Text style={styles.noiDung}>
-        Kiểm tra Wi-Fi hoặc dữ liệu di động. Máy chủ cũng có thể đang khởi động lại — WeDo sẽ tự
-        thử lại sau ít giây.
-      </Text>
+      <Text style={styles.tieuDe}>{t.matKetNoiTieuDe}</Text>
+      <Text style={styles.noiDung}>{t.matKetNoiNoiDung}</Text>
       <View style={styles.nut}>
         <Button
           testID="workspace-retry"
-          label="Thử lại"
+          label={tChung.thuLai}
           loading={dangThu}
           onPress={() => void thuLai()}
         />
