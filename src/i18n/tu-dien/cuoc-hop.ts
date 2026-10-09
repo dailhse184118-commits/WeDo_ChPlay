@@ -58,15 +58,13 @@ export const tuDienCuocHop = khaiBaoTuDien(
     },
 
     /*
-      Báo lỗi ngày giờ họp (lib/meetings/thoi-diem.ts). Câu tiếng Việt giữ đúng
-      chữ người dùng đang thấy: `ngaySai` và `ngayKhongCo` trước đây mượn câu
-      của ô ngày sinh nên vẫn nhắc "Ngày sinh". Bản tiếng Anh viết riêng cho
-      cuộc họp.
+      Báo lỗi ngày giờ họp (lib/meetings/thoi-diem.ts). `ngaySai` và `ngayKhongCo` trước đây mượn câu
+      của ô ngày sinh nên nhắc nhầm "Ngày sinh"; nay đã sửa thành "Ngày họp".
     */
     thoiDiem: {
       ngayTrong: 'Ngày họp chưa hợp lệ.',
-      ngaySai: (dinhDang: string) => `Ngày sinh cần viết theo dạng ${dinhDang}.`,
-      ngayKhongCo: 'Ngày sinh này không có trên lịch.',
+      ngaySai: (dinhDang: string) => `Ngày họp cần viết theo dạng ${dinhDang}.`,
+      ngayKhongCo: 'Ngày họp này không có trên lịch.',
       gioSai: 'Giờ họp cần viết theo dạng hh:mm, ví dụ 20:00.',
       gioNgoai: 'Giờ họp phải trong khoảng 00:00 đến 23:59.',
     },

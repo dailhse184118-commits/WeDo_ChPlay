@@ -492,11 +492,11 @@ describe('hàm thuần của cuộc họp và lịch', () => {
     expect(tenTrangThai('CANCELLED', 'vi')).toBe('Đã huỷ');
   });
 
-  it('ghepNgayGio: tiếng Việt giữ đúng câu cũ, tiếng Anh viết riêng cho cuộc họp', () => {
+  it('ghepNgayGio: tiếng Việt nói về ngày họp, tiếng Anh viết riêng cho cuộc họp', () => {
     const cases: Array<[string, string, string, string]> = [
       ['', '20:00', 'Ngày họp chưa hợp lệ.', 'Enter a valid meeting date.'],
-      ['25/09', '20:00', 'Ngày sinh cần viết theo dạng dd/mm/yyyy.', 'Enter the meeting date as dd/mm/yyyy.'],
-      ['31/02/2026', '20:00', 'Ngày sinh này không có trên lịch.', 'That date doesn’t exist on the calendar.'],
+      ['25/09', '20:00', 'Ngày họp cần viết theo dạng dd/mm/yyyy.', 'Enter the meeting date as dd/mm/yyyy.'],
+      ['31/02/2026', '20:00', 'Ngày họp này không có trên lịch.', 'That date doesn’t exist on the calendar.'],
       ['25/09/2026', '20', 'Giờ họp cần viết theo dạng hh:mm, ví dụ 20:00.', 'Enter the meeting time as hh:mm, for example 20:00.'],
       ['25/09/2026', '25:00', 'Giờ họp phải trong khoảng 00:00 đến 23:59.', 'The meeting time must be between 00:00 and 23:59.'],
     ];

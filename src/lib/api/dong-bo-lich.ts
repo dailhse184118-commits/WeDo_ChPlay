@@ -30,11 +30,11 @@ export function layDongBoLich(): Promise<TrangThaiDongBoLich> {
 /**
  * Chưa có link thì tạo, có rồi thì đổi mã — link cũ chết ngay.
  *
- * Luôn `lang: 'vi'`: app chỉ có tiếng Việt, và ngôn ngữ của chữ trong lịch
- * ("Hạn: …", "Họp: …") chốt theo lúc tạo link.
+ * `lang` là ngôn ngữ đang dùng của app: ngôn ngữ của chữ trong lịch ("Hạn: …",
+ * "Họp: …") chốt theo lúc tạo link.
  */
-export function taoLinkDongBoLich(): Promise<TrangThaiDongBoLich> {
-  return apiRequest<TrangThaiDongBoLich>(DUONG_DAN, { method: 'POST', body: { lang: 'vi' } });
+export function taoLinkDongBoLich(ngonNgu: NgonNgu = layNgonNgu()): Promise<TrangThaiDongBoLich> {
+  return apiRequest<TrangThaiDongBoLich>(DUONG_DAN, { method: 'POST', body: { lang: ngonNgu } });
 }
 
 /** Máy chủ trả 204 thân rỗng; gọi lại khi đã tắt cũng không lỗi. */
