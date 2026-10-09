@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,7 +12,6 @@ import { docMaTuQr } from '../../lib/loi-moi';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../theme/tokens';
 
 interface QuetMaQrProps {
-  visible: boolean;
   /** Mã mời đã chuẩn hoá (8 ký tự, không gạch). */
   onMa: (ma: string) => void;
   onDong: () => void;
@@ -21,14 +20,17 @@ interface QuetMaQrProps {
 /**
  * Màn quét QR mời vào nhóm, chiếm hết màn hình.
  *
+ * Không có prop `visible`: màn cha chỉ gắn component này khi đang quét, nên mỗi
+ * lần gắn là một lượt quét mới (khoá, câu báo lỗi đều bắt đầu lại từ đầu).
+ *
  * Máy ảnh gọi `onBarcodeScanned` liên tục chừng nào mã còn trong khung, nên có
  * khoá: chỉ xử lý một lần. QR không phải lời mời thì báo rồi mở khoá để quét
  * tiếp, nhưng bỏ qua đúng nội dung vừa báo — không thì câu báo nháy liên tục.
  *
  * Không mở link trong QR: chỉ đọc mã bằng `docMaTuQr`.
  */
-export function QuetMaQr({ visible, onMa, onDong }: QuetMaQrProps) {
-  const [quyen, xinQuyen] = useCameraPermissions();
+export function QuetMaQr({ onMa, onDong }: QuetMaQrProps) {
+  const [quyen, xinQuyen, layQuyen] = useCameraPermissions();
   const t = useTuDien(tuDienChat).moi;
   const chung = useTuDien(tuDienChung);
   const insets = useSafeAreaInsets();
@@ -36,25 +38,26 @@ export function QuetMaQr({ visible, onMa, onDong }: QuetMaQrProps) {
   const khoa = useRef(false);
   const daBao = useRef<string | null>(null);
   const daXin = useRef(false);
-
-  // Mỗi lần mở là một lượt quét mới.
-  useEffect(() => {
-    if (!visible) return;
-    khoa.current = false;
-    daBao.current = null;
-    setKhongPhaiLoiMoi(false);
-  }, [visible]);
+  const chuaCoQuyen = quyen !== null && !quyen.granted;
 
   // Chưa hỏi bao giờ thì hỏi luôn: người dùng bấm "Quét" là đã muốn dùng máy ảnh.
   useEffect(() => {
-    if (!visible || !quyen || daXin.current) return;
+    if (!quyen || daXin.current) return;
     if (quyen.status === 'undetermined' && quyen.canAskAgain) {
       daXin.current = true;
       void xinQuyen();
     }
-  }, [visible, quyen, xinQuyen]);
+  }, [quyen, xinQuyen]);
 
-  if (!visible) return null;
+  // Hook không tự đọc lại quyền khi người dùng bật trong Cài đặt rồi quay về
+  // app (Android): đọc lại mỗi lần app trở lại trước mặt.
+  useEffect(() => {
+    if (!chuaCoQuyen) return;
+    const dangKy = AppState.addEventListener('change', (trangThai) => {
+      if (trangThai === 'active') void layQuyen();
+    });
+    return () => dangKy.remove();
+  }, [chuaCoQuyen, layQuyen]);
 
   const daQuet = ({ data }: BarcodeScanningResult) => {
     if (khoa.current || data === daBao.current) return;

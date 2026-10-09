@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import { act, fireEvent } from '@testing-library/react-native';
 import { useCameraPermissions } from 'expo-camera';
 
@@ -18,7 +18,7 @@ function datQuyen(quyen: { granted: boolean; canAskAgain: boolean; status: strin
 }
 
 function dung(onMa = jest.fn(), onDong = jest.fn()) {
-  return renderScreen(<QuetMaQr visible onMa={onMa} onDong={onDong} />);
+  return renderScreen(<QuetMaQr onMa={onMa} onDong={onDong} />);
 }
 
 async function quet(man: Awaited<ReturnType<typeof dung>>, data: string) {
@@ -28,13 +28,24 @@ async function quet(man: Awaited<ReturnType<typeof dung>>, data: string) {
   });
 }
 
+/*
+  Gán thẳng rồi trả lại sau mỗi test, không dùng spyOn: AppState.addEventListener
+  trong Jest đã là jest.fn, `mockRestore` sẽ xoá luôn cài đặt của mock gốc.
+*/
+const dangKyGoc = AppState.addEventListener;
+function thayDangKyAppState(ham: jest.Mock) {
+  AppState.addEventListener = ham as never;
+}
+afterEach(() => {
+  AppState.addEventListener = dangKyGoc;
+});
+
 const cay = (man: { toJSON: () => unknown }) => JSON.stringify(man.toJSON());
 
 beforeEach(() => {
   jest.clearAllMocks();
   datQuyen({ granted: true, canAskAgain: true, status: 'granted' });
 });
-
 
 it('chỉ đọc mã QR, máy ảnh sau', async () => {
   const man = await dung();
@@ -109,6 +120,54 @@ it('đã bị từ chối hẳn: giải thích và có nút mở Cài đặt, kh
   moCaiDat.mockRestore();
 });
 
+it('Android: quay lại từ Cài đặt thì đọc lại quyền, đã bật thì hiện máy ảnh', async () => {
+  const React = jest.requireActual('react');
+  const tuChoi = { granted: false, canAskAgain: false, status: 'denied' };
+  const daCap = { granted: true, canAskAgain: true, status: 'granted' };
+  const layQuyen = jest.fn();
+  quyenMock.mockImplementation(() => {
+    const [q, datQ] = React.useState(tuChoi);
+    layQuyen.mockImplementation(async () => {
+      datQ(daCap);
+      return daCap;
+    });
+    return [q as never, jest.fn(), layQuyen];
+  });
+  let ngheDoi: ((trangThai: string) => void) | undefined;
+  const go = jest.fn();
+  const dangKy = jest.fn((_su: string, ham: (trangThai: string) => void) => {
+    ngheDoi = ham;
+    return { remove: go };
+  });
+  thayDangKyAppState(dangKy);
+
+  const man = await dung();
+  expect(man.getByTestId('nut-mo-cai-dat')).toBeTruthy();
+  expect(dangKy).toHaveBeenCalledWith('change', expect.any(Function));
+
+  await act(async () => {
+    ngheDoi?.('active');
+  });
+
+  expect(layQuyen).toHaveBeenCalledTimes(1);
+  expect(man.getByTestId('may-anh-quet-qr')).toBeTruthy();
+  // Đã có quyền thì thôi nghe.
+  expect(go).toHaveBeenCalled();
+
+  await man.unmount();
+});
+
+it('gỡ màn quét khi còn chưa có quyền: bỏ đăng ký AppState', async () => {
+  datQuyen({ granted: false, canAskAgain: false, status: 'denied' });
+  const go = jest.fn();
+  thayDangKyAppState(jest.fn(() => ({ remove: go })));
+
+  const man = await dung();
+  await man.unmount();
+
+  expect(go).toHaveBeenCalledTimes(1);
+});
+
 it('nút Đóng gọi onDong', async () => {
   const onDong = jest.fn();
   const man = await dung(jest.fn(), onDong);
@@ -116,12 +175,6 @@ it('nút Đóng gọi onDong', async () => {
   await fireEvent.press(man.getByTestId('nut-dong-quet-qr'));
 
   expect(onDong).toHaveBeenCalledTimes(1);
-});
-
-it('không mở thì không bật máy ảnh', async () => {
-  const man = await renderScreen(<QuetMaQr visible={false} onMa={jest.fn()} onDong={jest.fn()} />);
-
-  expect(man.queryByTestId('may-anh-quet-qr')).toBeNull();
 });
 
 describe('tiếng Anh', () => {

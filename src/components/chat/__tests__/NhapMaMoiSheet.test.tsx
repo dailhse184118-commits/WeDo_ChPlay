@@ -85,7 +85,6 @@ describe('quét mã QR', () => {
   const dungCoQuet = (onDaThamGia = jest.fn()) =>
     renderScreen(<NhapMaMoiSheet visible onDismiss={jest.fn()} onDaThamGia={onDaThamGia} />);
 
-
   it('chưa bấm Quét thì chưa bật máy ảnh', async () => {
     const man = await dungCoQuet();
 

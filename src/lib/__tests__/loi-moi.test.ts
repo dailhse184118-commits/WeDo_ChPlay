@@ -101,6 +101,19 @@ describe('docMaTuQr', () => {
     expect(docMaTuQr('https://wedofpt.com.vn/#/moi/7K3M+9QX')).toBeNull();
   });
 
+  it('chuỗi chỉ là mã phải đúng bảng chữ mã mời (không 0, 1, O, I)', () => {
+    expect(docMaTuQr('12345678')).toBeNull();
+    expect(docMaTuQr('ABCD0EFG')).toBeNull();
+    expect(docMaTuQr('ABCDOEFG')).toBeNull();
+    expect(docMaTuQr('ABCD1EFG')).toBeNull();
+    expect(docMaTuQr('abcd-iefg')).toBeNull();
+    expect(docMaTuQr('23456789')).toBe('23456789');
+  });
+
+  it('mã lấy từ link /moi/<mã> chỉ cần 8 chữ/số như trước', () => {
+    expect(docMaTuQr('https://wedofpt.com.vn/#/moi/12345678')).toBe('12345678');
+  });
+
   it('mã 7 hay 9 ký tự thì null', () => {
     expect(docMaTuQr('7K3M9QX')).toBeNull();
     expect(docMaTuQr('7K3M9QXAB')).toBeNull();

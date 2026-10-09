@@ -164,7 +164,7 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
 
       {/* Lồng trong Modal của bảng: iOS không hiện được hai Modal anh em cùng lúc.
           Chỉ gắn khi đang quét: máy ảnh và hỏi quyền không chạy lúc chỉ gõ mã. */}
-      {dangQuet ? <QuetMaQr visible onMa={daQuetDuoc} onDong={() => setDangQuet(false)} /> : null}
+      {dangQuet ? <QuetMaQr onMa={daQuetDuoc} onDong={() => setDangQuet(false)} /> : null}
     </Modal>
   );
 }
