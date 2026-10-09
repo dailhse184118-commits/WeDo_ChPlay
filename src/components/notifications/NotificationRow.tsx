@@ -2,7 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTuDien, useNgonNgu } from '../../i18n/NgonNguProvider';
-import { MA_VUNG, type NgonNgu } from '../../i18n/ngon-ngu';
+import { dinhDangThoiGian } from '../../i18n/dinh-dang';
+import type { NgonNgu } from '../../i18n/ngon-ngu';
 import { tuDienThongBao } from '../../i18n/tu-dien/thong-bao';
 import { Card } from '../ui/Card';
 import { IconTile, type IconTileTone } from '../ui/IconTile';
@@ -40,7 +41,8 @@ function formatWhen(iso: string, t: typeof tuDienThongBao.vi, ngonNgu: NgonNgu):
   if (diffMinutes < 48 * 60) return t.homQua;
 
   if (ngonNgu === 'en') {
-    return date.toLocaleDateString(MA_VUNG.en, { month: 'short', day: 'numeric' });
+    // Giờ Việt Nam, giống mọi ngày giờ khác trong app.
+    return dinhDangThoiGian(date, 'en', { month: 'short', day: 'numeric' });
   }
 
   const dd = String(date.getDate()).padStart(2, '0');

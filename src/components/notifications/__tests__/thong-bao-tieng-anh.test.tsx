@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { NotificationRow } from '../NotificationRow';
 import ManThongBao from '../../../app/(tabs)/notifications/index';
 import { datNgonNguChoKiemThu } from '../../../i18n/ngon-ngu';
 import { chuVietConSot } from '../../../i18n/chu-viet-con-sot';
@@ -130,6 +131,17 @@ describe('tab Thông báo ở tiếng Anh', () => {
     expect(man.getByText('5 min ago')).toBeTruthy();
     expect(man.getByText('3 hr ago')).toBeTruthy();
     expect(chuVietConSot(cay(man))).toEqual([]);
+  });
+
+  it('ngày của thông báo cũ tính theo giờ Việt Nam, không theo múi giờ máy', async () => {
+    // 18:30 UTC ngày 9/9 = 01:30 ngày 10/9 ở Việt Nam (UTC+7).
+    const iso = '2026-09-09T18:30:00.000Z';
+    const en = await renderScreen(<NotificationRow item={thongBao({ createdAt: iso })} onPress={() => undefined} />);
+    expect(en.getByText('Sep 10')).toBeTruthy();
+
+    datNgonNguChoKiemThu('vi');
+    const vi = await renderScreen(<NotificationRow item={thongBao({ createdAt: iso })} onPress={() => undefined} />);
+    expect(vi.queryByText('Sep 10')).toBeNull();
   });
 
   it('một thông báo chưa đọc dùng số ít', async () => {
