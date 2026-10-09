@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { BangChonNgonNgu } from '../../../components/account/BangChonNgonNgu';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
@@ -34,6 +35,9 @@ import {
   openLegalLink,
 } from '../../../lib/legal-links';
 import { dongGoiHienTai } from '../../../lib/payments/goi-hien-tai';
+import { useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { TEN_NGON_NGU } from '../../../i18n/ngon-ngu';
+import { tuDienTaiKhoan } from '../../../i18n/tu-dien/tai-khoan';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
@@ -77,6 +81,9 @@ export default function AccountScreen() {
   const router = useRouter();
   const { user, signOut, capNhatHoSo } = useAuth();
   const { active } = useWorkspace();
+  const tTaiKhoan = useTuDien(tuDienTaiKhoan);
+  const { luaChon } = useNgonNgu();
+  const [moBangNgonNgu, setMoBangNgonNgu] = useState(false);
 
   // Cùng khoá với màn chat và màn Nâng cấp (invalidate ['entitlements']).
   const entitlementsQuery = useQuery({
@@ -260,6 +267,14 @@ export default function AccountScreen() {
             hint="Chọn loại thông báo bạn muốn nhận"
             onPress={() => router.push('/account/notification-settings')}
           />
+          <MenuRow
+            testID="account-ngon-ngu"
+            icon="language-outline"
+            tone="info"
+            label="Ngôn ngữ / Language"
+            hint={luaChon === 'he-thong' ? tTaiKhoan.theoMay : TEN_NGON_NGU[luaChon]}
+            onPress={() => setMoBangNgonNgu(true)}
+          />
           {/*
             Đặt ngay dưới Cài đặt thông báo, trên các đường pháp lý: người thử
             nghiệm cần một đường báo lỗi từ trong app, không phải nhắn tin riêng.
@@ -416,6 +431,7 @@ export default function AccountScreen() {
 
         <Text style={styles.note}>WeDo {APP_VERSION}</Text>
       </ScrollView>
+      <BangChonNgonNgu visible={moBangNgonNgu} onDismiss={() => setMoBangNgonNgu(false)} />
     </View>
   );
 }

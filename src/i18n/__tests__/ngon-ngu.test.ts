@@ -78,3 +78,11 @@ it('kho hỏng thì vẫn đổi cho phiên này', async () => {
   expect(layNgonNgu()).toBe('en');
   spy.mockRestore();
 });
+it('datLuaChon trong lúc đang nạp kho thì lựa chọn mới thắng', async () => {
+  await AsyncStorage.setItem(KHOA_LUA_CHON, 'vi');
+  const nap = napLuaChonDaLuu();
+  await datLuaChon('en');
+  await nap;
+  expect(layLuaChon()).toBe('en');
+  expect(layNgonNgu()).toBe('en');
+});

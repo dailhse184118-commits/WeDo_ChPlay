@@ -10,7 +10,8 @@ import { CongDieuKhoan } from '../components/auth/CongDieuKhoan';
 import { VeDangNhapKhiDangXuat } from '../components/auth/VeDangNhapKhiDangXuat';
 import { UpdateGate } from '../components/update/UpdateGate';
 import { baoLoi, khoiDongSentry } from '../lib/observability/sentry';
-import { AuthProvider } from '../lib/auth/auth-context';
+import { AuthProvider, useAuth } from '../lib/auth/auth-context';
+import { batDongBoNgonNgu, quenNgonNguDaGui } from '../lib/i18n/dong-bo-ngon-ngu';
 import { bridgeAppStateToQueryFocus } from '../lib/app-focus';
 import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
@@ -94,6 +95,23 @@ function CongPhienBan({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Báo máy chủ ngôn ngữ đang dùng khi đã đăng nhập và mỗi lần đổi. Đăng xuất thì
+ * quên giá trị đã gửi, để tài khoản kế tiếp trên máy này được báo lại.
+ */
+function DongBoNgonNgu() {
+  const { status } = useAuth();
+  useEffect(() => {
+    if (status === 'signedOut') {
+      void quenNgonNguDaGui();
+      return;
+    }
+    if (status !== 'signedIn') return;
+    return batDongBoNgonNgu(() => true);
+  }, [status]);
+  return null;
+}
+
 export default function RootLayout() {
   useEffect(() => bridgeAppStateToQueryFocus(), []);
 
@@ -122,6 +140,7 @@ export default function RootLayout() {
             <AuthProvider>
               <StatusBar style="dark" />
               <VeDangNhapKhiDangXuat />
+              <DongBoNgonNgu />
               <CongPhienBan>
                 {/*
                   Người đã đăng nhập mà chưa đồng ý Điều khoản sử dụng thì không

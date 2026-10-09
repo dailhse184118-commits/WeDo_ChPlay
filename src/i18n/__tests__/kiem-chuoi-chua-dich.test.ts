@@ -11,6 +11,8 @@ const GOC = join(__dirname, '..', '..', '..');
 
 /** Các tệp đã đưa hết chữ vào từ điển (đường dẫn từ gốc dự án, dấu `/`). */
 const TEP_DA_DICH: string[] = [
+  'src/components/account/BangChonNgonNgu.tsx',
+  'src/lib/i18n/dong-bo-ngon-ngu.ts',
   'src/i18n/NgonNguProvider.tsx',
   'src/i18n/dich.ts',
   'src/i18n/dinh-dang.ts',

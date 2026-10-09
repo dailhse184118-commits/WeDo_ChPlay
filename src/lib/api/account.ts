@@ -1,5 +1,6 @@
 import { apiRequest } from './client';
 import type { DeletionBlockers, UserProfile, Workspace } from '../types';
+import type { NgonNgu } from '../../i18n/ngon-ngu';
 
 /**
  * Hỏi trước xem xoá được chưa.
@@ -109,5 +110,16 @@ export function dongYDieuKhoan(): Promise<DauDongYDieuKhoan> {
 export function datDongYAI(choPhep: boolean): Promise<{ aiConsentAt: string | null }> {
   return apiRequest<{ aiConsentAt: string | null }>('/users/me/ai-consent', {
     method: choPhep ? 'POST' : 'DELETE',
+  });
+}
+
+/**
+ * Báo máy chủ ngôn ngữ hiệu lực của app để thông báo đẩy và email gửi đúng
+ * ngôn ngữ. Máy chủ trả lại giá trị đã lưu.
+ */
+export function capNhatNgonNgu(language: NgonNgu): Promise<{ language: NgonNgu }> {
+  return apiRequest<{ language: NgonNgu }>('/users/me/language', {
+    method: 'PATCH',
+    body: { language },
   });
 }

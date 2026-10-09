@@ -13,6 +13,7 @@ export const TEP_BO_QUA: ReadonlyArray<{ tep: string; lyDo: string }> = [];
 /** Chuỗi được phép trong một tệp cụ thể. So khớp nguyên văn (đã chuẩn hoá NFC, bỏ khoảng trắng hai đầu). */
 export const CHUOI_DUOC_PHEP: ReadonlyArray<{ tep: string; chuoi: string; lyDo: string }> = [
   { tep: 'src/i18n/ngon-ngu.ts', chuoi: 'Tiếng Việt', lyDo: 'Tên ngôn ngữ viết bằng chính ngôn ngữ đó (endonym), giống nhau ở cả hai bản.' },
+  { tep: 'src/app/(tabs)/account/index.tsx', chuoi: 'Ngôn ngữ / Language', lyDo: 'Nhãn song ngữ cố ý: người đang đọc nhầm ngôn ngữ vẫn tìm thấy hàng đổi ngôn ngữ.' },
   { tep: 'src/i18n/dinh-dang.ts', chuoi: 'VNĐ', lyDo: 'Đơn vị tiền của bản tiếng Việt; bản tiếng Anh ghi VND trong cùng hàm.' },
   { tep: 'src/i18n/dinh-dang.ts', chuoi: 'đ', lyDo: 'Đơn vị tiền mặc định của bản tiếng Việt; bản tiếng Anh ghi VND trong cùng hàm.' },
   { tep: 'src/i18n/loi.ts', chuoi: 'Bạn không thể kết bạn với người này.', lyDo: 'Câu gốc tiếng Việt do máy chủ trả về, dùng để nhận diện lỗi; bản tiếng Anh dịch ngay trong loi.ts.' },

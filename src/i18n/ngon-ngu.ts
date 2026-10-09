@@ -26,6 +26,8 @@ function maMay(): string | null {
 
 let luaChon: LuaChonNgonNgu = 'he-thong';
 let hienTai: NgonNgu | null = null;
+/** Tăng mỗi lần lựa chọn được đặt tay, để lượt nạp đang chờ kho không ghi đè lên lựa chọn mới hơn. */
+let thuTuDat = 0;
 const nguoiNghe = new Set<() => void>();
 
 function tinh(): NgonNgu {
@@ -47,15 +49,21 @@ export function layLuaChon(): LuaChonNgonNgu {
 }
 /** Đọc lựa chọn đã lưu lúc mở app. Kho hỏng thì theo máy. */
 export async function napLuaChonDaLuu(): Promise<void> {
+  const thuTuLucDau = thuTuDat;
+  let daLuu: LuaChonNgonNgu = 'he-thong';
   try {
     const v = await AsyncStorage.getItem(KHOA_LUA_CHON);
-    luaChon = laLuaChon(v) ? v : 'he-thong';
+    daLuu = laLuaChon(v) ? v : 'he-thong';
   } catch {
-    luaChon = 'he-thong';
+    daLuu = 'he-thong';
   }
+  // Trong lúc chờ kho mà người dùng đã chọn thì lựa chọn mới hơn thắng.
+  if (thuTuDat !== thuTuLucDau) return;
+  luaChon = daLuu;
   capNhat();
 }
 export async function datLuaChon(l: LuaChonNgonNgu): Promise<void> {
+  thuTuDat++;
   luaChon = l;
   capNhat();
   try {
@@ -74,8 +82,9 @@ export function dangKyNgonNgu(nghe: () => void): () => void {
     nguoiNghe.delete(nghe);
   };
 }
-/** Chỉ cho kiểm thử. `null` = tính lại từ lựa chọn hiện tại. */
+/** Chỉ cho kiểm thử. `null` = trả về 'he-thong' (theo ngôn ngữ máy) rồi tính lại. */
 export function datNgonNguChoKiemThu(n: NgonNgu | null) {
+  thuTuDat++;
   if (n === null) {
     luaChon = 'he-thong';
     hienTai = null;
