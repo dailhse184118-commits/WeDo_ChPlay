@@ -86,3 +86,26 @@ it('dự án nằm sâu trong danh sách vẫn có huy hiệu khi cuộn tới',
     expect(within(man.getByTestId('project-row-p9')).queryByTestId('unread-badge')).toBeTruthy(),
   );
 });
+
+/*
+  Hai danh sách (dự án / tin nhắn) nằm cùng chỗ. Không có `key` riêng thì React
+  dùng lại một FlatList khi đổi tab và FlatList ném "Changing
+  onViewableItemsChanged nullability on the fly is not supported" — sập màn trên
+  máy thật (TestFlight 1.0.16).
+*/
+it('đổi qua Tin nhắn rồi về Dự án không làm sập danh sách', async () => {
+  const { listConversations } = jest.requireMock('../../../../lib/api/direct-chat');
+  (listConversations as jest.Mock).mockResolvedValue([]);
+  const man = await render(
+    <SafeAreaProvider initialMetrics={TEST_SAFE_AREA}>
+      <QueryClientProvider client={queryClient}>
+        <ManDanhSachChat />
+      </QueryClientProvider>
+    </SafeAreaProvider>,
+  );
+  await waitFor(() => man.getByTestId('project-row-p1'));
+  await fireEvent.press(man.getByText('Tin nhắn'));
+  await waitFor(() => expect(man.queryByTestId('ds-du-an')).toBeNull());
+  await fireEvent.press(man.getByText('Dự án'));
+  await waitFor(() => man.getByTestId('project-row-p1'));
+});

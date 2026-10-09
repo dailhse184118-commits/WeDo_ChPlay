@@ -317,6 +317,13 @@ export default function ChatListScreen() {
             </View>
           ) : (
             <FlatList
+              /*
+                `key` riêng cho mỗi danh sách: hai FlatList nằm cùng chỗ trong cây nên
+                không có key thì React dùng lại một phiên bản khi đổi tab, và FlatList
+                ném "Changing onViewableItemsChanged nullability on the fly is not
+                supported" (danh sách dự án có hàm, danh sách tin nhắn thì không).
+              */
+              key="ds-tin-nhan"
               data={hoiThoaiHien}
               ListHeaderComponent={
                 <Pressable
@@ -378,6 +385,7 @@ export default function ChatListScreen() {
           </View>
         ) : (
           <FlatList
+            key="ds-du-an"
             testID="ds-du-an"
             data={visible}
             ListHeaderComponent={
