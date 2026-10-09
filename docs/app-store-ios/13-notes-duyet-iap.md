@@ -9,7 +9,7 @@ Việc cuối của đợt In-App Purchase. Chương này thay dòng `PAYMENTS: 
 **Dài 3833 ký tự, 3980 byte UTF-8 (đếm theo NFC), tính cả mật khẩu B giả định dài 16 ký tự, dưới giới hạn 4.000 byte của Apple**. Mật khẩu A **không** ghi trong khối: nhập ở ô Password của Sign-In Information. Mật khẩu B ghi vào Notes (xem dưới).
 
 ```text
-WeDo is a team-work app for Vietnamese students, the iPhone companion to https://wedofpt.com.vn. The app follows the device language (change it in Account > Language). Vietnamese labels have English in brackets. Version 1.0.15 (5) sells two plans through auto-renewable In-App Purchase.
+WeDo is a team-work app for Vietnamese students, the iPhone companion to https://wedofpt.com.vn. The app follows the device language (change it in Account > Language). Version 1.0.16 (6) sells two plans through auto-renewable In-App Purchase.
 
 DEMO ACCOUNTS (email + password; no email verification, no OTP)
 Main: wedo.review@gmail.com, "Lê Huân", Leader of the project "Ra mắt AppleStore". Password: see App Store Connect demo account field.
