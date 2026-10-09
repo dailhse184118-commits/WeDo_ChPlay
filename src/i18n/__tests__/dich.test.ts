@@ -22,6 +22,13 @@ describe('số ít, số nhiều', () => {
     expect(soNhieu('vi', 1, { mot: 'Còn {so} lượt', nhieu: 'Còn {so} lượt' })).toBe('Còn 1 lượt');
     expect(soNhieu('vi', 5, { mot: 'sai', nhieu: 'Còn {so} lượt' })).toBe('Còn 5 lượt');
   });
+  it('chạy được khi không có Intl.PluralRules (Hermes trên máy thật)', () => {
+    // jest.setup.js đã xoá Intl.PluralRules để giống Hermes.
+    expect((Intl as { PluralRules?: unknown }).PluralRules).toBeUndefined();
+    expect(soNhieu('en', 1, dang)).toBe('1 credit left');
+    expect(soNhieu('en', 3, dang)).toBe('3 credits left');
+    expect(soNhieu('vi', 1, { mot: 'sai', nhieu: 'Còn {so} lượt' })).toBe('Còn 1 lượt');
+  });
   it('số được viết theo ngôn ngữ', () => {
     expect(soNhieu('en', 1000, dang)).toBe('1,000 credits left');
     expect(soNhieu('vi', 1000, { mot: '{so}', nhieu: '{so}' })).toBe('1.000');

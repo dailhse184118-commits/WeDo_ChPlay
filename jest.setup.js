@@ -33,3 +33,15 @@ const { datNgonNguChoKiemThu } = require('./src/i18n/ngon-ngu');
 beforeEach(() => {
   datNgonNguChoKiemThu('vi');
 });
+
+/*
+  Giả lập Hermes trên máy thật: các lớp Intl dưới đây KHÔNG có trong Hermes
+  (dùng tới là "undefined cannot be used as a constructor", sập màn hình), nhưng
+  Node có nên test vẫn xanh. Xoá đi để test bắt được ngay. Bản 1.0.16 (build 6)
+  từng sập vì `new Intl.PluralRules`.
+*/
+delete Intl.PluralRules;
+delete Intl.RelativeTimeFormat;
+delete Intl.ListFormat;
+delete Intl.Segmenter;
+delete Intl.DisplayNames;

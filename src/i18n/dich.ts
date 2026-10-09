@@ -64,12 +64,15 @@ export function noiSuy(mau: string, thamSo: Record<string, string | number>): st
 }
 
 /**
- * Chọn dạng số ít hay số nhiều theo quy tắc của ngôn ngữ (Intl.PluralRules).
- * Tiếng Việt không có số nhiều nên luôn ra `nhieu`; tiếng Anh ra `mot` khi
- * đúng 1. `{so}` trong câu được thay bằng số đã định dạng theo ngôn ngữ.
+ * Chọn dạng số ít hay số nhiều. Tiếng Việt không có số nhiều nên luôn ra
+ * `nhieu`; tiếng Anh ra `mot` khi đúng 1. `{so}` trong câu được thay bằng số
+ * đã định dạng theo ngôn ngữ.
+ *
+ * Tự tính, KHÔNG dùng `Intl.PluralRules`: Hermes trên máy thật không có lớp này
+ * (`new Intl.PluralRules` ném "undefined cannot be used as a constructor" và làm
+ * sập màn hình), dù Node khi chạy test thì có.
  */
 export function soNhieu(ngonNgu: NgonNgu, so: number, dang: { mot: string; nhieu: string }): string {
-  const loai = new Intl.PluralRules(MA_VUNG[ngonNgu]).select(so);
-  const mau = loai === 'one' ? dang.mot : dang.nhieu;
+  const mau = ngonNgu === 'en' && so === 1 ? dang.mot : dang.nhieu;
   return noiSuy(mau, { so: new Intl.NumberFormat(MA_VUNG[ngonNgu]).format(so) });
 }
