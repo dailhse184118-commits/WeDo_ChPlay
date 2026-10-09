@@ -33,6 +33,21 @@ const TEP_DA_DICH: string[] = [
   'src/lib/auth/google-signin.ts',
   'src/lib/auth/auth-context.tsx',
   'src/lib/auth/nguon-loi.ts',
+  'src/app/(tabs)/account/index.tsx',
+  'src/app/(tabs)/account/nang-cap.tsx',
+  'src/app/(tabs)/account/contributions.tsx',
+  'src/app/account/profile.tsx',
+  'src/app/account/delete-account.tsx',
+  'src/app/account/notification-settings.tsx',
+  'src/app/account/feedback.tsx',
+  'src/app/account/blocked.tsx',
+  'src/lib/payments/mua-goi.ts',
+  'src/lib/payments/quyen-loi.ts',
+  'src/lib/payments/goi-hien-tai.ts',
+  'src/lib/ai/han-muc.ts',
+  'src/lib/ngay-sinh.ts',
+  'src/lib/feedback/kiem-tra.ts',
+  'src/components/ui/GradientHeader.tsx',
 ];
 
 describe('bộ quét chữ chưa dịch', () => {

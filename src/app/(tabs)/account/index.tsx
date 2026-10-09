@@ -26,6 +26,7 @@ import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { capNhatAnhDaiDien, datDongYAI } from '../../../lib/api/account';
 import { getEntitlements } from '../../../lib/api/entitlements';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
 import {
   PRIVACY_URL,
@@ -35,9 +36,11 @@ import {
   openLegalLink,
 } from '../../../lib/legal-links';
 import { dongGoiHienTai } from '../../../lib/payments/goi-hien-tai';
-import { useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
 import { TEN_NGON_NGU } from '../../../i18n/ngon-ngu';
 import { tuDienTaiKhoan } from '../../../i18n/tu-dien/tai-khoan';
+
+type KhoaLoi = 'khongLuuDuocLuaChon' | 'khongDoiDuocAnh';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
@@ -81,8 +84,9 @@ export default function AccountScreen() {
   const router = useRouter();
   const { user, signOut, capNhatHoSo } = useAuth();
   const { active } = useWorkspace();
-  const tTaiKhoan = useTuDien(tuDienTaiKhoan);
-  const { luaChon } = useNgonNgu();
+  const t = useTuDien(tuDienTaiKhoan);
+  const dichLoi = useDichLoi();
+  const { luaChon, ngonNgu } = useNgonNgu();
   const [moBangNgonNgu, setMoBangNgonNgu] = useState(false);
 
   // Cùng khoá với màn chat và màn Nâng cấp (invalidate ['entitlements']).
@@ -93,11 +97,12 @@ export default function AccountScreen() {
   });
 
   const [dangLuuAnh, setDangLuuAnh] = useState(false);
-  const [loiAnh, setLoiAnh] = useState('');
+  /* Giữ lỗi ở dạng nguồn, dịch lúc vẽ: đổi ngôn ngữ giữa chừng thì băng đỏ đổi theo. */
+  const [loiAnh, setLoiAnh] = useState<NguonLoi<KhoaLoi> | null>(null);
 
   const { daDongY: choPhepAI, xinDongYRoiChay } = useDongYAI();
   const [dangLuuAI, setDangLuuAI] = useState(false);
-  const [loiAI, setLoiAI] = useState('');
+  const [loiAI, setLoiAI] = useState<NguonLoi<KhoaLoi> | null>(null);
 
   /*
     Bật: đi qua ĐÚNG hộp thoại xin đồng ý như lúc dùng AI lần đầu, để người dùng
@@ -113,25 +118,25 @@ export default function AccountScreen() {
     }
     if (!user) return;
 
-    setLoiAI('');
+    setLoiAI(null);
     setDangLuuAI(true);
     try {
       const { aiConsentAt } = await datDongYAI(false);
       capNhatHoSo({ ...user, aiConsentAt });
     } catch (loi) {
-      setLoiAI(loi instanceof Error ? loi.message : 'Không lưu được lựa chọn.');
+      setLoiAI({ loi, duPhong: 'khongLuuDuocLuaChon' });
     } finally {
       setDangLuuAI(false);
     }
   }
 
   async function luuAnh(anhUrl: string | null) {
-    setLoiAnh('');
+    setLoiAnh(null);
     setDangLuuAnh(true);
     try {
       capNhatHoSo(await capNhatAnhDaiDien(anhUrl));
     } catch (loi) {
-      setLoiAnh(loi instanceof Error ? loi.message : 'Không đổi được ảnh đại diện.');
+      setLoiAnh({ loi, duPhong: 'khongDoiDuocAnh' });
     } finally {
       setDangLuuAnh(false);
     }
@@ -144,7 +149,7 @@ export default function AccountScreen() {
     trị để GỠ ảnh. Gộp lại thì mở trình chọn rồi đổi ý là mất luôn ảnh đang có.
   */
   async function chonVaLuuAnh() {
-    setLoiAnh('');
+    setLoiAnh(null);
     setDangLuuAnh(true);
     try {
       const anh = await chonAnhDaiDien();
@@ -152,7 +157,7 @@ export default function AccountScreen() {
 
       capNhatHoSo(await capNhatAnhDaiDien(anh));
     } catch (loi) {
-      setLoiAnh(loi instanceof Error ? loi.message : 'Không đổi được ảnh đại diện.');
+      setLoiAnh({ loi, duPhong: 'khongDoiDuocAnh' });
     } finally {
       setDangLuuAnh(false);
     }
@@ -168,16 +173,16 @@ export default function AccountScreen() {
       return;
     }
 
-    Alert.alert('Ảnh đại diện', undefined, [
-      { text: 'Chọn ảnh khác', onPress: () => void chonVaLuuAnh() },
-      { text: 'Gỡ ảnh', style: 'destructive', onPress: () => void luuAnh(null) },
-      { text: 'Thôi', style: 'cancel' },
+    Alert.alert(t.anhDaiDien, undefined, [
+      { text: t.chonAnhKhac, onPress: () => void chonVaLuuAnh() },
+      { text: t.goAnh, style: 'destructive', onPress: () => void luuAnh(null) },
+      { text: t.thoi, style: 'cancel' },
     ]);
   }
 
   return (
     <View style={styles.screen}>
-      <GradientHeader title="Tài khoản" />
+      <GradientHeader title={t.tieuDe} />
 
       {/*
         Kéo cả khung cuộn lên, không phải chỉ kéo thẻ bên trong. ScrollView xén mọi
@@ -198,7 +203,7 @@ export default function AccountScreen() {
         */}
         <View style={styles.identityBlock}>
           <Card style={styles.identity}>
-            <Text style={styles.name}>{user?.fullName ?? 'Đang tải…'}</Text>
+            <Text style={styles.name}>{user?.fullName ?? t.dangTai}</Text>
             <Text testID="account-email" style={styles.email}>
               {user?.email ?? ''}
             </Text>
@@ -219,7 +224,7 @@ export default function AccountScreen() {
               testID="account-avatar"
               accessibilityRole="button"
               accessibilityLabel={
-                user?.avatarUrl ? 'Đổi hoặc gỡ ảnh đại diện' : 'Chọn ảnh đại diện'
+                user?.avatarUrl ? t.doiHoacGoAnh : t.chonAnh
               }
               onPress={chamVaoAnh}
               style={styles.avatarNut}
@@ -242,8 +247,8 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {loiAnh ? <ErrorBanner message={loiAnh} /> : null}
-        {loiAI ? <ErrorBanner message={loiAI} /> : null}
+        {loiAnh ? <ErrorBanner message={chuLoi(t, loiAnh, dichLoi)} /> : null}
+        {loiAI ? <ErrorBanner message={chuLoi(t, loiAI, dichLoi)} /> : null}
 
         <Card style={styles.menu}>
           {/*
@@ -255,16 +260,16 @@ export default function AccountScreen() {
             testID="account-profile"
             icon="person-outline"
             tone="info"
-            label="Thông tin cá nhân"
-            hint="Họ tên, số điện thoại, ngày sinh"
+            label={t.thongTinCaNhan}
+            hint={t.thongTinCaNhanGoiY}
             onPress={() => router.push('/account/profile')}
           />
           <MenuRow
             testID="account-notification-settings"
             icon="notifications-outline"
             tone="info"
-            label="Cài đặt thông báo"
-            hint="Chọn loại thông báo bạn muốn nhận"
+            label={t.caiDatThongBao}
+            hint={t.caiDatThongBaoGoiY}
             onPress={() => router.push('/account/notification-settings')}
           />
           <MenuRow
@@ -272,7 +277,7 @@ export default function AccountScreen() {
             icon="language-outline"
             tone="info"
             label="Ngôn ngữ / Language"
-            hint={luaChon === 'he-thong' ? tTaiKhoan.theoMay : TEN_NGON_NGU[luaChon]}
+            hint={luaChon === 'he-thong' ? t.theoMay : TEN_NGON_NGU[luaChon]}
             onPress={() => setMoBangNgonNgu(true)}
           />
           {/*
@@ -283,8 +288,8 @@ export default function AccountScreen() {
             testID="account-contributions"
             icon="podium-outline"
             tone="info"
-            label="Bảng đóng góp"
-            hint="Ai làm bao nhiêu, ai đúng hạn"
+            label={t.bangDongGop}
+            hint={t.bangDongGopGoiY}
             onPress={() => router.push('/account/contributions')}
           />
           {/*
@@ -297,8 +302,8 @@ export default function AccountScreen() {
               testID="account-calendar-sync"
               icon="calendar-outline"
               tone="info"
-              label="Đồng bộ lịch"
-              hint="Đưa hạn chót và cuộc họp sang Google Calendar, Lịch Apple"
+              label={t.dongBoLich}
+              hint={t.dongBoLichGoiY}
               onPress={() => router.push('/account/calendar-sync')}
             />
           ) : null}
@@ -308,13 +313,13 @@ export default function AccountScreen() {
               testID="account-nang-cap"
               icon="diamond-outline"
               tone="info"
-              label="Nâng cấp gói"
+              label={t.nangCapGoi}
               hint={
                 entitlementsQuery.isLoading
-                  ? 'Đang kiểm tra…'
+                  ? t.dangKiemTra
                   : entitlementsQuery.data
-                    ? dongGoiHienTai(entitlementsQuery.data.subscription ?? null)
-                    : 'Xem các gói'
+                    ? dongGoiHienTai(entitlementsQuery.data.subscription ?? null, ngonNgu)
+                    : t.xemCacGoi
               }
               onPress={() => router.push('/account/nang-cap')}
             />
@@ -323,8 +328,8 @@ export default function AccountScreen() {
             testID="account-feedback"
             icon="chatbox-ellipses-outline"
             tone="info"
-            label="Góp ý cho WeDo"
-            hint="Nói cho chúng tôi biết chỗ nào khó dùng"
+            label={t.gopY}
+            hint={t.gopYGoiY}
             onPress={() => router.push('/account/feedback')}
           />
           {/*
@@ -336,8 +341,8 @@ export default function AccountScreen() {
             testID="account-blocked"
             icon="ban-outline"
             tone="info"
-            label="Người đã chặn"
-            hint="Xem và bỏ chặn"
+            label={t.nguoiDaChan}
+            hint={t.nguoiDaChanGoiY}
             onPress={() => router.push('/account/blocked')}
           />
           {/*
@@ -348,14 +353,12 @@ export default function AccountScreen() {
           <View style={[styles.menuRow, styles.menuDivider]}>
             <IconTile name="sparkles-outline" tone="info" />
             <View style={styles.menuBody}>
-              <Text style={styles.menuLabel}>Cho phép dùng AI</Text>
-              <Text style={styles.menuHint}>
-                Gợi ý công việc từ tin nhắn bạn chọn. Tắt thì app không gửi tin nhắn bạn chọn cho AI nữa.
-              </Text>
+              <Text style={styles.menuLabel}>{t.choPhepAI}</Text>
+              <Text style={styles.menuHint}>{t.choPhepAIGoiY}</Text>
             </View>
             <Switch
               testID="account-ai-consent"
-              accessibilityLabel="Cho phép dùng AI"
+              accessibilityLabel={t.choPhepAI}
               value={choPhepAI}
               disabled={dangLuuAI}
               onValueChange={(bat) => void doiChoPhepAI(bat)}
@@ -366,8 +369,8 @@ export default function AccountScreen() {
             testID="account-terms"
             icon="document-text-outline"
             tone="done"
-            label="Điều khoản sử dụng"
-            hint="Mở trong trình duyệt"
+            label={t.dieuKhoan}
+            hint={t.moTrongTrinhDuyet}
             onPress={() => void openLegalLink(TERMS_URL)}
           />
           {/*
@@ -378,8 +381,8 @@ export default function AccountScreen() {
             testID="account-privacy"
             icon="shield-checkmark-outline"
             tone="done"
-            label="Chính sách quyền riêng tư"
-            hint="Mở trong trình duyệt"
+            label={t.riengTu}
+            hint={t.moTrongTrinhDuyet}
             onPress={() => void openLegalLink(PRIVACY_URL)}
           />
           {/*
@@ -391,8 +394,8 @@ export default function AccountScreen() {
             testID="account-help"
             icon="help-buoy-outline"
             tone="info"
-            label="Hỗ trợ"
-            hint="Câu hỏi thường gặp, cách báo cáo nội dung xấu"
+            label={t.hoTro}
+            hint={t.hoTroGoiY}
             onPress={() => void openLegalLink(SUPPORT_URL)}
           />
           {/* Mở thư trước; máy không có ứng dụng thư thì mở trang hỗ trợ. */}
@@ -400,8 +403,8 @@ export default function AccountScreen() {
             testID="account-support"
             icon="mail-outline"
             tone="info"
-            label={`Liên hệ: ${SUPPORT_EMAIL}`}
-            hint="Gửi thư cho WeDo"
+            label={t.lienHe(SUPPORT_EMAIL)}
+            hint={t.guiThu}
             onPress={() =>
               void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openLegalLink(SUPPORT_URL))
             }
@@ -415,15 +418,15 @@ export default function AccountScreen() {
             testID="account-delete"
             icon="trash-outline"
             tone="rejected"
-            label="Xoá tài khoản"
-            hint="Xoá vĩnh viễn dữ liệu của bạn"
+            label={t.xoaTaiKhoan}
+            hint={t.xoaTaiKhoanGoiY}
             onPress={() => router.push('/account/delete-account')}
           />
           <MenuRow
             testID="account-signout"
             icon="log-out-outline"
             tone="rejected"
-            label="Đăng xuất"
+            label={t.dangXuat}
             onPress={() => void signOut()}
             last
           />

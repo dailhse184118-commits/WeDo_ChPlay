@@ -4,6 +4,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deepLinkToSubscriptions, useIAP, type Purchase } from 'expo-iap';
 
+import { useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienNangCap } from '../../../i18n/tu-dien/nang-cap';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { guiGiaoDichApple, layAppAccountToken } from '../../../lib/api/apple-iap';
 import { getEntitlements } from '../../../lib/api/entitlements';
@@ -34,6 +36,14 @@ const CHO_KET_NOI_MS = 15_000;
 type TrangThaiGia = 'dang-tai' | 'loi' | 'xong';
 
 /**
+ * Câu báo đang hiện, giữ ở dạng NGUỒN, dịch lúc vẽ để đổi ngôn ngữ giữa chừng thì
+ * câu báo đổi theo. `mua` là lỗi mua gói (qua `loiNhanMua`); còn lại là câu cố định của màn.
+ */
+type LoiNangCap =
+  | { khoa: 'khongDocGiaoDich' | 'daThanhToan' | 'chuaKhoiPhuc' | 'chuaMoQuanLy' }
+  | { mua: unknown };
+
+/**
  * Màn Nâng cấp (chỉ iOS). Mọi giá lấy từ StoreKit. Giao dịch về thì gửi máy
  * chủ xác minh, máy chủ xác nhận rồi mới `finishTransaction`: máy chủ hỏng thì
  * giữ giao dịch, StoreKit đưa lại ở lần mở màn này sau và ta gửi lại.
@@ -45,6 +55,8 @@ export default function ManNangCap() {
   const router = useRouter();
   /* Màn ẩn của nhóm (tabs): không dùng `router.back()`, xem `useQuayLai`. */
   const quayLai = useQuayLai(useCallback(() => router.navigate('/account'), [router]));
+  const t = useTuDien(tuDienNangCap);
+  const { ngonNgu } = useNgonNgu();
   const { user } = useAuth();
   const { active, workspaces } = useWorkspace();
   const queryClient = useQueryClient();
@@ -52,7 +64,7 @@ export default function ManNangCap() {
   const [dangKichHoat, setDangKichHoat] = useState(false);
   const [dangKhoiPhuc, setDangKhoiPhuc] = useState(false);
   const [daKhoiPhuc, setDaKhoiPhuc] = useState(false);
-  const [loi, setLoi] = useState('');
+  const [loi, setLoi] = useState<LoiNangCap | null>(null);
   const [workspaceChon, setWorkspaceChon] = useState<string | null>(null);
   const [trangThaiGia, setTrangThaiGia] = useState<TrangThaiGia>('dang-tai');
 
@@ -108,7 +120,7 @@ export default function ManNangCap() {
       if (sku) void xoaWorkspaceLucMua(sku);
       setDangMua(null);
       setDaKhoiPhuc(false);
-      setLoi(loiNhanMua(e));
+      setLoi({ mua: e });
     },
     // Không kết nối được StoreKit thì không có giá nào để hiện.
     onError: () => {
@@ -127,7 +139,7 @@ export default function ManNangCap() {
     if (!jws) {
       setDangMua(null);
       setDaKhoiPhuc(false);
-      setLoi('Không đọc được giao dịch từ App Store.');
+      setLoi({ khoa: 'khongDocGiaoDich' });
       return;
     }
     // Cùng một giao dịch về hai lần (nghe sự kiện + khôi phục) thì chỉ gửi một.
@@ -144,7 +156,7 @@ export default function ManNangCap() {
       await finishTransaction({ purchase });
       await xoaWorkspaceLucMua(sku);
       await queryClient.invalidateQueries({ queryKey: ['entitlements'] });
-      setLoi('');
+      setLoi(null);
     } catch (e) {
       const ma = (e as { code?: string } | null)?.code;
       if (ma === 'TRANSACTION_OWNED_BY_OTHER_USER') {
@@ -152,7 +164,7 @@ export default function ManNangCap() {
           Gói đã thuộc một tài khoản WeDo khác: gửi lại bao nhiêu lần cũng bị từ
           chối, và không ai mất gì. Finish để khỏi báo lỗi mỗi lần mở màn.
         */
-        setLoi(loiNhanMua(e));
+        setLoi({ mua: e });
         try {
           await finishTransaction({ purchase });
           await xoaWorkspaceLucMua(sku);
@@ -167,11 +179,7 @@ export default function ManNangCap() {
         dùng workspace người dùng chọn lại trên màn.
       */
       if (ma === 'WORKSPACE_OWNER_REQUIRED') await xoaWorkspaceLucMua(sku);
-      setLoi(
-        ma && MA_LOI_NGHIEP_VU.has(ma)
-          ? loiNhanMua(e)
-          : 'Đã thanh toán, đang kích hoạt gói… Mở lại màn Nâng cấp nếu chưa thấy gói.',
-      );
+      setLoi(ma && MA_LOI_NGHIEP_VU.has(ma) ? { mua: e } : { khoa: 'daThanhToan' });
     } finally {
       dangGui.current.delete(purchase.id);
       setDangKichHoat(false);
@@ -220,17 +228,17 @@ export default function ManNangCap() {
   /* Tab ẩn không bao giờ gỡ: quay lại màn thì xoá câu báo của lần trước. */
   useFocusEffect(
     useCallback(() => {
-      setLoi('');
+      setLoi(null);
       setDaKhoiPhuc(false);
     }, []),
   );
 
-  const the = useMemo(() => ghepTheGoi(subscriptions), [subscriptions]);
-  const khongCoGia = the.every((t) => !t.thang && !t.nam);
+  const the = useMemo(() => ghepTheGoi(subscriptions, ngonNgu), [subscriptions, ngonNgu]);
+  const khongCoGia = the.every((g) => !g.thang && !g.nam);
   const loiGia = trangThaiGia === 'loi' || (trangThaiGia === 'xong' && khongCoGia);
 
   async function mua(sku: MaGoi) {
-    setLoi('');
+    setLoi(null);
     setDaKhoiPhuc(false);
     setDangMua(sku);
     try {
@@ -240,12 +248,12 @@ export default function ManNangCap() {
     } catch (e) {
       void xoaWorkspaceLucMua(sku);
       setDangMua(null);
-      setLoi(loiNhanMua(e));
+      setLoi({ mua: e });
     }
   }
 
   async function khoiPhuc() {
-    setLoi('');
+    setLoi(null);
     setDaKhoiPhuc(false);
     setDangKhoiPhuc(true);
     try {
@@ -256,7 +264,7 @@ export default function ManNangCap() {
       await restorePurchases({ alsoPublishToEventListenerIOS: true });
       setDaKhoiPhuc(true);
     } catch {
-      setLoi('Chưa khôi phục được. Bạn thử lại sau nhé.');
+      setLoi({ khoa: 'chuaKhoiPhuc' });
     } finally {
       setDangKhoiPhuc(false);
     }
@@ -266,58 +274,61 @@ export default function ManNangCap() {
     try {
       await deepLinkToSubscriptions();
     } catch {
-      setLoi('Chưa mở được trang quản lý đăng ký. Vào Cài đặt → [tên bạn] → Đăng ký nhé.');
+      setLoi({ khoa: 'chuaMoQuanLy' });
     }
   }
 
   if (Platform.OS !== 'ios') return null;
 
+  /* Câu lỗi đã dịch. Rỗng khi không có lỗi, hoặc khi người dùng tự huỷ (`loiNhanMua` trả rỗng). */
+  const loiChu = loi ? ('khoa' in loi ? t[loi.khoa] : loiNhanMua(loi.mua, ngonNgu)) : '';
+
   /* Chỉ báo kết quả khôi phục khi đã có kết quả và không có lỗi nào sau đó. */
   const thongBao =
-    daKhoiPhuc && !loi
+    daKhoiPhuc && !loiChu
       ? availablePurchases.length > 0
-        ? 'Đã kiểm tra các gói đã mua.'
-        : 'Không tìm thấy gói nào.'
+        ? t.daKiemTra
+        : t.khongThayGoi
       : '';
 
   return (
     <View style={styles.man}>
-      <GradientHeader title="Nâng cấp" onBack={quayLai} dense />
+      <GradientHeader title={t.tieuDe} onBack={quayLai} dense />
       <ScrollView style={styles.than} contentContainerStyle={styles.noiDung}>
         {conGoiWeb && goiHienTai ? (
           <View testID="chan-goi-web" style={styles.hop}>
             <Text style={styles.nhan}>
-              {loiNhanMua({ code: 'SUBSCRIPTION_CONFLICT', currentPeriodEnd: goiHienTai.currentPeriodEnd })}
+              {loiNhanMua({ code: 'SUBSCRIPTION_CONFLICT', currentPeriodEnd: goiHienTai.currentPeriodEnd }, ngonNgu)}
             </Text>
           </View>
         ) : null}
         {trangThaiGia === 'dang-tai' ? (
           <View testID="dang-tai-gia" style={styles.hop}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.chipChu}>Đang lấy giá từ App Store…</Text>
+            <Text style={styles.chipChu}>{t.layGia}</Text>
           </View>
         ) : null}
         {loiGia ? (
           <View testID="loi-gia" style={styles.hop}>
-            <Text style={styles.loi}>Chưa lấy được gói từ App Store.</Text>
+            <Text style={styles.loi}>{t.khongLayDuocGoi}</Text>
             <Pressable testID="thu-lai-gia" accessibilityRole="button" onPress={() => void taiGia(!connected)}>
-              <Text style={styles.lienKet}>Thử lại</Text>
+              <Text style={styles.lienKet}>{t.thuLai}</Text>
             </Pressable>
           </View>
         ) : null}
-        {the.map((t) => (
+        {the.map((goi) => (
           <TheNangCap
-            key={t.plan}
-            the={t}
+            key={goi.plan}
+            the={goi}
             dangMua={dangMua}
             khoaMua={khoaMua}
-            khoaTeam={t.plan === 'TEAM_GROWTH' && cuaToi.length === 0}
+            khoaTeam={goi.plan === 'TEAM_GROWTH' && cuaToi.length === 0}
             onMua={mua}
           />
         ))}
         {cuaToi.length > 1 ? (
           <View style={styles.hop}>
-            <Text style={styles.nhan}>Mua Team Growth cho workspace</Text>
+            <Text style={styles.nhan}>{t.muaTeamChoWorkspace}</Text>
             {cuaToi.map((w) => (
               <Pressable
                 key={w.id}
@@ -334,10 +345,10 @@ export default function ManNangCap() {
         {dangKichHoat ? (
           <View style={styles.hop}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.chipChu}>Đã thanh toán, đang kích hoạt gói…</Text>
+            <Text style={styles.chipChu}>{t.dangKichHoat}</Text>
           </View>
         ) : null}
-        {loi ? <Text style={styles.loi}>{loi}</Text> : null}
+        {loiChu ? <Text style={styles.loi}>{loiChu}</Text> : null}
         {thongBao ? <Text style={styles.thongBao}>{thongBao}</Text> : null}
         <Pressable
           testID="khoi-phuc"
@@ -346,23 +357,20 @@ export default function ManNangCap() {
           disabled={dangKhoiPhuc}
           onPress={() => void khoiPhuc()}
         >
-          <Text style={styles.lienKet}>{dangKhoiPhuc ? 'Đang khôi phục…' : 'Khôi phục mua hàng'}</Text>
+          <Text style={styles.lienKet}>{dangKhoiPhuc ? t.dangKhoiPhuc : t.khoiPhuc}</Text>
         </Pressable>
         <Pressable testID="quan-ly" accessibilityRole="button" onPress={() => void quanLy()}>
-          <Text style={styles.lienKet}>Quản lý đăng ký</Text>
+          <Text style={styles.lienKet}>{t.quanLy}</Text>
         </Pressable>
         <View style={styles.hangLienKet}>
           <Pressable testID="nang-cap-dieu-khoan" accessibilityRole="link" onPress={() => void openLegalLink(TERMS_URL)}>
-            <Text style={styles.lienKetNho}>Điều khoản sử dụng</Text>
+            <Text style={styles.lienKetNho}>{t.dieuKhoan}</Text>
           </Pressable>
           <Pressable testID="nang-cap-rieng-tu" accessibilityRole="link" onPress={() => void openLegalLink(PRIVACY_URL)}>
-            <Text style={styles.lienKetNho}>Chính sách riêng tư</Text>
+            <Text style={styles.lienKetNho}>{t.riengTu}</Text>
           </Pressable>
         </View>
-        <Text style={styles.phapLy}>
-          Tiền được trừ vào Apple ID khi xác nhận mua. Gói tự gia hạn theo kỳ đã chọn và tính vào Apple ID của bạn, trừ
-          khi bạn huỷ ít nhất 24 giờ trước khi hết kỳ. Quản lý và huỷ trong Cài đặt → [tên bạn] → Đăng ký.
-        </Text>
+        <Text style={styles.phapLy}>{t.phapLy}</Text>
       </ScrollView>
     </View>
   );
@@ -381,6 +389,7 @@ function TheNangCap({
   khoaTeam: boolean;
   onMua: (sku: MaGoi) => void;
 }) {
+  const t = useTuDien(tuDienNangCap);
   const khoa = khoaMua || khoaTeam || dangMua !== null;
   return (
     <View style={[styles.the, khoaTeam && styles.theMo]}>
@@ -390,7 +399,7 @@ function TheNangCap({
           • {q}
         </Text>
       ))}
-      {khoaTeam ? <Text style={styles.ghiChu}>Tạo workspace rồi mới mua Team Growth.</Text> : null}
+      {khoaTeam ? <Text style={styles.ghiChu}>{t.taoWorkspaceTruoc}</Text> : null}
       <View style={styles.hangNut}>
         {[the.thang, the.nam].map((o, i) =>
           o ? (
@@ -404,7 +413,7 @@ function TheNangCap({
               style={[styles.nut, khoa && !khoaTeam && styles.nutMo]}
             >
               <Text style={styles.nutChu}>
-                {dangMua === o.sku ? 'Đang mở App Store…' : `${o.gia} / ${i === 0 ? 'tháng' : 'năm'}`}
+                {dangMua === o.sku ? t.dangMoAppStore : t.giaTheoKy(o.gia, i !== 0)}
               </Text>
             </Pressable>
           ) : null,

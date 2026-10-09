@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
 import { Button } from '../../components/ui/Button';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../components/ui/GradientHeader';
@@ -11,8 +13,6 @@ import { TextField } from '../../components/ui/TextField';
 import { getFeedbackStatus, submitFeedback } from '../../lib/api/feedback';
 import { kiemTraDanhGia, soKyTuConLai } from '../../lib/feedback/kiem-tra';
 import { colors, fontSize, radius, scale, spacing } from '../../theme/tokens';
-
-const NHAN_SAO = ['', 'Rất tệ', 'Tệ', 'Tạm được', 'Tốt', 'Rất tốt'];
 
 function HangSao({
   sao,
@@ -23,6 +23,7 @@ function HangSao({
   onChon: (v: number) => void;
   khoa?: boolean;
 }) {
+  const t = useTuDien(tuDienTaiKhoan).gopYMan;
   return (
     <View>
       <View style={styles.hangSao}>
@@ -32,7 +33,7 @@ function HangSao({
             onPress={() => !khoa && onChon(v)}
             disabled={khoa}
             accessibilityRole="button"
-            accessibilityLabel={`${v} sao`}
+            accessibilityLabel={t.sao(v)}
             testID={`sao-${v}`}
             hitSlop={6}
           >
@@ -45,18 +46,27 @@ function HangSao({
         ))}
       </View>
       {/* Chữ dưới sao: người dùng biết mình vừa chọn mức nào mà không phải đếm. */}
-      <Text style={styles.nhanSao}>{sao > 0 ? NHAN_SAO[sao] : 'Chạm để chọn sao'}</Text>
+      <Text style={styles.nhanSao}>{sao > 0 ? t.nhanSao[sao - 1] : t.chamDeChon}</Text>
     </View>
   );
 }
 
+/**
+ * Lỗi đang hiện, giữ ở dạng NGUỒN để dịch lúc vẽ. `kiem-tra` giữ lại đúng số sao và
+ * nội dung vừa bị từ chối (người dùng sửa tiếp thì câu báo vẫn là của lần bấm đó).
+ */
+type LoiGopY = { kieu: 'kiem-tra'; sao: number; noiDung: string } | { kieu: 'gui'; loi: unknown };
+
 export default function ManGopY() {
   const router = useRouter();
+  const t = useTuDien(tuDienTaiKhoan).gopYMan;
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const queryClient = useQueryClient();
 
   const [sao, setSao] = useState(0);
   const [noiDung, setNoiDung] = useState('');
-  const [loi, setLoi] = useState<string | null>(null);
+  const [loi, setLoi] = useState<LoiGopY | null>(null);
 
   /*
     Đọc `/feedback/status`, không phải `/feedback/mine`: chỉ lượt này biết quản
@@ -84,14 +94,12 @@ export default function ManGopY() {
       void queryClient.invalidateQueries({ queryKey: ['feedback-mine'] });
       setLoi(null);
     },
-    onError: (e) =>
-      setLoi(e instanceof Error ? e.message : 'Không gửi được đánh giá.'),
+    onError: (e) => setLoi({ kieu: 'gui', loi: e }),
   });
 
   const bam = () => {
-    const loiKiemTra = kiemTraDanhGia(sao, noiDung);
-    if (loiKiemTra) {
-      setLoi(loiKiemTra);
+    if (kiemTraDanhGia(sao, noiDung, ngonNgu)) {
+      setLoi({ kieu: 'kiem-tra', sao, noiDung });
       return;
     }
     setLoi(null);
@@ -99,12 +107,17 @@ export default function ManGopY() {
   };
 
   const conLai = soKyTuConLai(noiDung);
+  const loiChu = !loi
+    ? ''
+    : loi.kieu === 'kiem-tra'
+      ? (kiemTraDanhGia(loi.sao, loi.noiDung, ngonNgu) ?? '')
+      : dichLoi(loi.loi, t.khongGuiDuoc);
   // Thẻ "đã gửi" chỉ khi máy chủ nói CÒN KHOÁ.
   const cu = trangThai.data?.locked ? trangThai.data.feedback : null;
 
   return (
     <View style={styles.man}>
-      <GradientHeader title="Góp ý cho WeDo" onBack={() => router.back()} dense />
+      <GradientHeader title={t.tieuDe} onBack={() => router.back()} dense />
 
       <ScrollView
         style={styles.than}
@@ -124,38 +137,33 @@ export default function ManGopY() {
             dài rồi mới báo bị khoá.
           */
           <View style={styles.daGuiHop}>
-            <Text style={styles.daGuiTieuDe}>Bạn đã gửi đánh giá</Text>
+            <Text style={styles.daGuiTieuDe}>{t.daGuiTieuDe}</Text>
             <HangSao sao={cu.rating} onChon={() => {}} khoa />
             <Text style={styles.daGuiNoiDung}>{cu.comment}</Text>
-            <Text style={styles.daGuiPhu}>
-              Mỗi người gửi được một lần. Muốn sửa thì nhắn cho đội ngũ WeDo để mở lại giúp bạn.
-            </Text>
+            <Text style={styles.daGuiPhu}>{t.daGuiPhu}</Text>
           </View>
         ) : (
           <>
-            <Text style={styles.moiGoi}>
-              Bạn thấy WeDo thế nào? Chê thoải mái — góp ý thật giúp chúng tôi sửa đúng chỗ hơn là
-              lời khen.
-            </Text>
+            <Text style={styles.moiGoi}>{t.moiGoi}</Text>
 
-            {loi ? <ErrorBanner message={loi} /> : null}
+            {loiChu ? <ErrorBanner message={loiChu} /> : null}
 
             <HangSao sao={sao} onChon={setSao} />
 
             <TextField
-              label="Điều bạn muốn nói"
+              label={t.dieuMuonNoi}
               value={noiDung}
               onChangeText={setNoiDung}
-              placeholder="Chỗ nào khó dùng? Thiếu tính năng gì? Gặp lỗi ở đâu?"
+              placeholder={t.goiYNoiDung}
               multiline
               testID="o-noi-dung"
             />
             <Text style={[styles.demChu, conLai < 0 && styles.demChuVuot]}>
-              Còn {conLai} ký tự
+              {t.conLai(conLai)}
             </Text>
 
             <Button
-              label="Gửi góp ý"
+              label={t.gui}
               onPress={bam}
               loading={gui.isPending}
               testID="nut-gui-gop-y"

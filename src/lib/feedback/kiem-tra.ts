@@ -7,13 +7,18 @@
  * vì gõ xong bấm gửi rồi mới nhận lỗi.
  */
 
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
+
 export const TOI_THIEU_KY_TU = 10;
 export const TOI_DA_KY_TU = 1500;
 
 /** Trả câu báo lỗi để hiện thẳng, hoặc `null` khi hợp lệ. */
-export function kiemTraDanhGia(sao: number, noiDung: string): string | null {
+export function kiemTraDanhGia(sao: number, noiDung: string, ngonNgu: NgonNgu = layNgonNgu()): string | null {
+  const t = theoNgonNgu(tuDienTaiKhoan, ngonNgu).danhGia;
   if (sao < 1 || sao > 5) {
-    return 'Chọn số sao trước đã.';
+    return t.chonSao;
   }
 
   const chu = noiDung.trim();
@@ -23,11 +28,11 @@ export function kiemTraDanhGia(sao: number, noiDung: string): string | null {
       Nói rõ CÒN THIẾU bao nhiêu chứ không chỉ nêu mức tối thiểu. Người dùng gõ
       được 6 ký tự mà đọc "cần ít nhất 10" thì vẫn phải tự trừ nhẩm.
     */
-    return `Viết thêm ${TOI_THIEU_KY_TU - chu.length} ký tự nữa để chúng tôi hiểu ý bạn.`;
+    return t.thieu(TOI_THIEU_KY_TU - chu.length);
   }
 
   if (chu.length > TOI_DA_KY_TU) {
-    return `Nội dung dài quá ${TOI_DA_KY_TU} ký tự, bạn rút gọn giúp nhé.`;
+    return t.daiQua(TOI_DA_KY_TU);
   }
 
   return null;

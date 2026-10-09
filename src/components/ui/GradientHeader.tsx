@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
 import { GIOI_HAN_CO_CHU } from '../../theme/responsive';
 import { colors, fontSize, gradients, radius, sizes, spacing } from '../../theme/tokens';
 
@@ -47,6 +49,7 @@ export function GradientHeader({
   children,
 }: GradientHeaderProps) {
   const insets = useSafeAreaInsets();
+  const t = useTuDien(tuDienChung);
 
   return (
     <View
@@ -61,7 +64,7 @@ export function GradientHeader({
           <Pressable
             testID="header-back"
             accessibilityRole="button"
-            accessibilityLabel="Quay lại"
+            accessibilityLabel={t.troVe}
             onPress={onBack}
             hitSlop={12}
             style={({ pressed }) => [styles.back, pressed ? styles.backPressed : null]}
@@ -86,7 +89,7 @@ export function GradientHeader({
             <Pressable
               testID="header-subtitle-button"
               accessibilityRole="button"
-              accessibilityLabel={`${subtitle}. Chạm để đổi`}
+              accessibilityLabel={t.chamDeDoi(subtitle)}
               onPress={onPressSubtitle}
               hitSlop={8}
               style={({ pressed }) => [styles.subtitleRow, pressed ? styles.backPressed : null]}

@@ -14,6 +14,10 @@
  * một chỗ duy nhất, chứ không rải trong màn hình.
  */
 
+import { theoNgonNgu } from '../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../i18n/ngon-ngu';
+import { tuDienTaiKhoan } from '../i18n/tu-dien/tai-khoan';
+
 /** Ngày xưa nhất chấp nhận được — chặn lỗi gõ thành năm 1800. */
 const NAM_SOM_NHAT = 1900;
 
@@ -50,7 +54,7 @@ export function tuThemDauGach(dangGo: string): string {
 export interface KetQuaDoiNgay {
   /** Chuỗi `yyyy-mm-dd` gửi cho máy chủ, hoặc `null` khi ô để trống. */
   giaTri: string | null;
-  /** Câu báo lỗi tiếng Việt, hoặc `null` khi hợp lệ. */
+  /** Câu báo lỗi theo ngôn ngữ đang dùng, hoặc `null` khi hợp lệ. */
   loi: string | null;
 }
 
@@ -65,13 +69,14 @@ export interface KetQuaDoiNgay {
  * Ô để trống là hợp lệ: ngày sinh không bắt buộc, và để trống chính là cách
  * người dùng gỡ ngày đã lưu.
  */
-export function doiNgaySinhSangMayChu(dangGo: string): KetQuaDoiNgay {
+export function doiNgaySinhSangMayChu(dangGo: string, ngonNgu: NgonNgu = layNgonNgu()): KetQuaDoiNgay {
+  const t = theoNgonNgu(tuDienTaiKhoan, ngonNgu).ngaySinh;
   const sach = dangGo.trim();
   if (!sach) return { giaTri: null, loi: null };
 
   const khop = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(sach);
   if (!khop) {
-    return { giaTri: null, loi: `Ngày sinh cần viết theo dạng ${DINH_DANG_NGAY}.` };
+    return { giaTri: null, loi: t.sai(DINH_DANG_NGAY) };
   }
 
   const ngay = Number(khop[1]);
@@ -91,11 +96,11 @@ export function doiNgaySinhSangMayChu(dangGo: string): KetQuaDoiNgay {
     thu.getUTCDate() === ngay;
 
   if (!dungLich) {
-    return { giaTri: null, loi: 'Ngày sinh này không có trên lịch.' };
+    return { giaTri: null, loi: t.khongCoTrenLich };
   }
 
   if (nam < NAM_SOM_NHAT) {
-    return { giaTri: null, loi: `Năm sinh phải từ ${NAM_SOM_NHAT} trở đi.` };
+    return { giaTri: null, loi: t.namSomNhat(NAM_SOM_NHAT) };
   }
 
   /*
@@ -110,7 +115,7 @@ export function doiNgaySinhSangMayChu(dangGo: string): KetQuaDoiNgay {
     homNay.getUTCDate(),
   );
   if (thu.getTime() > homNayUTC) {
-    return { giaTri: null, loi: 'Ngày sinh không thể ở tương lai.' };
+    return { giaTri: null, loi: t.tuongLai };
   }
 
   const hai = (n: number) => String(n).padStart(2, '0');

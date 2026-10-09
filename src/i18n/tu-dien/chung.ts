@@ -12,6 +12,7 @@ export const tuDienChung = khaiBaoTuDien(
     loiChung: 'Đã có lỗi xảy ra. Vui lòng thử lại.',
     ngonNgu: 'Ngôn ngữ',
     theoMay: 'Theo ngôn ngữ máy',
+    chamDeDoi: (ten: string) => `${ten}. Chạm để đổi`,
   },
   {
     huy: 'Cancel',
@@ -23,5 +24,6 @@ export const tuDienChung = khaiBaoTuDien(
     loiChung: 'Something went wrong. Please try again.',
     ngonNgu: 'Language',
     theoMay: 'Use device language',
+    chamDeDoi: (ten: string) => `${ten}. Tap to change`,
   },
 );

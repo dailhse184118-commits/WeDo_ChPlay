@@ -11,6 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
 import { Avatar } from '../../components/ui/Avatar';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../components/ui/GradientHeader';
@@ -25,6 +27,8 @@ import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../
  */
 export default function ManNguoiDaChan() {
   const router = useRouter();
+  const t = useTuDien(tuDienTaiKhoan).chan;
+  const dichLoi = useDichLoi();
   const danhSachQuery = useDanhSachChan();
   const boChan = useBoChan();
 
@@ -39,17 +43,16 @@ export default function ManNguoiDaChan() {
 
   const ds = danhSachQuery.data ?? [];
 
-  const loi =
-    boChan.error instanceof Error
-      ? boChan.error.message
-      : danhSachQuery.isError && !danhSachQuery.data
-        ? 'Không tải được danh sách người đã chặn.'
-        : '';
+  const loi = boChan.error
+    ? dichLoi(boChan.error, t.khongBoChanDuoc)
+    : danhSachQuery.isError && !danhSachQuery.data
+      ? t.khongTaiDuoc
+      : '';
 
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Người đã chặn"
+        title={t.tieuDe}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/account'))}
         dense
       />
@@ -68,10 +71,7 @@ export default function ManNguoiDaChan() {
             <>
               {loi ? <ErrorBanner message={loi} /> : null}
               {ds.length > 0 ? (
-                <Text style={styles.ghiChu}>
-                  Bạn không thấy tin nhắn của những người này, và hai bên không thể nhắn tin riêng
-                  hay kết bạn với nhau.
-                </Text>
+                <Text style={styles.ghiChu}>{t.ghiChu}</Text>
               ) : null}
             </>
           }
@@ -91,7 +91,7 @@ export default function ManNguoiDaChan() {
               <Pressable
                 testID={`bo-chan-${item.userId}`}
                 accessibilityRole="button"
-                accessibilityLabel={`Bỏ chặn ${item.fullName}`}
+                accessibilityLabel={t.boChanTen(item.fullName)}
                 accessibilityState={{ disabled: dangBo !== null, busy: dangBo === item.userId }}
                 disabled={dangBo !== null}
                 onPress={() => bo(item.userId)}
@@ -100,7 +100,7 @@ export default function ManNguoiDaChan() {
                 {dangBo === item.userId ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={styles.nutChu}>Bỏ chặn</Text>
+                  <Text style={styles.nutChu}>{t.boChan}</Text>
                 )}
               </Pressable>
             </View>
@@ -111,11 +111,8 @@ export default function ManNguoiDaChan() {
                 <View style={styles.trongIcon}>
                   <Ionicons name="shield-checkmark-outline" size={28} color={colors.primary} />
                 </View>
-                <Text style={styles.trongTieuDe}>Bạn chưa chặn ai.</Text>
-                <Text style={styles.trongThan}>
-                  Muốn chặn ai, nhấn giữ tin nhắn của họ hoặc chạm dấu ba chấm cạnh tên họ trong
-                  màn Bạn bè.
-                </Text>
+                <Text style={styles.trongTieuDe}>{t.trongTieuDe}</Text>
+                <Text style={styles.trongThan}>{t.trongThan}</Text>
               </View>
             )
           }

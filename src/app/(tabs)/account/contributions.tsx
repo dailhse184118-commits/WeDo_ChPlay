@@ -10,6 +10,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
+import { useDichLoi, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienTaiKhoan } from '../../../i18n/tu-dien/tai-khoan';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { XuatBaoCao } from '../../../components/dong-gop/XuatBaoCao';
@@ -28,7 +30,8 @@ function O({ so, nhan }: { so: number | string; nhan: string }) {
 }
 
 function The({ nguoi, hang }: { nguoi: DongGopThanhVien; hang: number }) {
-  const ten = nguoi.user?.fullName || nguoi.user?.email || 'Không rõ';
+  const t = useTuDien(tuDienTaiKhoan).dongGop;
+  const ten = nguoi.user?.fullName || nguoi.user?.email || t.khongRo;
 
   return (
     <View style={styles.the}>
@@ -42,21 +45,19 @@ function The({ nguoi, hang }: { nguoi: DongGopThanhVien; hang: number }) {
           để không ai tưởng người này đúng hạn 0 lần.
         */}
         <Text style={styles.tyLe}>
-          {nguoi.tyLeDungHanPhanTram === null
-            ? '—'
-            : `${nguoi.tyLeDungHanPhanTram}% đúng hạn`}
+          {nguoi.tyLeDungHanPhanTram === null ? '—' : t.tyLe(nguoi.tyLeDungHanPhanTram)}
         </Text>
       </View>
 
       <View style={styles.hangO}>
-        <O so={nguoi.hoanThanh} nhan="Hoàn thành" />
-        <O so={nguoi.chuaXong} nhan="Chưa xong" />
-        <O so={nguoi.treHan} nhan="Trễ hạn" />
-        <O so={nguoi.daNop} nhan="Bài đã nộp" />
+        <O so={nguoi.hoanThanh} nhan={t.hoanThanh} />
+        <O so={nguoi.chuaXong} nhan={t.chuaXong} />
+        <O so={nguoi.treHan} nhan={t.treHan} />
+        <O so={nguoi.daNop} nhan={t.daNop} />
       </View>
 
       {nguoi.biTraLai > 0 ? (
-        <Text style={styles.traLai}>{nguoi.biTraLai} việc từng bị trả lại để sửa</Text>
+        <Text style={styles.traLai}>{t.biTraLai(nguoi.biTraLai)}</Text>
       ) : null}
     </View>
   );
@@ -75,6 +76,8 @@ export default function ManDongGop() {
   const router = useRouter();
   /* Lối vào duy nhất là màn Tài khoản — không dùng `router.back()`, xem `useQuayLai`. */
   const quayLai = useQuayLai(useCallback(() => router.navigate('/account'), [router]));
+  const t = useTuDien(tuDienTaiKhoan).dongGop;
+  const dichLoi = useDichLoi();
   const { active } = useWorkspace();
   const [xemHet, setXemHet] = useState(false);
 
@@ -87,7 +90,7 @@ export default function ManDongGop() {
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Bảng đóng góp"
+        title={t.tieuDe}
         subtitle={active?.name}
         onBack={quayLai}
         dense
@@ -104,19 +107,11 @@ export default function ManDongGop() {
           lần gọi hỏng không chặn đường.
         */}
         {bang.isError && !bang.data ? (
-          <ErrorBanner
-            message={
-              bang.error instanceof Error
-                ? bang.error.message
-                : 'Không tải được bảng đóng góp.'
-            }
-          />
+          <ErrorBanner message={dichLoi(bang.error, t.khongTaiDuoc)} />
         ) : null}
 
         {bang.isError && bang.data ? (
-          <Text style={styles.ngoaiTuyen}>
-            Đang xem dữ liệu đã lưu. Kết nối lại để cập nhật.
-          </Text>
+          <Text style={styles.ngoaiTuyen}>{t.ngoaiTuyen}</Text>
         ) : null}
 
         {bang.isLoading ? (
@@ -130,14 +125,10 @@ export default function ManDongGop() {
             là nhóm chưa giao việc cho ai — sai hoàn toàn và làm người dùng hoang
             mang về dữ liệu của chính mình.
           */
-          <Text style={styles.trong}>
-            Chưa có việc nào được giao cho ai trong không gian làm việc này.
-          </Text>
+          <Text style={styles.trong}>{t.trong}</Text>
         ) : (
           <>
-            <Text style={styles.moDau}>
-              Xếp theo số việc đã hoàn thành. Việc không đặt hạn không tính vào tỷ lệ đúng hạn.
-            </Text>
+            <Text style={styles.moDau}>{t.moDau}</Text>
 
             {(xemHet
               ? bang.data!.thanhVien
@@ -149,7 +140,7 @@ export default function ManDongGop() {
             {!xemHet && bang.data!.thanhVien.length > SO_NGUOI_HIEN_SAN ? (
               <Pressable onPress={() => setXemHet(true)} style={styles.nutPhu}>
                 <Text style={styles.nutPhuChu}>
-                  Xem thêm {bang.data!.thanhVien.length - SO_NGUOI_HIEN_SAN} người
+                  {t.xemThem(bang.data!.thanhVien.length - SO_NGUOI_HIEN_SAN)}
                 </Text>
               </Pressable>
             ) : null}
