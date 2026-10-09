@@ -8,9 +8,10 @@ import { useQuery } from '@tanstack/react-query';
 import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
 import { KhongTaiDuocKhongGian } from '../../components/workspace/KhongTaiDuocKhongGian';
-import { getUnreadCount } from '../../lib/api/notifications';
+import { getUnreadCount, listNotifications } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
 import { useOpenTaskFromNotification } from '../../lib/notifications/mo-tu-thong-bao';
+import { demChuaDocHienThi } from '../../lib/notifications/thanh-toan';
 import { useRealtimeSync } from '../../lib/realtime/use-realtime-sync';
 import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
@@ -23,10 +24,13 @@ function TabsWithWorkspace() {
   useOpenTaskFromNotification();
   useRealtimeSync();
 
-  // Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
+  /*
+    Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
+    iPhone trừ đi thông báo gói/thanh toán đang bị giấu — xem `thanh-toan.ts`.
+  */
   const unreadQuery = useQuery({
     queryKey: ['notifications-unread'],
-    queryFn: getUnreadCount,
+    queryFn: () => demChuaDocHienThi(getUnreadCount, listNotifications),
     refetchInterval: 60_000,
     staleTime: 30_000,
     enabled: status === 'ready',
@@ -120,6 +124,11 @@ function TabsWithWorkspace() {
         nhóm, không nằm trong URL.
       */}
       <Tabs.Screen name="account/contributions" options={{ href: null }} />
+      {/*
+        Màn Nâng cấp (mua gói qua App Store, chỉ iOS) cũng gọi `useWorkspace()`,
+        nên cùng luật: nằm trong nhóm này và khai `href: null`.
+      */}
+      <Tabs.Screen name="account/nang-cap" options={{ href: null }} />
       {/*
         Cuộc họp cũng PHẢI nằm trong nhóm này, cùng lý do với Bảng đóng góp ở
         trên: màn danh sách và màn tạo mới gọi `useWorkspace()`. Ngày 23/09/2026

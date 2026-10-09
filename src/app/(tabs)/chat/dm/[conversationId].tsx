@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
@@ -15,6 +17,8 @@ import { MessageBubble } from '../../../../components/chat/MessageBubble';
 import { EmptyChat } from '../../../../components/chat/EmptyChat';
 import { ImageViewer } from '../../../../components/chat/ImageViewer';
 import { MessageComposer } from '../../../../components/chat/MessageComposer';
+import { useBangThaoTac } from '../../../../components/moderation/BangThaoTac';
+import { PhieuBaoCao, type DoiTuongBaoCao } from '../../../../components/moderation/PhieuBaoCao';
 import { ErrorBanner } from '../../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../../components/ui/GradientHeader';
 import { LoiGuiDoDang, cauGuiDoDang } from '../../../../lib/api/chat-files';
@@ -22,6 +26,7 @@ import {
   SO_TIN_RIENG_MOI_NHAT,
   getDirectHistory,
   getDirectMessages,
+  listConversations,
   markConversationRead,
   sendDirectFiles,
   sendDirectMessage,
@@ -29,14 +34,17 @@ import {
 import type { TepChon } from '../../../../lib/api/tasks';
 import { useAuth } from '../../../../lib/auth/auth-context';
 import { mergeMessages } from '../../../../lib/chat/message-list';
+import { doiPhuong } from '../../../../lib/chat/doi-phuong';
 import { idsHienAvatar, idsHienTen } from '../../../../lib/chat/nhom-tin';
 import { useDongBoKhungChat } from '../../../../lib/chat/use-dong-bo-khung-chat';
 import { useHeaderTep } from '../../../../lib/chat/use-header-tep';
+import { locTinNguoiDaChan } from '../../../../lib/moderation/loc-chan';
+import { useChanNguoi, useNguoiDaChan } from '../../../../lib/moderation/use-kiem-duyet';
 import { baoLoi, moTaTep } from '../../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../../lib/images/pick-images';
 import { useSocket } from '../../../../lib/socket/socket-context';
-import type { DirectMessage } from '../../../../lib/types';
-import { colors, spacing } from '../../../../theme/tokens';
+import type { DirectMessage, UserSummary } from '../../../../lib/types';
+import { colors, radius, scale, spacing } from '../../../../theme/tokens';
 
 const GOC_MAY_CHU = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 
@@ -207,6 +215,104 @@ export default function ManTinNhanRieng() {
       socket.off('message:direct:recalled', khiThuHoi);
     };
   }, [socket]);
+  /*
+    Người kia trong hội thoại. Báo cáo và chặn cần id của họ, mà tham số đường
+    dẫn chỉ mang tên. Đọc từ danh sách hội thoại — thường đã nằm sẵn trong cache
+    vì người dùng vừa bấm vào từ đó — và lùi về người gửi tin khi danh sách chưa
+    về kịp (mở thẳng từ thông báo chẳng hạn).
+  */
+  const hoiThoaiQuery = useQuery({
+    queryKey: ['direct-conversations'],
+    queryFn: listConversations,
+    enabled: Boolean(conversationId),
+  });
+
+  const nguoiKia = useMemo<UserSummary | null>(() => {
+    const hoiThoai = hoiThoaiQuery.data?.find((item) => item.id === conversationId);
+    const tuDanhSach = hoiThoai && user?.id ? doiPhuong(hoiThoai, user.id) : null;
+    if (tuDanhSach) return tuDanhSach;
+
+    const tinCuaHo = tatCaTin.find((tin) => tin.senderId !== user?.id && tin.sender);
+    return tinCuaHo?.sender ?? null;
+  }, [hoiThoaiQuery.data, tatCaTin, conversationId, user?.id]);
+
+  /*
+    Tin của người mình đã chặn. Máy chủ đã bỏ chúng khỏi lượt GET, nhưng vừa
+    chặn xong thì cache vẫn còn bản cũ — lọc ở đây để chúng biến mất ngay.
+  */
+  const daChan = useNguoiDaChan();
+  const tinHien = useMemo(
+    () => locTinNguoiDaChan(tatCaTin, daChan, (tin) => tin.senderId),
+    [tatCaTin, daChan],
+  );
+
+  const [doiTuongBaoCao, setDoiTuongBaoCao] = useState<DoiTuongBaoCao | null>(null);
+  const { moBang, bang: bangThaoTac } = useBangThaoTac();
+  const { hoiRoiChan } = useChanNguoi();
+
+  /*
+    Chặn xong thì rời hội thoại: nó biến khỏi danh sách Tin nhắn, tin của người
+    kia bị ẩn, và gửi thêm cũng bị máy chủ từ chối — ở lại chỉ thấy một màn trống.
+  */
+  const chan = useCallback(
+    (nguoi: UserSummary) => hoiRoiChan(nguoi, () => router.back()),
+    [hoiRoiChan, router],
+  );
+
+  function moThaoTacHoiThoai() {
+    if (!nguoiKia) return;
+
+    moBang({
+      tieuDe: nguoiKia.fullName,
+      thaoTac: [
+        {
+          khoa: 'bao-cao-nguoi',
+          nhan: 'Báo cáo người này',
+          onChon: () =>
+            setDoiTuongBaoCao({
+              targetType: 'USER',
+              targetId: nguoiKia.id,
+              tenNguoi: nguoiKia.fullName,
+            }),
+        },
+        { khoa: 'chan', nhan: 'Chặn người này', nguyHiem: true, onChon: () => chan(nguoiKia) },
+      ],
+    });
+  }
+
+  /* Tin của chính mình thì không có gì để báo cáo hay chặn. */
+  function moThaoTacTin(tin: DirectMessage) {
+    if (!tin.senderId || tin.senderId === user?.id) return;
+
+    const nguoiGui: UserSummary | null = tin.sender
+      ? { ...tin.sender, id: tin.senderId }
+      : nguoiKia;
+
+    moBang({
+      thaoTac: [
+        {
+          khoa: 'bao-cao',
+          nhan: 'Báo cáo tin nhắn',
+          onChon: () =>
+            setDoiTuongBaoCao({
+              targetType: 'DIRECT_MESSAGE',
+              targetId: tin.id,
+              tenNguoi: nguoiGui?.fullName,
+            }),
+        },
+        ...(nguoiGui
+          ? [
+              {
+                khoa: 'chan',
+                nhan: 'Chặn người này',
+                nguyHiem: true,
+                onChon: () => chan(nguoiGui),
+              },
+            ]
+          : []),
+      ],
+    });
+  }
 
   function xongMotLuotGui() {
     // Xoá ô soạn SAU khi máy chủ nhận. Xoá trước mà mạng hỏng thì người dùng
@@ -276,21 +382,21 @@ export default function ManTinNhanRieng() {
     `author`, tin nhắn riêng gọi là `sender`; đó là hình dạng máy chủ trả về.
   */
   const duLieu = useMemo(
-    () => [...tatCaTin].reverse().map((tin) => ({ ...tin, author: tin.sender ?? null })),
-    [tatCaTin],
+    () => [...tinHien].reverse().map((tin) => ({ ...tin, author: tin.sender ?? null })),
+    [tinHien],
   );
 
   /*
     Tính trên danh sách theo thứ tự thời gian, TRƯỚC khi đảo — xem `idsHienAvatar`.
   */
   const nhom = useMemo(() => {
-    const theoThoiGian = tatCaTin.map((tin) => ({
+    const theoThoiGian = tinHien.map((tin) => ({
       id: tin.id,
       nguoiGuiId: tin.senderId,
     }));
 
     return { avatar: idsHienAvatar(theoThoiGian), ten: idsHienTen(theoThoiGian) };
-  }, [tatCaTin]);
+  }, [tinHien]);
 
   async function nhanAnh(lay: () => Promise<TepChon[]>) {
     setLoiChonAnh('');
@@ -316,11 +422,29 @@ export default function ManTinNhanRieng() {
   const dangGui = guiMutation.isPending || guiAnhMutation.isPending;
 
   /*
+    Màn này là tab ẩn, sống suốt phiên: mở hội thoại khác vẫn là CÙNG một màn.
+    Lỗi gửi của hội thoại trước — nhất là câu "không thể nhắn tin" sau khi chặn
+    — không được nằm lại trên hội thoại sau, và phiếu báo cáo cũng phải đóng.
+  */
+  const { reset: xoaLoiGui } = guiMutation;
+  const { reset: xoaLoiGuiAnh } = guiAnhMutation;
+  useEffect(() => {
+    xoaLoiGui();
+    xoaLoiGuiAnh();
+    setDoiTuongBaoCao(null);
+  }, [conversationId, xoaLoiGui, xoaLoiGuiAnh]);
+
+  /*
     Lỗi gửi đứng trước lỗi tải: người dùng vừa bấm Gửi thì điều họ đang chờ là
     kết quả của cú bấm đó.
 
     Gửi hỏng mà không báo gì là im lặng nguy hiểm — ô soạn vẫn còn chữ, vòng
     quay tắt, và người dùng tưởng tin đã đi.
+
+    Một trong hai người đã chặn người kia thì máy chủ trả 403 mã `BLOCKED` kèm
+    câu tiếng Việt sẵn ("Bạn không thể nhắn tin cho người này."). Nó đi đúng
+    đường này và hiện nguyên văn — đừng thay bằng câu lỗi chung, người dùng cần
+    biết đây không phải lỗi mạng để khỏi bấm gửi lại mãi.
   */
   const loiGui = guiMutation.error ?? guiAnhMutation.error;
   const loi =
@@ -339,7 +463,25 @@ export default function ManTinNhanRieng() {
 
   return (
     <View style={styles.man}>
-      <GradientHeader title={ten || 'Tin nhắn'} onBack={() => router.back()} dense />
+      <GradientHeader
+        title={ten || nguoiKia?.fullName || 'Tin nhắn'}
+        onBack={() => router.back()}
+        dense
+        right={
+          nguoiKia ? (
+            <Pressable
+              testID="dm-thao-tac"
+              accessibilityRole="button"
+              accessibilityLabel={`Thao tác với ${nguoiKia.fullName}`}
+              onPress={moThaoTacHoiThoai}
+              hitSlop={8}
+              style={styles.nutThem}
+            >
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.onPrimary} />
+            </Pressable>
+          ) : undefined
+        }
+      />
 
       <Reanimated.View style={[styles.than, kieuTruThem]}>
         {loi ? <ErrorBanner message={loi} /> : null}
@@ -384,9 +526,9 @@ export default function ManTinNhanRieng() {
                 goc={GOC_MAY_CHU}
                 headers={headerTep}
                 onXemAnh={setAnhDangXem}
-                // Nhấn giữ để tạo công việc là tính năng của chat dự án. Tin
-                // nhắn riêng chưa có hành động nào, nhưng prop là bắt buộc.
-                onLongPress={() => undefined}
+                // Tạo công việc bằng AI là tính năng của chat dự án. Ở đây nhấn
+                // giữ chỉ có Báo cáo và Chặn.
+                onLongPress={() => moThaoTacTin(item)}
               />
             )}
           />
@@ -405,6 +547,9 @@ export default function ManTinNhanRieng() {
       </Reanimated.View>
 
       <ImageViewer url={anhDangXem} headers={headerTep} onDong={() => setAnhDangXem(null)} />
+
+      {bangThaoTac}
+      <PhieuBaoCao doiTuong={doiTuongBaoCao} onDong={() => setDoiTuongBaoCao(null)} />
     </View>
   );
 }
@@ -415,4 +560,12 @@ const styles = StyleSheet.create({
   giua: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   danhSach: { padding: spacing.md },
   taiCu: { paddingVertical: spacing.md },
+  nutThem: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

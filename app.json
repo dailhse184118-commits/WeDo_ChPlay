@@ -2,28 +2,47 @@
   "expo": {
     "name": "WeDo",
     "slug": "wedo",
-    "version": "1.0.13",
+    "version": "1.0.15",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wedo",
     "userInterfaceStyle": "light",
+    "locales": {
+      "vi": "./locales/vi.json"
+    },
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "vn.wedo.app",
+      "buildNumber": "5",
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "icon": "./assets/images/icon.png",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "vi",
+        "CFBundleLocalizations": ["vi"],
+        "CFBundleAllowMixedLocalizations": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        }
+      }
     },
     "android": {
       "package": "vn.wedo.app",
-      "versionCode": 17,
+      "versionCode": 20,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0055c7",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.SYSTEM_ALERT_WINDOW"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "com.android.vending.BILLING"
       ],
       "softwareKeyboardLayoutMode": "resize"
     },
@@ -41,19 +60,31 @@
           "imageWidth": 220
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-notifications",
         {
           "color": "#0055c7"
         }
       ],
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.108450458549-jr95oi462iueau8md2n4vp2di1b47pmn"
+        }
+      ],
+      "expo-apple-authentication",
+      "expo-iap",
       [
         "expo-image-picker",
         {
           "cameraPermission": "WeDo cần máy ảnh để bạn chụp và gửi ảnh ngay trong khung chat.",
-          "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat.",
+          "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat và chọn ảnh đại diện.",
           "microphonePermission": false
         }
       ],

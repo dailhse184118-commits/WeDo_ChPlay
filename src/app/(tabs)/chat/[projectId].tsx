@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,8 @@ import {
   TaskSuggestionSheet,
   type TaskSuggestionValues,
 } from '../../../components/chat/TaskSuggestionSheet';
+import { useBangThaoTac, type ThaoTac } from '../../../components/moderation/BangThaoTac';
+import { PhieuBaoCao, type DoiTuongBaoCao } from '../../../components/moderation/PhieuBaoCao';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import {
@@ -46,11 +49,13 @@ import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
 import { useDongBoKhungChat } from '../../../lib/chat/use-dong-bo-khung-chat';
 import { useHeaderTep } from '../../../lib/chat/use-header-tep';
+import { locTinNguoiDaChan } from '../../../lib/moderation/loc-chan';
+import { useChanNguoi, useNguoiDaChan } from '../../../lib/moderation/use-kiem-duyet';
+import { laLeaderDuAn } from '../../../lib/tasks/task-permissions';
 import { baoLoi, moTaTep } from '../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
-import { laLeaderDuAn } from '../../../lib/tasks/task-permissions';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import type { ChatMessage, ChatTaskSuggestion, UserSummary } from '../../../lib/types';
 import { colors, fontSize, spacing } from '../../../theme/tokens';
@@ -146,6 +151,16 @@ export default function ChatThreadScreen() {
   const [suggestion, setSuggestion] = useState<ChatTaskSuggestion | undefined>(undefined);
   const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
 
+  /* Tin đang bị báo cáo. `null` là phiếu báo cáo đang đóng. */
+  const [doiTuongBaoCao, setDoiTuongBaoCao] = useState<DoiTuongBaoCao | null>(null);
+  const { moBang, bang: bangThaoTac } = useBangThaoTac();
+  const { hoiRoiChan } = useChanNguoi();
+  /*
+    Người mình đã chặn. Máy chủ bỏ tin của họ khỏi các lượt GET, nhưng tin tới
+    qua socket thì không — lọc lại lúc dựng danh sách (xem `display`).
+  */
+  const daChan = useNguoiDaChan();
+
   /*
     Màn này là một tab ẩn, sống suốt phiên: mở dự án khác vẫn là CÙNG một màn,
     chỉ đổi tham số. Xoá sạch trạng thái của dự án cũ ngay trong lượt dựng —
@@ -166,6 +181,7 @@ export default function ChatThreadScreen() {
     setAnhChoGui([]);
     setAnhDangXem(null);
     setSheetOpen(false);
+    setDoiTuongBaoCao(null);
     setSending(false);
   }
 
@@ -614,9 +630,16 @@ export default function ChatThreadScreen() {
     void doSend(content, localId);
   }, [draft, anhChoGui, doSend, doSendAnh, socket, projectId]);
 
-  const handleLongPress = useCallback(
-    async (messageId: string) => {
+  /**
+   * Điểm DUY NHẤT bắt đầu gửi một tin nhắn cho AI đề xuất công việc.
+   *
+   * Mọi đường vào luồng AI phải đi qua hàm này, để hộp thoại xin đồng ý dùng AI
+   * chỉ cần bọc đúng một chỗ.
+   */
+  const batDauGoiYAI = useCallback(
+    async (tin: ChatMessage) => {
       if (!projectId) return;
+      const messageId = tin.id;
 
       setSourceMessageId(messageId);
       setSuggestion(undefined);
@@ -659,12 +682,11 @@ export default function ChatThreadScreen() {
 
   /*
     Máy chủ chỉ cho Leader dự án hoặc chủ không gian làm việc dùng AI
-    (`ensureProjectLeader`). Thành viên thường nhấn giữ từng mở bảng gợi ý rồi
-    ăn 403 — nên chỉ bày AI cho đúng những người đó.
+    (`ensureProjectLeader`), nên chỉ bày mục AI cho đúng những người đó.
 
     Dự án không có trong danh sách của không gian đang chọn — mở từ thông báo của
-    không gian khác chẳng hạn — thì không biết chắc vai trò. Khi đó vẫn cho, và để
-    máy chủ quyết: giấu nhầm là Leader thật mất tính năng.
+    không gian khác chẳng hạn — thì không biết chắc vai trò. Khi đó vẫn hiện, như
+    trước giờ, và để máy chủ quyết: giấu nhầm là Leader thật mất tính năng.
 
     Chủ không gian xét theo không gian CỦA DỰ ÁN: mở từ thông báo của không gian
     khác thì `active` là không gian đang chọn, không phải không gian chứa dự án.
@@ -679,17 +701,58 @@ export default function ChatThreadScreen() {
   ) : undefined;
 
   /*
-    Nhấn giữ một tin: chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem
-    `useDongYAI`. Tin còn đang gửi hoặc gửi hỏng chưa tồn tại trên máy chủ (mã
-    là mã tạm trên máy), gửi lên chỉ nhận 404.
+    Nhấn giữ một tin mở bảng thao tác. Trước đây nhấn giữ là gọi AI ngay — tức
+    không có đường nào để báo cáo hay chặn một tin nhắn xấu (Guideline 1.2).
+
+    Tin của chính mình thì không có Báo cáo và Chặn. Tin còn đang gửi hoặc gửi
+    hỏng chưa tồn tại trên máy chủ (mã là mã tạm trên máy) nên không có thao tác nào.
   */
-  const nhanGiuTin = useCallback(
-    (messageId: string) => {
-      if (!duocDungAI) return;
-      if (pending.some((item) => item.localId === messageId)) return;
-      xinDongYRoiChay(() => void handleLongPress(messageId));
+  const moThaoTacTin = useCallback(
+    (tin: ChatMessage) => {
+      if (pending.some((item) => item.localId === tin.id)) return;
+
+      const tenNguoiGui =
+        tin.author?.fullName ??
+        members.find((member) => member.id === tin.authorId)?.fullName ??
+        '';
+      const thaoTac: ThaoTac[] = [];
+
+      if (duocDungAI) {
+        thaoTac.push({
+          khoa: 'ai',
+          nhan: 'Tạo công việc bằng AI',
+          // Chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem `useDongYAI`.
+          onChon: () => xinDongYRoiChay(() => void batDauGoiYAI(tin)),
+        });
+      }
+
+      if (tin.authorId !== user?.id) {
+        thaoTac.push({
+          khoa: 'bao-cao',
+          nhan: 'Báo cáo tin nhắn',
+          onChon: () =>
+            setDoiTuongBaoCao({
+              targetType: 'PROJECT_MESSAGE',
+              targetId: tin.id,
+              tenNguoi: tenNguoiGui || undefined,
+            }),
+        });
+        thaoTac.push({
+          khoa: 'chan',
+          nhan: 'Chặn người này',
+          nguyHiem: true,
+          onChon: () =>
+            hoiRoiChan({
+              id: tin.authorId,
+              fullName: tenNguoiGui,
+              avatarUrl: tin.author?.avatarUrl,
+            }),
+        });
+      }
+
+      moBang({ tieuDe: tenNguoiGui || undefined, thaoTac });
     },
-    [duocDungAI, pending, xinDongYRoiChay, handleLongPress],
+    [pending, members, duocDungAI, batDauGoiYAI, xinDongYRoiChay, user?.id, hoiRoiChan, moBang],
   );
 
   const handleConfirm = useCallback(
@@ -772,8 +835,11 @@ export default function ChatThreadScreen() {
       updatedAt: new Date().toISOString(),
     }));
     // Lọc theo dự án cho chắc: tin lạc dự án khác không bao giờ được hiện ở đây.
-    return [...messages.filter((tin) => tin.projectId === projectId), ...pendingAsMessages].reverse();
-  }, [messages, pending, active?.id, projectId, user?.id]);
+    const cuaDuAn = messages.filter((tin) => tin.projectId === projectId);
+    // Không thể đuổi người khỏi dự án chung, nên chặn nghĩa là ẩn tin của họ với mình.
+    const khongBiChan = locTinNguoiDaChan(cuaDuAn, daChan, (tin) => tin.authorId);
+    return [...khongBiChan, ...pendingAsMessages].reverse();
+  }, [messages, pending, active?.id, projectId, user?.id, daChan]);
 
   /*
     Tính trên thứ tự thời gian, tức đảo lại `display` — xem `idsHienAvatar`.
@@ -792,12 +858,12 @@ export default function ChatThreadScreen() {
 
   const typingText = useMemo(() => {
     void typingTick;
-    const ids = activeTypers(typingBy, Date.now());
+    const ids = activeTypers(typingBy, Date.now()).filter((id) => !daChan.has(id));
     const names = ids
       .map((id) => members.find((member) => member.id === id)?.fullName)
       .filter((name): name is string => Boolean(name));
     return typingLabel(names);
-  }, [typingBy, typingTick, members]);
+  }, [typingBy, typingTick, members, daChan]);
 
   // Vòng quay chỉ khi CHƯA có gì để xem. Nạp lại lúc quay về màn thì chạy ngầm.
   if (loading && messages.length === 0) {
@@ -842,6 +908,16 @@ export default function ChatThreadScreen() {
         {hanMuc && hanMuc.muc !== 'du' ? (
           <View style={hanMuc.muc === 'het' ? styles.hanMucHet : styles.hanMucSapHet}>
             <Text style={styles.hanMucChu}>{hanMuc.loiNhan}</Text>
+            {hanMuc.coNutNangCap ? (
+              <Pressable
+                testID="nut-nang-cap"
+                accessibilityRole="button"
+                onPress={() => router.push('/account/nang-cap')}
+                style={styles.hanMucNut}
+              >
+                <Text style={styles.hanMucNutChu}>Nâng cấp</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -879,9 +955,7 @@ export default function ChatThreadScreen() {
                 goc={GOC_MAY_CHU}
                 headers={headerTep}
                 onXemAnh={setAnhDangXem}
-                onLongPress={
-                  duocDungAI && !pendingItem ? () => nhanGiuTin(item.id) : undefined
-                }
+                onLongPress={pendingItem ? undefined : () => moThaoTacTin(item)}
                 onRetry={
                   pendingItem
                     ? () => {
@@ -927,6 +1001,9 @@ export default function ChatThreadScreen() {
         onConfirm={handleConfirm}
         onDismiss={() => setSheetOpen(false)}
       />
+
+      {bangThaoTac}
+      <PhieuBaoCao doiTuong={doiTuongBaoCao} onDong={() => setDoiTuongBaoCao(null)} />
     </View>
   );
 }
@@ -952,6 +1029,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   hanMucChu: { fontSize: fontSize.sm, color: colors.text, lineHeight: fontSize.sm * 1.5 },
+  hanMucNut: { alignSelf: 'flex-start', paddingVertical: spacing.xs, marginTop: spacing.xs },
+  hanMucNutChu: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
   // Nền khung chat xám nhạt để bong bóng trắng của người khác nổi lên.
   flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

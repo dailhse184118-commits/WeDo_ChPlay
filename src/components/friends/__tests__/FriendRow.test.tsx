@@ -87,4 +87,31 @@ describe('FriendRow', () => {
 
     expect(tay.onDuyet).not.toHaveBeenCalled();
   });
+
+  /* Máy chủ chỉ trả email của người đã là bạn; người lạ tìm được thì là `null`. */
+  it('không có email thì bỏ hẳn dòng email', async () => {
+    const { getByText, queryByText } = await dung({
+      nguoi: { ...BAN, email: null },
+    });
+
+    expect(getByText('Tuấn')).toBeTruthy();
+    expect(queryByText('tuan@wedo.vn')).toBeNull();
+  });
+
+  /* Lời mời quấy rối cũng phải báo cáo và chặn được, nên dòng lời mời đến cũng có. */
+  it('có onThem thì hiện nút ba chấm, kể cả dòng lời mời đến', async () => {
+    const onThem = jest.fn();
+    const { getByTestId } = await dung({ trangThai: 'cho-minh-duyet', onThem });
+
+    await fireEvent.press(getByTestId('friend-row-them'));
+
+    expect(onThem).toHaveBeenCalledTimes(1);
+    expect(tay.onDuyet).not.toHaveBeenCalled();
+  });
+
+  it('không truyền onThem thì không có nút ba chấm', async () => {
+    const { queryByTestId } = await dung();
+
+    expect(queryByTestId('friend-row-them')).toBeNull();
+  });
 });

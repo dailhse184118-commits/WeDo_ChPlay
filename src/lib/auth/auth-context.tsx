@@ -3,6 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import {
   getMe,
   login as loginRequest,
+  loginWithApple as loginWithAppleRequest,
   loginWithGoogle as loginWithGoogleRequest,
   logout as logoutRequest,
   register as registerRequest,
@@ -13,6 +14,7 @@ import { donThongBaoKhiDangXuat } from '../notifications/don-khi-dang-xuat';
 import { dongBoPushToken, huyDangKyPushToken } from '../notifications/push-token';
 import { xoaCacheBenBi } from '../query';
 import type { UserProfile } from '../types';
+import { layThongTinApple } from './apple-signin';
 import { getGoogleIdToken, signOutFromGoogle } from './google-signin';
 import {
   clearToken,
@@ -32,6 +34,8 @@ export interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   /** Người dùng đóng hộp thoại Google thì kết thúc êm, không đổi trạng thái. */
   signInWithGoogle: () => Promise<void>;
+  /** Chỉ iPhone. Người dùng đóng bảng Apple thì kết thúc êm, không đổi trạng thái. */
+  signInWithApple: () => Promise<void>;
   signUp: (input: RegisterInput) => Promise<void>;
   signOut: () => Promise<void>;
   /**
@@ -270,8 +274,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     /*
       Ghi nhận thiết bị để máy chủ đẩy thông báo xuống. Đặt sau khi đã vào được
-      app: hàm này tự nuốt lỗi, nhưng nó có thể hiện hộp xin quyền hệ thống, và
-      hỏi quyền trước khi người dùng thấy màn hình nào thì rất khó hiểu.
+      app: hàm này tự nuốt lỗi, nhưng trên Android nó có thể hiện hộp xin quyền
+      hệ thống, và hỏi quyền trước khi người dùng thấy màn hình nào thì rất khó
+      hiểu. Trên iPhone nó không bao giờ hỏi — chỉ ghi token nếu đã có quyền.
     */
     void dongBoPushToken();
   }, []);
@@ -293,6 +298,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await establishSession(response.accessToken, response.refreshToken);
   }, [establishSession]);
 
+  /*
+    Cùng một đường vào như Google: máy chủ tự tạo tài khoản mới hoặc nhận lại
+    tài khoản cũ. Tài khoản mới chưa đồng ý điều khoản (`termsAcceptedAt` là
+    null) nên `CongDieuKhoan` chặn lại hỏi một lần ngay sau khi vào.
+
+    Không có bước đăng xuất riêng phía Apple: Apple không giữ phiên nào trong
+    app để mà quên, và `signOutAsync` của thư viện lại bật bảng Apple lên.
+  */
+  const signInWithApple = useCallback(async () => {
+    const thongTin = await layThongTinApple();
+    // null nghĩa là người dùng tự đóng bảng Apple — không phải lỗi, không báo gì.
+    if (!thongTin) return;
+
+    const response = await loginWithAppleRequest(thongTin);
+    await establishSession(response.accessToken, response.refreshToken);
+  }, [establishSession]);
+
   const signUp = useCallback(
     async (input: RegisterInput) => {
       const response = await registerRequest(input);
@@ -308,8 +330,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ status, user, signIn, signInWithGoogle, signUp, signOut, capNhatHoSo }),
-    [status, user, signIn, signInWithGoogle, signUp, signOut, capNhatHoSo],
+    () => ({ status, user, signIn, signInWithGoogle, signInWithApple, signUp, signOut, capNhatHoSo }),
+    [status, user, signIn, signInWithGoogle, signInWithApple, signUp, signOut, capNhatHoSo],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

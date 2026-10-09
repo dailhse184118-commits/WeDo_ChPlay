@@ -76,6 +76,29 @@ describe('nhomBanBe', () => {
   });
 
   /*
+    Máy chủ giấu email và số điện thoại của người nhận ở lời mời mình đã gửi
+    (khoá còn, giá trị `null`). Dòng vẫn phải hiện, chỉ không có dòng email.
+  */
+  it('lời mời đã gửi mà máy chủ giấu liên lạc người nhận vẫn thành một dòng', () => {
+    const ketQua = nhomBanBe(
+      danhSach({
+        outgoing: [
+          tinhBan({
+            id: 'f6',
+            status: 'PENDING',
+            addressee: { id: 'u2', email: null, phone: null, fullName: 'Tuấn' },
+          }),
+        ],
+      }),
+      TOI,
+    );
+
+    expect(ketQua.daGui).toEqual([
+      { tinhBanId: 'f6', nguoi: { id: 'u2', email: null, phone: null, fullName: 'Tuấn' } },
+    ]);
+  });
+
+  /*
     Máy chủ đôi khi trả bản ghi thiếu hồ sơ người kia — người đó vừa bị xoá,
     chẳng hạn. Một dòng hỏng chỉ được mất một dòng, không được làm sập cả màn.
   */

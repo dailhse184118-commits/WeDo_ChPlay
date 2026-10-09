@@ -56,8 +56,8 @@ interface MessageBubbleProps {
    */
   headers?: Record<string, string>;
   /**
-   * Thiếu thì nhấn giữ không làm gì và không hứa gì với trình đọc màn hình —
-   * dành cho người không được dùng AI và cho tin chưa tới máy chủ.
+   * Mở bảng thao tác (AI, báo cáo, chặn). Thiếu thì nhấn giữ không làm gì và
+   * không hứa gì với trình đọc màn hình — dành cho tin chưa tới máy chủ.
    */
   onLongPress?: () => void;
   onRetry?: () => void;
@@ -91,7 +91,7 @@ export function MessageBubble({
   const handleLongPress = () => {
     if (!nhanGiuDuoc) return;
     // Rung nhẹ khi nhấn giữ. tapFeedback không bao giờ ném lỗi nên thiếu mô-tơ rung
-    // hay thiếu module native cũng không chặn được luồng tạo công việc.
+    // hay thiếu module native cũng không chặn được bảng thao tác.
     void tapFeedback();
     onLongPress?.();
   };
@@ -123,7 +123,7 @@ export function MessageBubble({
         <Pressable
           testID={`message-${message.id}`}
           accessibilityRole="button"
-          accessibilityHint={nhanGiuDuoc ? 'Nhấn giữ để nhờ AI tạo công việc từ tin nhắn này' : undefined}
+          accessibilityHint={nhanGiuDuoc ? 'Nhấn giữ để xem thao tác với tin nhắn này' : undefined}
           onLongPress={handleLongPress}
           delayLongPress={350}
           style={[

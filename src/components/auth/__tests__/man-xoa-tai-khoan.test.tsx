@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { fireEvent, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -23,6 +23,7 @@ const mockedDelete = deleteAccount as jest.MockedFunction<typeof deleteAccount>;
 const mockedAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 let client: QueryClient;
+let heDieuHanh: jest.ReplaceProperty<typeof Platform.OS> | undefined;
 
 async function moMan() {
   return await renderScreen(
@@ -40,16 +41,24 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  heDieuHanh?.restore();
+  heDieuHanh = undefined;
   client.clear();
 });
 
 describe('màn xoá tài khoản', () => {
-  // Máy chủ xoá cả tin nhắn riêng, bạn bè và tệp trên kho lưu trữ; danh sách phải nói đủ.
-  it('nói rõ tin nhắn riêng, bạn bè, ảnh và tệp cũng bị xoá', async () => {
+  /*
+    Apple: người dùng mong mọi dữ liệu gắn với tài khoản bị xoá, kể cả ảnh đã
+    chia sẻ. Máy chủ xoá cả tin nhắn riêng, bạn bè và tệp trên kho lưu trữ; danh
+    sách phải nói đủ, và iPhone không được nhắc gì tới cửa hàng hay gói trả phí.
+  */
+  it('iPhone: nói rõ tin nhắn riêng, bạn bè, ảnh và tệp cũng bị xoá, không nhắc cửa hàng hay gói', async () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
     const man = await moMan();
 
     await waitFor(() => expect(man.getByTestId('delete-account')).toBeTruthy());
     expect(man.getByText('Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên')).toBeTruthy();
+    expect(man.queryByText(/Google Play|CH Play|App Store|gói|thanh toán/i)).toBeNull();
   });
 
   it('tải thông tin hỏng: có nút Thử lại, bấm là hỏi lại máy chủ', async () => {

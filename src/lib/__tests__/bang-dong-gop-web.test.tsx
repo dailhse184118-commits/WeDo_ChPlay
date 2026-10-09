@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -12,7 +13,8 @@ import { renderScreen } from '../../test-utils/render';
 
   Trang web đó mở vào màn Cài đặt, sát cạnh tab "Quản lý gói và thanh toán",
   thanh bên có "Nâng cấp gói": một lối dẫn ra trang mua ngoài Google Play
-  Billing. Nút phải biến mất trên MỌI nền tảng, kể cả khi đã cấu hình web.
+  Billing — và trên iPhone là lối sang trang mua trái Guideline 3.1.1(a),
+  3.1.3(f). Nút phải biến mất trên MỌI nền tảng, kể cả khi đã cấu hình web.
 
   Đặt ở đây chứ không cạnh màn hình: mọi tệp dưới `src/app/(tabs)/` đều thành
   một tab, kể cả tệp kiểm thử.
@@ -45,6 +47,7 @@ const NGUOI: DongGopThanhVien = {
 };
 
 let queryClient: QueryClient;
+let heDieuHanh: jest.ReplaceProperty<typeof Platform.OS> | undefined;
 const WEB_CU = process.env.EXPO_PUBLIC_WEB_URL;
 
 beforeEach(() => {
@@ -56,12 +59,29 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  heDieuHanh?.restore();
+  heDieuHanh = undefined;
   queryClient.clear();
   process.env.EXPO_PUBLIC_WEB_URL = WEB_CU;
 });
 
 describe('Bảng đóng góp — nút mở web', () => {
-  it('đã cấu hình web vẫn không có nút "Xem đầy đủ trên web"', async () => {
+  it.each(['ios', 'android'] as const)(
+    '%s: đã cấu hình web vẫn không có nút "Xem đầy đủ trên web"',
+    async (os) => {
+      heDieuHanh = jest.replaceProperty(Platform, 'OS', os);
+      const man = await renderScreen(
+        <QueryClientProvider client={queryClient}>
+          <ManDongGop />
+        </QueryClientProvider>,
+      );
+
+      await waitFor(() => expect(man.getByText('Lê Hữu Đại')).toBeTruthy());
+      expect(man.queryByText('Xem đầy đủ trên web')).toBeNull();
+    },
+  );
+
+  it('không nền tảng nào có nút "Xem đầy đủ trên web" khi chưa đổi gì', async () => {
     const man = await renderScreen(
       <QueryClientProvider client={queryClient}>
         <ManDongGop />

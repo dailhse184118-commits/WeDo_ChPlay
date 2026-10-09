@@ -4,24 +4,35 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppleButton } from '../../components/ui/AppleButton';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GoogleButton } from '../../components/ui/GoogleButton';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
+import { docLyDoHetPhien } from '../../lib/api/client';
+import { useCoDangNhapApple } from '../../lib/auth/apple-signin';
 import { useAuth } from '../../lib/auth/auth-context';
+import { coDangNhapGoogle } from '../../lib/auth/google-signin';
 import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
 export default function LoginScreen() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
+  const coApple = useCoDangNhapApple();
+  const coGoogle = coDangNhapGoogle();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  /*
+    Bị đưa ra khỏi app vì tài khoản bị khoá thì màn này là thứ đầu tiên người
+    dùng thấy. Không nói lý do thì họ tưởng app lỗi rồi cứ đăng nhập lại mãi.
+  */
+  const [error, setError] = useState(() => docLyDoHetPhien() ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [appleSubmitting, setAppleSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim()) {
@@ -58,6 +69,19 @@ export default function LoginScreen() {
       setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại. Vui lòng thử lại.');
     } finally {
       setGoogleSubmitting(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setError('');
+    setAppleSubmitting(true);
+    try {
+      // Người dùng đóng bảng Apple thì hàm này kết thúc êm — như Google.
+      await signInWithApple();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đăng nhập Apple thất bại. Vui lòng thử lại.');
+    } finally {
+      setAppleSubmitting(false);
     }
   };
 
@@ -108,6 +132,8 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 placeholder="ban@example.com"
                 keyboardType="email-address"
+                textContentType="username"
+                autoComplete="email"
               />
               <TextField
                 testID="password"
@@ -116,6 +142,8 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 placeholder="Ít nhất 6 ký tự"
                 secureTextEntry
+                textContentType="password"
+                autoComplete="current-password"
               />
 
               <Button
@@ -123,21 +151,46 @@ export default function LoginScreen() {
                 label="Đăng nhập"
                 onPress={handleSubmit}
                 loading={submitting}
-                disabled={googleSubmitting}
+                disabled={googleSubmitting || appleSubmitting}
               />
 
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerLabel}>hoặc</Text>
-                <View style={styles.dividerLine} />
-              </View>
+              {/*
+                Apple chỉ có trên iPhone; Google có trên Android, và trên iPhone
+                khi đã khai client iOS — xem `coDangNhapGoogle`. Không còn nút
+                nào thì không vẽ dòng "hoặc" treo lơ lửng.
 
-              <GoogleButton
-                testID="google"
-                onPress={handleGoogle}
-                loading={googleSubmitting}
-                disabled={submitting}
-              />
+                Apple đứng trước và cùng cỡ với Google: Apple đòi nút của họ nổi
+                bật không kém các cách đăng nhập bên thứ ba khác (4.8).
+              */}
+              {coApple || coGoogle ? (
+                <>
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerLabel}>hoặc</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <View style={styles.nutKhac}>
+                    {coApple ? (
+                      <AppleButton
+                        testID="apple"
+                        onPress={handleApple}
+                        loading={appleSubmitting}
+                        disabled={submitting || googleSubmitting}
+                      />
+                    ) : null}
+
+                    {coGoogle ? (
+                      <GoogleButton
+                        testID="google"
+                        onPress={handleGoogle}
+                        loading={googleSubmitting}
+                        disabled={submitting || appleSubmitting}
+                      />
+                    ) : null}
+                  </View>
+                </>
+              ) : null}
             </Card>
 
             <Link href="/forgot-password" style={styles.link}>
@@ -183,6 +236,7 @@ const styles = StyleSheet.create({
   },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerLabel: { color: colors.textMuted, fontSize: fontSize.sm },
+  nutKhac: { gap: spacing.sm },
   link: {
     marginTop: spacing.lg,
     textAlign: 'center',

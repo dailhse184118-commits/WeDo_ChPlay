@@ -72,6 +72,21 @@ describe('chonAnhDaiDien', () => {
     await expect(chonAnhDaiDien()).resolves.toBe('data:image/jpeg;base64,AAAA');
   });
 
+  /*
+    Ảnh thư viện iPhone là HEIC — web và Android không hiện được. Ảnh đại diện
+    luôn đi qua bước dựng lại rồi lưu JPEG, nên HEIC cũng ra JPEG.
+  */
+  it('ảnh HEIC của iPhone cũng ra JPEG', async () => {
+    chon.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'file:///IMG_0001.HEIC', mimeType: 'image/heic', fileName: 'IMG_0001.HEIC' }],
+    } as never);
+
+    await expect(chonAnhDaiDien()).resolves.toMatch(/^data:image\/jpeg;base64,/);
+    expect(manipulate).toHaveBeenCalledWith('file:///IMG_0001.HEIC');
+    expect(saveAsync).toHaveBeenCalledWith(expect.objectContaining({ format: 'jpeg' }));
+  });
+
   it('lưu dạng JPEG kèm base64', async () => {
     await chonAnhDaiDien();
 

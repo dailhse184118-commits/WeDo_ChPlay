@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { CongDieuKhoan } from '../components/auth/CongDieuKhoan';
 import { VeDangNhapKhiDangXuat } from '../components/auth/VeDangNhapKhiDangXuat';
 import { UpdateGate } from '../components/update/UpdateGate';
 import { baoLoi, khoiDongSentry } from '../lib/observability/sentry';
@@ -83,10 +84,10 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
  * nhập cũng có thể hỏng.
  */
 function CongPhienBan({ children }: { children: React.ReactNode }) {
-  const { muc, notes } = usePhienBan();
+  const { muc, notes, storeUrl } = usePhienBan();
 
   if (muc === 'bat-buoc') {
-    return <UpdateGate notes={notes} />;
+    return <UpdateGate notes={notes} storeUrl={storeUrl} />;
   }
 
   return <>{children}</>;
@@ -120,7 +121,14 @@ export default function RootLayout() {
             <StatusBar style="dark" />
             <VeDangNhapKhiDangXuat />
             <CongPhienBan>
-              <Stack screenOptions={{ headerShown: false }} />
+              {/*
+                Người đã đăng nhập mà chưa đồng ý Điều khoản sử dụng thì không
+                vào được màn nào — kể cả màn mở từ thông báo. Nằm DƯỚI cổng phiên
+                bản: app quá cũ thì cập nhật trước đã.
+              */}
+              <CongDieuKhoan>
+                <Stack screenOptions={{ headerShown: false }} />
+              </CongDieuKhoan>
             </CongPhienBan>
           </AuthProvider>
         </PersistQueryClientProvider>

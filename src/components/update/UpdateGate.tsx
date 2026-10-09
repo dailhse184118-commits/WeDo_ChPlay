@@ -3,12 +3,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '../ui/Button';
-import { moChPlay } from '../../lib/version/mo-ch-play';
+import { chuNutCapNhat, coNutCapNhat, moCuaHang } from '../../lib/version/mo-cua-hang';
 import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../theme/tokens';
 
 interface UpdateGateProps {
   /** Câu mô tả bản mới do máy chủ gửi. Có thể rỗng. */
   notes: string;
+  /** Trang WeDo trên cửa hàng, do máy chủ gửi. iPhone chỉ mở được trang này. */
+  storeUrl?: string | null;
 }
 
 /**
@@ -20,8 +22,12 @@ interface UpdateGateProps {
  *
  * Nói rõ lý do thay vì chỉ ra lệnh. Người bị chặn mà không hiểu vì sao sẽ gỡ
  * app chứ không cập nhật.
+ *
+ * Nút cập nhật theo nền tảng: iPhone mở App Store và không bao giờ nhắc CH Play
+ * (Guideline 2.3.10). `usePhienBan` đã không dựng màn này trên iPhone khi máy
+ * chủ thiếu trang App Store; ẩn nút ở đây chỉ là chốt thứ hai.
  */
-export function UpdateGate({ notes }: UpdateGateProps) {
+export function UpdateGate({ notes, storeUrl }: UpdateGateProps) {
   return (
     <View testID="update-gate" style={styles.man}>
       <View style={styles.icon}>
@@ -37,13 +43,15 @@ export function UpdateGate({ notes }: UpdateGateProps) {
 
       {notes ? <Text style={styles.ghiChu}>{notes}</Text> : null}
 
-      <View style={styles.nut}>
-        <Button
-          testID="update-gate-cap-nhat"
-          label="Mở CH Play để cập nhật"
-          onPress={() => void moChPlay()}
-        />
-      </View>
+      {coNutCapNhat(storeUrl) ? (
+        <View style={styles.nut}>
+          <Button
+            testID="update-gate-cap-nhat"
+            label={chuNutCapNhat()}
+            onPress={() => void moCuaHang(storeUrl)}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

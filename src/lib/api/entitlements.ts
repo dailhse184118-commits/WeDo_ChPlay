@@ -13,10 +13,21 @@ export interface HanMucAI {
   pending: number;
 }
 
+/** Gói đang có hiệu lực của workspace, kèm cách thanh toán và mốc hết kỳ. */
+export interface GoiHienTai {
+  provider: 'PAYOS' | 'APPLE';
+  plan: 'PERSONAL_PRO' | 'TEAM_GROWTH';
+  billingCycle: 'MONTHLY' | 'YEARLY';
+  /** Chuỗi ISO. */
+  currentPeriodEnd: string;
+}
+
 export interface Entitlements {
+  plan: 'FREE' | 'PERSONAL_PRO' | 'TEAM_GROWTH';
   usage: {
     aiDetections: HanMucAI;
   };
+  subscription: GoiHienTai | null;
 }
 
 /**

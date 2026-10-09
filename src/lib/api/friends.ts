@@ -4,8 +4,10 @@ import type { FriendsList, Friendship, NguoiTimDuoc } from '../types';
 /**
  * Máy chủ chặn từ khoá dưới 3 ký tự, khớp luôn ở đây cho khỏi bắn lượt gọi thừa.
  *
- * Từng là 2. Máy chủ nâng lên 3 (chống dò danh bạ theo tên), còn app vẫn hỏi ở
- * 2 ký tự rồi báo chắc nịch "Không tìm thấy" — tên hai chữ như An, Vy, Tú thì
+ * Từng là 2. Nâng lên 3 cùng lúc máy chủ thôi cho dò email và số điện thoại
+ * theo từng mẩu (giờ phải khớp đúng cả chuỗi): từ khoá hai ký tự chỉ còn dò
+ * được tên, và kết quả rộng tới mức chẳng giúp gì. App mà vẫn hỏi ở 2 ký tự
+ * thì máy chủ báo chắc nịch "Không tìm thấy" — tên hai chữ như An, Vy, Tú thì
  * người dùng tưởng bạn mình không có trên WeDo.
  */
 export const DO_DAI_TU_KHOA_TOI_THIEU = 3;

@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import type { HanMucAI } from '../api/entitlements';
 
 /**
@@ -26,6 +28,8 @@ export interface TrangThaiHanMuc {
   tong: number;
   /** Câu hiện cho người dùng; `null` khi còn dư dả, không cần nói gì. */
   loiNhan: string | null;
+  /** Hết lượt trên iPhone thì hiện nút sang màn Nâng cấp (mua qua App Store). */
+  coNutNangCap: boolean;
 }
 
 /**
@@ -49,6 +53,7 @@ export function trangThaiHanMuc(han: HanMucAI): TrangThaiHanMuc {
     return {
       ...chung,
       muc: 'het',
+      coNutNangCap: Platform.OS === 'ios',
       /*
         Nói rõ BAO GIỜ có lại. "Hết lượt" mà không kèm mốc thời gian thì người
         dùng không biết nên chờ hay nên bỏ cuộc, và họ sẽ bấm lại nhiều lần vô
@@ -62,11 +67,12 @@ export function trangThaiHanMuc(han: HanMucAI): TrangThaiHanMuc {
     return {
       ...chung,
       muc: 'sap-het',
+      coNutNangCap: false,
       loiNhan: `Còn ${conLai} lượt AI trong tháng này.`,
     };
   }
 
-  return { ...chung, muc: 'du', loiNhan: null };
+  return { ...chung, muc: 'du', loiNhan: null, coNutNangCap: false };
 }
 
 /**

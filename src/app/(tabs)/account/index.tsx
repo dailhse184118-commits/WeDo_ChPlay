@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import Constants from 'expo-constants';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -22,19 +23,21 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
 import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { capNhatAnhDaiDien, datDongYAI } from '../../../lib/api/account';
+import { getEntitlements } from '../../../lib/api/entitlements';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
+import {
+  PRIVACY_URL,
+  SUPPORT_EMAIL,
+  SUPPORT_URL,
+  TERMS_URL,
+  openLegalLink,
+} from '../../../lib/legal-links';
+import { dongGoiHienTai } from '../../../lib/payments/goi-hien-tai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
 /** Số pixel thẻ danh tính chồng lên mép dưới của gradient header. */
-
-/*
-  Đặt qua biến môi trường chứ không nhúng cứng: trang chính sách còn chưa dựng
-  xong, mà đưa một liên kết hỏng vào bản nộp Play thì bị từ chối ngay. Chưa cấu
-  hình thì giấu hẳn dòng đó đi.
-*/
-const PRIVACY_POLICY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? '';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 
@@ -75,6 +78,13 @@ export default function AccountScreen() {
   const { user, signOut, capNhatHoSo } = useAuth();
   const { active } = useWorkspace();
 
+  // Cùng khoá với màn chat và màn Nâng cấp (invalidate ['entitlements']).
+  const entitlementsQuery = useQuery({
+    queryKey: ['entitlements', active?.id],
+    queryFn: () => getEntitlements(active?.id),
+    enabled: Platform.OS === 'ios' && Boolean(active?.id),
+  });
+
   const [dangLuuAnh, setDangLuuAnh] = useState(false);
   const [loiAnh, setLoiAnh] = useState('');
 
@@ -84,10 +94,10 @@ export default function AccountScreen() {
 
   /*
     Bật: đi qua ĐÚNG hộp thoại xin đồng ý như lúc dùng AI lần đầu, để người dùng
-    đọc được sẽ gửi gì đi trước khi cho phép. Không có việc gì để chạy tiếp —
-    đồng ý xong là công tắc tự bật theo hồ sơ.
+    đọc được sẽ gửi gì đi trước khi cho phép (Guideline 5.1.2(i)). Không có việc
+    gì để chạy tiếp — đồng ý xong là công tắc tự bật theo hồ sơ.
 
-    Tắt: rút lại ngay, không hỏi — rút lại phải dễ như cho phép.
+    Tắt: rút lại ngay, không hỏi (5.1.1(ii) — rút lại phải dễ như cho phép).
   */
   async function doiChoPhepAI(bat: boolean) {
     if (bat) {
@@ -251,7 +261,7 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/notification-settings')}
           />
           {/*
-            Đặt ngay dưới Cài đặt thông báo, trên Chính sách bảo mật: người thử
+            Đặt ngay dưới Cài đặt thông báo, trên các đường pháp lý: người thử
             nghiệm cần một đường báo lỗi từ trong app, không phải nhắn tin riêng.
           */}
           <MenuRow
@@ -263,9 +273,9 @@ export default function AccountScreen() {
             onPress={() => router.push('/account/contributions')}
           />
           {/*
-            Ẩn hẳn trên iPhone: app iPhone luôn tính là gói Miễn phí (Apple
-            3.1.1), hiện ra chỉ để thấy một tính năng bị khoá. Màn đích cũng tự
-            quay về đây nếu lỡ mở trên iPhone.
+            Ẩn hẳn trên iPhone: app iPhone mua gói qua App Store, còn Đồng bộ lịch
+            là tính năng gói Pro/Team bán trên web. Màn đích cũng tự quay về đây
+            nếu lỡ mở trên iPhone.
           */}
           {Platform.OS !== 'ios' ? (
             <MenuRow
@@ -277,6 +287,23 @@ export default function AccountScreen() {
               onPress={() => router.push('/account/calendar-sync')}
             />
           ) : null}
+          {/* Mua gói qua App Store — chỉ iPhone. Android không bán gì trong app. */}
+          {Platform.OS === 'ios' ? (
+            <MenuRow
+              testID="account-nang-cap"
+              icon="diamond-outline"
+              tone="info"
+              label="Nâng cấp gói"
+              hint={
+                entitlementsQuery.isLoading
+                  ? 'Đang kiểm tra…'
+                  : entitlementsQuery.data
+                    ? dongGoiHienTai(entitlementsQuery.data.subscription ?? null)
+                    : 'Xem các gói'
+              }
+              onPress={() => router.push('/account/nang-cap')}
+            />
+          ) : null}
           <MenuRow
             testID="account-feedback"
             icon="chatbox-ellipses-outline"
@@ -284,6 +311,19 @@ export default function AccountScreen() {
             label="Góp ý cho WeDo"
             hint="Nói cho chúng tôi biết chỗ nào khó dùng"
             onPress={() => router.push('/account/feedback')}
+          />
+          {/*
+            Câu xác nhận chặn chỉ đường tới đúng chỗ này ("Tài khoản → Người đã
+            chặn"). Đổi tên hay dời đi thì phải sửa cả câu đó trong
+            `src/lib/moderation/noi-dung.ts`.
+          */}
+          <MenuRow
+            testID="account-blocked"
+            icon="ban-outline"
+            tone="info"
+            label="Người đã chặn"
+            hint="Xem và bỏ chặn"
+            onPress={() => router.push('/account/blocked')}
           />
           {/*
             Hộp thoại xin đồng ý AI hứa "có thể tắt trong Tài khoản", và chính
@@ -307,20 +347,55 @@ export default function AccountScreen() {
               trackColor={{ true: colors.primary }}
             />
           </View>
+          <MenuRow
+            testID="account-terms"
+            icon="document-text-outline"
+            tone="done"
+            label="Điều khoản sử dụng"
+            hint="Mở trong trình duyệt"
+            onPress={() => void openLegalLink(TERMS_URL)}
+          />
           {/*
-            Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
-            chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.
+            Luôn hiện: `PRIVACY_URL` có trang dự phòng, và Apple bắt buộc có đường
+            tới chính sách ngay trong app (5.1.1).
           */}
-          {PRIVACY_POLICY_URL ? (
-            <MenuRow
-              testID="account-privacy"
-              icon="shield-checkmark-outline"
-              tone="done"
-              label="Chính sách bảo mật"
-              hint="Mở trong trình duyệt"
-              onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
-            />
-          ) : null}
+          <MenuRow
+            testID="account-privacy"
+            icon="shield-checkmark-outline"
+            tone="done"
+            label="Chính sách quyền riêng tư"
+            hint="Mở trong trình duyệt"
+            onPress={() => void openLegalLink(PRIVACY_URL)}
+          />
+          {/*
+            App có nội dung người dùng tự đăng phải công bố cách liên hệ ngay
+            trong app (Guideline 1.2, 1.5): một trang hỗ trợ, và một địa chỉ thư
+            ghi rõ ra chứ không giấu sau nút bấm.
+          */}
+          <MenuRow
+            testID="account-help"
+            icon="help-buoy-outline"
+            tone="info"
+            label="Hỗ trợ"
+            hint="Câu hỏi thường gặp, cách báo cáo nội dung xấu"
+            onPress={() => void openLegalLink(SUPPORT_URL)}
+          />
+          {/* Mở thư trước; máy không có ứng dụng thư thì mở trang hỗ trợ. */}
+          <MenuRow
+            testID="account-support"
+            icon="mail-outline"
+            tone="info"
+            label={`Liên hệ: ${SUPPORT_EMAIL}`}
+            hint="Gửi thư cho WeDo"
+            onPress={() =>
+              void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openLegalLink(SUPPORT_URL))
+            }
+          />
+          {/*
+            Google Play và App Store đều bắt buộc có đường xoá tài khoản NGAY TRONG
+            APP, không được chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ
+            người dùng tìm.
+          */}
           <MenuRow
             testID="account-delete"
             icon="trash-outline"

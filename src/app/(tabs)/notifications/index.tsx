@@ -32,7 +32,9 @@ import {
   ensureNotificationPermission,
   type NotificationPermissionState,
 } from '../../../lib/notifications/permission';
+import { dongBoPushToken } from '../../../lib/notifications/push-token';
 import { planReminders } from '../../../lib/notifications/scheduler';
+import { demChuaDocHienThi, locThongBaoHienThi } from '../../../lib/notifications/thanh-toan';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, spacing } from '../../../theme/tokens';
@@ -58,10 +60,12 @@ export default function NotificationsScreen() {
     Số chưa đọc của MÁY CHỦ — cùng khoá với huy hiệu trên thanh tab. Danh sách
     chỉ có 50 thông báo mới nhất; đếm trên danh sách thì chưa đọc nằm ngoài 50 mục
     làm nút "Đọc hết" biến mất trong khi huy hiệu vẫn đỏ, không cách nào tắt.
+    Cùng hàm đếm với huy hiệu: iPhone trừ thông báo gói/thanh toán đang bị giấu
+    — hai chỗ chung một khoá mà đếm hai kiểu thì con số nhảy qua lại.
   */
   const chuaDocQuery = useQuery({
     queryKey: ['notifications-unread'],
-    queryFn: getUnreadCount,
+    queryFn: () => demChuaDocHienThi(getUnreadCount, listNotifications),
     staleTime: 30_000,
   });
   useRefetchOnScreenFocus(chuaDocQuery.refetch);
@@ -98,6 +102,13 @@ export default function NotificationsScreen() {
   const handleEnable = useCallback(async () => {
     const granted = await ensureNotificationPermission();
     setPermission(granted ? 'granted' : 'blocked');
+
+    /*
+      iPhone không xin quyền lúc đăng nhập (xem `dongBoPushToken`), nên đây
+      thường là lần đầu máy có quyền: phải ghi token lên máy chủ ngay, không thì
+      phải đợi tới lần mở app sau mới nhận được thông báo đẩy.
+    */
+    if (granted) void dongBoPushToken();
   }, []);
 
   const refreshBadge = useCallback(() => {
@@ -154,7 +165,8 @@ export default function NotificationsScreen() {
     }
   }, [refreshBadge]);
 
-  const items = notificationsQuery.data ?? [];
+  // iPhone giấu thông báo gói/thanh toán web (nói về payOS, app mua qua App Store); Android giữ nguyên.
+  const items = locThongBaoHienThi(notificationsQuery.data ?? []);
   const unreadCount =
     chuaDocQuery.data?.count ?? items.filter((item) => !item.readAt).length;
   const showPrompt = permission === 'undetermined' && !dismissedPrompt;

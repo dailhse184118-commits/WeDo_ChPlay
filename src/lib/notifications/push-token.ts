@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { registerPushToken, unregisterPushToken } from '../api/notifications';
-import { ensureNotificationPermission } from './permission';
+import { checkNotificationPermission, ensureNotificationPermission } from './permission';
 
 /**
  * Mã dự án EAS. `getExpoPushTokenAsync` bắt buộc phải có trong bản đóng gói
@@ -44,7 +44,24 @@ export async function taoKenhThongBaoAndroid(): Promise<void> {
 }
 
 /**
- * Ghi nhận thiết bị này với máy chủ. Gọi ngay sau khi đăng nhập.
+ * Máy đã có quyền thông báo chưa, trước khi xin token.
+ *
+ * Android: hỏi luôn nếu chưa có, như trước giờ.
+ *
+ * iPhone: CHỈ đọc, không bao giờ bật hộp thoại hệ thống ở đây. iOS chỉ cho hỏi
+ * đúng một lần; bật ra ngay sau đăng nhập, khi người dùng chưa biết thông báo
+ * để làm gì, thì phần lớn bấm "Không cho phép" và mất luôn (Apple khuyên hỏi
+ * đúng lúc, kèm lời giải thích). Việc hỏi để dành cho thẻ "Nhắc bạn trước khi
+ * việc đến hạn" ở tab Thông báo; đồng ý xong ở đó thì thẻ gọi lại hàm này.
+ */
+async function coQuyenThongBao(): Promise<boolean> {
+  if (Platform.OS === 'ios') return (await checkNotificationPermission()) === 'granted';
+  return ensureNotificationPermission();
+}
+
+/**
+ * Ghi nhận thiết bị này với máy chủ. Gọi ngay sau khi đăng nhập, và sau khi
+ * người dùng vừa cho phép thông báo ở tab Thông báo.
  *
  * Không bao giờ ném lỗi: mất thông báo đẩy là chuyện khó chịu, còn để nó làm
  * hỏng lượt đăng nhập là chuyện nghiêm trọng. Chưa cấu hình FCM thì Expo ném
@@ -53,8 +70,8 @@ export async function taoKenhThongBaoAndroid(): Promise<void> {
  */
 export async function dongBoPushToken(): Promise<void> {
   try {
-    // Không có quyền thì Expo cũng không cấp token — hỏi trước cho khỏi phí.
-    if (!(await ensureNotificationPermission())) return;
+    // Không có quyền thì Expo cũng không cấp token — kiểm trước cho khỏi phí.
+    if (!(await coQuyenThongBao())) return;
 
     const token = await layTokenCuaMay();
     await registerPushToken(token, Platform.OS as 'android' | 'ios');

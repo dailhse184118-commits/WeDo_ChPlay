@@ -144,6 +144,7 @@ describe('taiMotTepLen', () => {
 
     await expect(taiMotTepLen('/p/files', TEP, '')).rejects.toThrow('Tệp quá nặng.');
   });
+
   /* Hai người đã chặn nhau: đường native cũng phải mang mã `BLOCKED` như đường fetch. */
   it('đường native giữ mã lỗi của máy chủ', async () => {
     goi.mockRejectedValue(new ApiError('Không thể kết nối.', 0));
