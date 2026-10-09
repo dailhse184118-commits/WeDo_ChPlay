@@ -1,7 +1,7 @@
 {
   "ios": {
     "CFBundleDisplayName": "WeDo",
-    "NSCameraUsageDescription": "WeDo cần máy ảnh để bạn chụp và gửi ảnh ngay trong khung chat.",
+    "NSCameraUsageDescription": "WeDo cần máy ảnh để bạn chụp ảnh gửi trong khung chat và quét mã QR mời vào nhóm.",
     "NSPhotoLibraryUsageDescription": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat và chọn ảnh đại diện."
   }
 }

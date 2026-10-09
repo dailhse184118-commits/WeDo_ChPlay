@@ -179,6 +179,17 @@ export const tuDienChat = khaiBaoTuDien(
       coLoi: 'Có lỗi xảy ra. Thử lại sau ít phút.',
       chiaSeNoiDung: (tenDuAn: string, url: string, ma: string) =>
         `Tham gia dự án ${tenDuAn} trên WeDo: ${url}. Hoặc nhập mã ${ma} trong app.`,
+      // QR mời vào nhóm
+      maQrLoiMoi: 'Mã QR mời vào nhóm',
+      huongDanQr: 'Bạn bè mở WeDo → Nhập mã mời → Quét mã QR',
+      quetQr: 'Quét QR',
+      quetMaQr: 'Quét mã QR',
+      huongDanQuet: 'Đưa mã QR mời vào khung để quét.',
+      qrKhongPhaiLoiMoi: 'Mã QR này không phải lời mời WeDo.',
+      canQuyenMayAnh: 'WeDo cần máy ảnh để quét mã QR mời vào nhóm.',
+      quyenMayAnhBiTat: 'Quyền máy ảnh của WeDo đang tắt. Mở Cài đặt để bật lại rồi quét tiếp.',
+      choPhepMayAnh: 'Cho phép dùng máy ảnh',
+      moCaiDat: 'Mở Cài đặt',
     },
   },
   {
@@ -361,6 +372,17 @@ export const tuDienChat = khaiBaoTuDien(
       coLoi: 'Something went wrong. Try again in a few minutes.',
       chiaSeNoiDung: (tenDuAn: string, url: string, ma: string) =>
         `Join the project ${tenDuAn} on WeDo: ${url}. Or enter the code ${ma} in the app.`,
+      // QR mời vào nhóm
+      maQrLoiMoi: 'Team invite QR code',
+      huongDanQr: 'Friends open WeDo → Enter invite code → Scan QR code',
+      quetQr: 'Scan QR',
+      quetMaQr: 'Scan QR code',
+      huongDanQuet: 'Fit the invite QR code inside the frame.',
+      qrKhongPhaiLoiMoi: 'This QR code isn’t a WeDo invite.',
+      canQuyenMayAnh: 'WeDo needs your camera to scan invite QR codes.',
+      quyenMayAnhBiTat: 'Camera access for WeDo is turned off. Open Settings to turn it back on, then scan again.',
+      choPhepMayAnh: 'Allow camera access',
+      moCaiDat: 'Open Settings',
     },
   },
 );

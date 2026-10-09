@@ -26,6 +26,23 @@ export function maGuiDi(oNhap: string): string | null {
   return gon.length === DO_DAI_MA_MOI ? gon : null;
 }
 
+const MA_HOP_LE = new RegExp(`^[A-Z0-9]{${DO_DAI_MA_MOI}}$`);
+
+/**
+ * Lấy mã mời từ nội dung một mã QR. Nhận hai dạng:
+ * - link có đoạn `/moi/<mã>` (sau `#` hay trong đường dẫn, tên miền nào cũng
+ *   được — gốc link lấy từ `FRONTEND_URL` của máy chủ nên có thể đổi);
+ * - chuỗi chỉ là mã, có hay không có gạch, chữ thường hay hoa.
+ *
+ * Chỉ đọc chuỗi: không mở link, không gọi mạng. Không phải lời mời thì `null`.
+ */
+export function docMaTuQr(noiDung: string): string | null {
+  const gon = noiDung.trim();
+  const theoLink = /\/moi\/([^/?#&\s]+)/i.exec(gon);
+  const ma = (theoLink ? theoLink[1] : gon).toUpperCase().replace(/-/g, '');
+  return MA_HOP_LE.test(ma) ? ma : null;
+}
+
 export function hienThiMaMoi(ma: string): string {
   return ma.length === DO_DAI_MA_MOI ? `${ma.slice(0, 4)}-${ma.slice(4)}` : ma;
 }

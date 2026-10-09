@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 import { Button } from '../ui/Button';
 import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
@@ -18,7 +19,7 @@ interface MoiVaoNhomSheetProps {
 
 /**
  * Leader chia sẻ link mời qua bảng chia sẻ của hệ điều hành (Zalo, Messenger…),
- * tạo link mới hay tắt link. Hiện và quét QR trong app chờ bản build mới.
+ * cho bạn bè quét QR ngay trên máy mình, tạo link mới hay tắt link.
  */
 export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: MoiVaoNhomSheetProps) {
   const [loiMoi, setLoiMoi] = useState<LoiMoiDuAn | null>(null);
@@ -118,55 +119,65 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
 
       <View style={styles.sheet}>
         <View style={styles.tay} />
-        <Text style={styles.tieuDe}>{t.moiVaoNhom}</Text>
-        <Text style={styles.moTa}>{t.moTaChiaSe}</Text>
+        {/* Có QR thì bảng cao hơn: máy màn nhỏ hay chữ phóng to vẫn cuộn được. */}
+        <ScrollView style={styles.cuon} contentContainerStyle={styles.noiDung} bounces={false}>
+          <Text style={styles.tieuDe}>{t.moiVaoNhom}</Text>
+          <Text style={styles.moTa}>{t.moTaChiaSe}</Text>
 
-        {dangTai ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : loiMoi ? (
-          <View style={styles.theMa}>
-            <Text testID="ma-moi-hien-tai" style={styles.ma}>
-              {hienThiMaMoi(loiMoi.code)}
-            </Text>
-            <Text style={styles.chiTiet}>
-              {t.chiTiet(hienThiHanMoi(loiMoi.expiresAt, ngonNgu), loiMoi.useCount)}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.chiTiet}>{t.chuaCoLink}</Text>
-        )}
+          {dangTai ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : loiMoi ? (
+            <View style={styles.theMa}>
+              {/* Nền trắng, lề rộng: máy quét cần vùng yên lặng quanh mã. */}
+              <View testID="qr-loi-moi" accessible accessibilityLabel={t.maQrLoiMoi} style={styles.nenQr}>
+                <QRCode value={loiMoi.url} size={CANH_QR} color="#000000" backgroundColor="#ffffff" quietZone={12} />
+              </View>
+              <Text style={styles.huongDanQr}>{t.huongDanQr}</Text>
+              <Text testID="ma-moi-hien-tai" style={styles.ma}>
+                {hienThiMaMoi(loiMoi.code)}
+              </Text>
+              <Text style={styles.chiTiet}>
+                {t.chiTiet(hienThiHanMoi(loiMoi.expiresAt, ngonNgu), loiMoi.useCount)}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.chiTiet}>{t.chuaCoLink}</Text>
+          )}
 
-        {loi ? <Text style={styles.loi}>{cauLoiMoi(loi.e, ngonNgu)}</Text> : null}
+          {loi ? <Text style={styles.loi}>{cauLoiMoi(loi.e, ngonNgu)}</Text> : null}
 
-        <Button
-          testID="nut-chia-se-loi-moi"
-          label={t.chiaSeLink}
-          onPress={() => void chiaSe()}
-          loading={dang === 'chia-se'}
-          disabled={dangTai || dang !== null}
-        />
-        <Button
-          testID="nut-tao-link-moi"
-          label={t.taoLinkMoi}
-          variant="secondary"
-          onPress={taoMoi}
-          loading={dang === 'tao'}
-          disabled={dangTai || dang !== null}
-        />
-        {loiMoi ? (
           <Button
-            testID="nut-tat-link"
-            label={t.tatLink}
-            variant="danger"
-            onPress={tat}
-            loading={dang === 'tat'}
-            disabled={dang !== null}
+            testID="nut-chia-se-loi-moi"
+            label={t.chiaSeLink}
+            onPress={() => void chiaSe()}
+            loading={dang === 'chia-se'}
+            disabled={dangTai || dang !== null}
           />
-        ) : null}
+          <Button
+            testID="nut-tao-link-moi"
+            label={t.taoLinkMoi}
+            variant="secondary"
+            onPress={taoMoi}
+            loading={dang === 'tao'}
+            disabled={dangTai || dang !== null}
+          />
+          {loiMoi ? (
+            <Button
+              testID="nut-tat-link"
+              label={t.tatLink}
+              variant="danger"
+              onPress={tat}
+              loading={dang === 'tat'}
+              disabled={dang !== null}
+            />
+          ) : null}
+        </ScrollView>
       </View>
     </Modal>
   );
 }
+
+const CANH_QR = 200;
 
 const styles = StyleSheet.create({
   nen: { flex: 1, backgroundColor: 'rgba(0, 20, 50, 0.35)' },
@@ -176,9 +187,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
-    gap: spacing.sm + 4,
+    maxHeight: '92%',
     boxShadow: shadows.card,
   },
+  cuon: { flexGrow: 0 },
+  noiDung: { gap: spacing.sm + 4, paddingTop: spacing.sm + 4 },
   tay: {
     alignSelf: 'center',
     width: scaleWithFont(44),
@@ -190,6 +203,15 @@ const styles = StyleSheet.create({
   tieuDe: { fontSize: fontSize.lg, lineHeight: lineHeight.lg, fontWeight: '700', color: colors.text },
   moTa: { fontSize: fontSize.sm, lineHeight: lineHeight.sm, color: colors.textMuted },
   theMa: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
+  nenQr: { backgroundColor: '#ffffff', borderRadius: radius.md, padding: spacing.xs },
+  huongDanQr: {
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
   ma: { fontSize: fontSize.xl, fontWeight: '800', letterSpacing: 3, color: colors.primary },
   chiTiet: { fontSize: fontSize.sm, lineHeight: lineHeight.sm, color: colors.textMuted, marginTop: spacing.xxs },
   loi: { fontSize: fontSize.sm, lineHeight: lineHeight.sm, color: colors.danger },
