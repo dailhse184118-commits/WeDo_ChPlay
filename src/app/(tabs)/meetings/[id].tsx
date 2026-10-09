@@ -9,6 +9,12 @@ import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { dinhDangThoiGian } from '../../../i18n/dinh-dang';
+import type { NgonNgu } from '../../../i18n/ngon-ngu';
+import { tuDienChung } from '../../../i18n/tu-dien/chung';
+import { tuDienCuocHop } from '../../../i18n/tu-dien/cuoc-hop';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { ApiError } from '../../../lib/api/client';
 import {
   chiTietCuocHop,
@@ -20,8 +26,11 @@ import { choVaoPhong, khoangGio, tenTrangThai } from '../../../lib/meetings/sap-
 import { useQuayLai } from '../../../lib/use-quay-lai';
 import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../../theme/tokens';
 
-/** `21/09/2026` — ngày đầy đủ, vì thẻ ở danh sách chỉ hiện giờ. */
-function ngayDayDu(iso: string): string {
+/** `21/09/2026` — ngày đầy đủ, vì thẻ ở danh sách chỉ hiện giờ. Tiếng Anh: `Friday, Sep 25, 2026`. */
+function ngayDayDu(iso: string, ngonNgu: NgonNgu): string {
+  if (ngonNgu === 'en') {
+    return dinhDangThoiGian(iso, 'en', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  }
   return new Date(iso).toLocaleDateString('vi-VN', {
     weekday: 'long',
     day: '2-digit',
@@ -29,13 +38,6 @@ function ngayDayDu(iso: string): string {
     year: 'numeric',
   });
 }
-
-/* Cùng chữ với web và bản tóm tắt gửi vào chat. */
-const TEN_TRANG_THAI_HANG_MUC: Record<HangMucHanhDong['status'], string> = {
-  PENDING: 'Chờ Leader duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Đã từ chối',
-};
 
 function Khoi({ tieuDe, children }: { tieuDe: string; children: React.ReactNode }) {
   return (
@@ -47,6 +49,9 @@ function Khoi({ tieuDe, children }: { tieuDe: string; children: React.ReactNode 
 }
 
 function HangMuc({ muc }: { muc: HangMucHanhDong }) {
+  const t = useTuDien(tuDienCuocHop).chiTiet;
+  /* Cùng chữ với web và bản tóm tắt gửi vào chat. */
+  const tenTrangThaiHangMuc = t.trangThaiHangMuc[muc.status];
   return (
     <View style={styles.muc}>
       <Ionicons
@@ -58,10 +63,10 @@ function HangMuc({ muc }: { muc: HangMucHanhDong }) {
       <View style={styles.mucThan}>
         <Text style={styles.mucTieuDe}>{muc.title}</Text>
         <Text style={styles.mucPhu}>
-          {muc.assignee?.fullName ?? 'Chưa giao'}
+          {muc.assignee?.fullName ?? t.chuaGiao}
           {/* Trạng thái lạ (máy chủ thêm giá trị mới) thì thôi không ghi, đừng đoán. */}
-          {TEN_TRANG_THAI_HANG_MUC[muc.status] ? ` · ${TEN_TRANG_THAI_HANG_MUC[muc.status]}` : ''}
-          {muc.task ? ' · đã thành công việc' : ''}
+          {tenTrangThaiHangMuc ? ` · ${tenTrangThaiHangMuc}` : ''}
+          {muc.task ? ` · ${t.daThanhCongViec}` : ''}
         </Text>
       </View>
     </View>
@@ -70,6 +75,11 @@ function HangMuc({ muc }: { muc: HangMucHanhDong }) {
 
 export default function ManChiTietHop() {
   const router = useRouter();
+  const tong = useTuDien(tuDienCuocHop);
+  const t = tong.chiTiet;
+  const chung = useTuDien(tuDienChung);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const { id, tu } = useLocalSearchParams<{ id: string; tu?: string }>();
 
   /*
@@ -84,7 +94,9 @@ export default function ManChiTietHop() {
     }, [router, tu]),
   );
   const queryClient = useQueryClient();
-  const [loiMoPhong, setLoiMoPhong] = useState<string | null>(null);
+  const [loiMoPhong, setLoiMoPhong] = useState<NguonLoi<
+    'chuaCoDuongVao' | 'khongMoDuocDuongDan' | 'khongMoDuocPhong'
+  > | null>(null);
 
   const hopQuery = useQuery({
     queryKey: ['meeting', id],
@@ -99,7 +111,7 @@ export default function ManChiTietHop() {
       void queryClient.invalidateQueries({ queryKey: ['meetings'] });
 
       if (!hop.roomUrl) {
-        setLoiMoPhong('Máy chủ chưa trả về đường vào phòng. Thử lại sau ít phút nhé.');
+        setLoiMoPhong({ khoa: 'chuaCoDuongVao' });
         return;
       }
 
@@ -113,20 +125,20 @@ export default function ManChiTietHop() {
       */
       const moDuoc = await Linking.canOpenURL(hop.roomUrl);
       if (!moDuoc) {
-        setLoiMoPhong('Máy không mở được đường dẫn phòng họp.');
+        setLoiMoPhong({ khoa: 'khongMoDuocDuongDan' });
         return;
       }
       await Linking.openURL(hop.roomUrl);
     },
     onError: (loi: unknown) => {
-      setLoiMoPhong(loi instanceof Error ? loi.message : 'Không mở được phòng họp.');
+      setLoiMoPhong({ loi, duPhong: 'khongMoDuocPhong' });
     },
   });
 
   if (hopQuery.isLoading) {
     return (
       <View style={styles.man}>
-        <GradientHeader title="Cuộc họp" onBack={quayLai} dense />
+        <GradientHeader title={tong.tieuDe} onBack={quayLai} dense />
         <View style={styles.giua}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -148,19 +160,17 @@ export default function ManChiTietHop() {
       (loi instanceof ApiError && (loi.status === 404 || loi.status === 403));
     return (
       <View style={styles.man}>
-        <GradientHeader title="Cuộc họp" onBack={quayLai} dense />
+        <GradientHeader title={tong.tieuDe} onBack={quayLai} dense />
         <View style={styles.giua}>
           {khongCo ? (
-            <ErrorBanner message="Không tìm thấy cuộc họp này, hoặc bạn không có quyền xem." />
+            <ErrorBanner message={t.khongTimThay} />
           ) : (
             <>
-              <ErrorBanner
-                message={loi instanceof Error ? loi.message : 'Không tải được cuộc họp.'}
-              />
+              <ErrorBanner message={dichLoi(loi, t.khongTaiDuoc)} />
               <View style={styles.nut}>
                 <Button
                   testID="meeting-retry"
-                  label="Thử lại"
+                  label={chung.thuLai}
                   variant="secondary"
                   onPress={() => void hopQuery.refetch()}
                   loading={hopQuery.isFetching}
@@ -178,17 +188,17 @@ export default function ManChiTietHop() {
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Cuộc họp"
+        title={tong.tieuDe}
         onBack={quayLai}
         dense
       />
 
       <ScrollView contentContainerStyle={styles.cuon} showsVerticalScrollIndicator={false}>
-        {loiMoPhong ? <ErrorBanner message={loiMoPhong} /> : null}
+        {loiMoPhong ? <ErrorBanner message={chuLoi(t, loiMoPhong, dichLoi)} /> : null}
 
         <Card style={styles.khoi}>
           <Text testID="meeting-status" style={styles.trangThai}>
-            {tenTrangThai(hop.status)}
+            {tenTrangThai(hop.status, ngonNgu)}
           </Text>
           <Text testID="meeting-title" style={styles.tieuDe}>
             {hop.title}
@@ -196,11 +206,11 @@ export default function ManChiTietHop() {
 
           <View style={styles.dong}>
             <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.dongChu}>{ngayDayDu(hop.startTime)}</Text>
+            <Text style={styles.dongChu}>{ngayDayDu(hop.startTime, ngonNgu)}</Text>
           </View>
           <View style={styles.dong}>
             <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.dongChu}>{khoangGio(hop)}</Text>
+            <Text style={styles.dongChu}>{khoangGio(hop, ngonNgu)}</Text>
           </View>
           {hop.project?.name ? (
             <View style={styles.dong}>
@@ -213,28 +223,26 @@ export default function ManChiTietHop() {
             <View style={styles.nut}>
               <Button
                 testID="meeting-join"
-                label="Vào phòng họp"
+                label={t.vaoPhong}
                 onPress={() => {
                   setLoiMoPhong(null);
                   moPhong.mutate();
                 }}
                 loading={moPhong.isPending}
               />
-              <Text style={styles.ghiChuNut}>
-                Phòng họp mở trong trình duyệt của máy.
-              </Text>
+              <Text style={styles.ghiChuNut}>{t.phongMoTrongTrinhDuyet}</Text>
             </View>
           ) : null}
         </Card>
 
         {hop.agenda ? (
-          <Khoi tieuDe="Nội dung dự kiến">
+          <Khoi tieuDe={t.noiDungDuKien}>
             <Text style={styles.doanVan}>{hop.agenda}</Text>
           </Khoi>
         ) : null}
 
         {hop.participants?.length ? (
-          <Khoi tieuDe={`Người tham dự (${hop.participants.length})`}>
+          <Khoi tieuDe={t.nguoiThamDu(hop.participants.length)}>
             {hop.participants.map((nguoi) => (
               <View key={nguoi.id} style={styles.nguoi}>
                 <Avatar
@@ -251,19 +259,19 @@ export default function ManChiTietHop() {
         ) : null}
 
         {hop.summary ? (
-          <Khoi tieuDe="Tóm tắt">
+          <Khoi tieuDe={t.tomTat}>
             <Text style={styles.doanVan}>{hop.summary}</Text>
           </Khoi>
         ) : null}
 
         {hop.decisions ? (
-          <Khoi tieuDe="Quyết định">
+          <Khoi tieuDe={t.quyetDinh}>
             <Text style={styles.doanVan}>{hop.decisions}</Text>
           </Khoi>
         ) : null}
 
         {hop.actionItems?.length ? (
-          <Khoi tieuDe={`Hạng mục hành động (${hop.actionItems.length})`}>
+          <Khoi tieuDe={t.hangMucHanhDong(hop.actionItems.length)}>
             {hop.actionItems.map((muc) => (
               <HangMuc key={muc.id} muc={muc} />
             ))}
@@ -276,9 +284,7 @@ export default function ManChiTietHop() {
           hai thao tác của Leader, làm trên máy tính tiện hơn hẳn.
         */}
         {hop.status === 'COMPLETED' && !hop.summary ? (
-          <Text style={styles.ghiChuCuoi}>
-            Biên bản và tóm tắt được tạo trên bản web tại wedofpt.com.vn.
-          </Text>
+          <Text style={styles.ghiChuCuoi}>{t.bienBanTrenWeb}</Text>
         ) : null}
       </ScrollView>
     </View>

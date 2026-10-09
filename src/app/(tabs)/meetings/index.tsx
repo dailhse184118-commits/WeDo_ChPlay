@@ -13,6 +13,8 @@ import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienCuocHop } from '../../../i18n/tu-dien/cuoc-hop';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { TheCuocHop } from '../../../components/meetings/TheCuocHop';
@@ -26,6 +28,7 @@ import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/to
 
 export default function ManDanhSachHop() {
   const router = useRouter();
+  const t = useTuDien(tuDienCuocHop);
   const { active, workspaces, switchTo } = useWorkspace();
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -42,10 +45,10 @@ export default function ManDanhSachHop() {
   const sections = useMemo(() => {
     const { sapToi, daQua } = chiaHaiNhom(hopQuery.data ?? [], new Date());
     const ra: Array<{ title: string; data: CuocHop[] }> = [];
-    if (sapToi.length) ra.push({ title: 'Sắp tới', data: sapToi });
-    if (daQua.length) ra.push({ title: 'Đã qua', data: daQua });
+    if (sapToi.length) ra.push({ title: t.danhSach.sapToi, data: sapToi });
+    if (daQua.length) ra.push({ title: t.danhSach.daQua, data: daQua });
     return ra;
-  }, [hopQuery.data]);
+  }, [hopQuery.data, t]);
 
   const trong = !hopQuery.isLoading && sections.length === 0;
 
@@ -56,7 +59,7 @@ export default function ManDanhSachHop() {
         quay lại, và phải đổi được không gian làm việc ngay tại đây như mọi tab.
       */}
       <GradientHeader
-        title="Cuộc họp"
+        title={t.tieuDe}
         subtitle={active?.name}
         onPressSubtitle={() => setSwitcherOpen(true)}
       />
@@ -72,8 +75,8 @@ export default function ManDanhSachHop() {
         style={({ pressed }) => [styles.loiVaoLich, pressed ? styles.nhan : null]}
       >
         <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-        <Text style={styles.loiVaoLichChu}>Lịch</Text>
-        <Text style={styles.loiVaoLichGoiY}>Hạn chót và sự kiện</Text>
+        <Text style={styles.loiVaoLichChu}>{t.danhSach.lich}</Text>
+        <Text style={styles.loiVaoLichGoiY}>{t.danhSach.lichGoiY}</Text>
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </Pressable>
 
@@ -90,7 +93,7 @@ export default function ManDanhSachHop() {
         style={({ pressed }) => [styles.taoMoi, pressed ? styles.nhan : null]}
       >
         <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-        <Text style={styles.taoMoiChu}>Tạo cuộc họp</Text>
+        <Text style={styles.taoMoiChu}>{t.danhSach.taoCuocHop}</Text>
       </Pressable>
 
       <View style={styles.than}>
@@ -100,7 +103,7 @@ export default function ManDanhSachHop() {
           sách vẫn đọc được là làm người dùng tưởng app hỏng.
         */}
         {hopQuery.isError && !hopQuery.data ? (
-          <ErrorBanner message="Không tải được danh sách cuộc họp." />
+          <ErrorBanner message={t.danhSach.khongTaiDuoc} />
         ) : null}
 
         {hopQuery.isLoading ? (
@@ -110,11 +113,8 @@ export default function ManDanhSachHop() {
         ) : trong ? (
           <View style={styles.giua}>
             <Ionicons name="videocam-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.trongTieuDe}>Chưa có cuộc họp nào</Text>
-            <Text style={styles.trongMoTa}>
-              Leader của dự án là người lên lịch họp. Cuộc họp được tạo sẽ hiện ở
-              đây và trên tab Lịch.
-            </Text>
+            <Text style={styles.trongTieuDe}>{t.danhSach.trongTieuDe}</Text>
+            <Text style={styles.trongMoTa}>{t.danhSach.trongMoTa}</Text>
           </View>
         ) : (
           <SectionList

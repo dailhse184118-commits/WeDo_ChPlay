@@ -132,6 +132,8 @@ const TIENG_ANH_THEO_CAU: Record<string, string> = {
   'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.': 'Your session has ended. Please sign in again.',
   'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.': 'Can’t reach the server. Check your connection and try again.',
   'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.': 'You’re going too fast. Please try again in a few minutes.',
+  // Máy chủ: cuộc họp (BE src/meetings).
+  'Chỉ Leader dự án mới có thể tạo cuộc họp.': 'Only a project Leader can schedule a meeting.',
   // Máy chủ: không thấy dự án (báo cáo đóng góp, chat, cuộc họp… cùng dùng một câu).
   'Không tìm thấy dự án': 'Project not found. It may have been deleted or you no longer have access.',
 };

@@ -83,6 +83,16 @@ const TEP_DA_DICH: string[] = [
   'src/lib/tasks/deadline-groups.ts',
   'src/lib/tasks/tao-task.ts',
   'src/lib/tasks/task-permissions.ts',
+  'src/app/(tabs)/meetings/index.tsx',
+  'src/app/(tabs)/meetings/new.tsx',
+  'src/app/(tabs)/meetings/[id].tsx',
+  'src/app/(tabs)/calendar/index.tsx',
+  'src/app/account/calendar-sync.tsx',
+  'src/components/meetings/TheCuocHop.tsx',
+  'src/lib/meetings/thoi-diem.ts',
+  'src/lib/meetings/sap-xep.ts',
+  'src/lib/calendar/nhom-theo-ngay.ts',
+  'src/lib/api/dong-bo-lich.ts',
 ];
 
 describe('bộ quét chữ chưa dịch', () => {

@@ -2,6 +2,8 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienCuocHop } from '../../i18n/tu-dien/cuoc-hop';
 import type { CuocHop } from '../../lib/api/meetings';
 import { khoangGio, tenTrangThai } from '../../lib/meetings/sap-xep';
 import { colors, fontSize, lineHeight, radius, shadows, sizes, spacing } from '../../theme/tokens';
@@ -21,6 +23,8 @@ interface Props {
 }
 
 export function TheCuocHop({ hop, onPress, testID }: Props) {
+  const t = useTuDien(tuDienCuocHop);
+  const { ngonNgu } = useNgonNgu();
   const mau = MAU[hop.status] ?? colors.primary;
   const daHuy = hop.status === 'CANCELLED';
 
@@ -28,7 +32,7 @@ export function TheCuocHop({ hop, onPress, testID }: Props) {
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`${hop.title}, ${tenTrangThai(hop.status)}, ${khoangGio(hop)}`}
+      accessibilityLabel={`${hop.title}, ${tenTrangThai(hop.status, ngonNgu)}, ${khoangGio(hop, ngonNgu)}`}
       onPress={onPress}
       style={({ pressed }) => [styles.the, pressed ? styles.nhan : null]}
     >
@@ -36,8 +40,8 @@ export function TheCuocHop({ hop, onPress, testID }: Props) {
 
       <View style={styles.than}>
         <View style={styles.dong}>
-          <Text style={[styles.trangThai, { color: mau }]}>{tenTrangThai(hop.status)}</Text>
-          <Text style={styles.gio}>{khoangGio(hop)}</Text>
+          <Text style={[styles.trangThai, { color: mau }]}>{tenTrangThai(hop.status, ngonNgu)}</Text>
+          <Text style={styles.gio}>{khoangGio(hop, ngonNgu)}</Text>
         </View>
 
         <Text
@@ -69,7 +73,7 @@ export function TheCuocHop({ hop, onPress, testID }: Props) {
           {hop.actionItems?.length ? (
             <View style={styles.chiTiet}>
               <Ionicons name="checkbox-outline" size={14} color={colors.textMuted} />
-              <Text style={styles.chiTietChu}>{hop.actionItems.length} hạng mục</Text>
+              <Text style={styles.chiTietChu}>{t.the.hangMuc(hop.actionItems.length)}</Text>
             </View>
           ) : null}
         </View>
