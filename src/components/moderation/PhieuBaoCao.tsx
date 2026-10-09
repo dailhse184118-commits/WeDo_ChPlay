@@ -15,6 +15,10 @@ import { useMutation } from '@tanstack/react-query';
 
 import { Button } from '../ui/Button';
 import { ErrorBanner } from '../ui/ErrorBanner';
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
+import { tuDienKiemDuyet } from '../../i18n/tu-dien/kiem-duyet';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import { ApiError } from '../../lib/api/client';
 import {
   DO_DAI_GHI_CHU_TOI_DA,
@@ -23,7 +27,7 @@ import {
   type LoaiDoiTuongBaoCao,
   type LyDoBaoCao,
 } from '../../lib/api/moderation';
-import { CAU_DA_BAO_CAO, CAU_QUA_NHIEU_BAO_CAO, LY_DO_BAO_CAO } from '../../lib/moderation/noi-dung';
+import { MA_LY_DO_BAO_CAO } from '../../lib/moderation/noi-dung';
 import { colors, fontSize, lineHeight, radius, scaleWithFont, spacing } from '../../theme/tokens';
 
 /** Thứ đang bị báo cáo. `null` là phiếu đang đóng. */
@@ -39,15 +43,20 @@ interface PhieuBaoCaoProps {
   onDong: () => void;
 }
 
-function cauHoi(doiTuong: DoiTuongBaoCao): { tieuDe: string; cauHoi: string } {
+type TuDienKD = typeof tuDienKiemDuyet.vi;
+
+function cauHoi(doiTuong: DoiTuongBaoCao, t: TuDienKD): { tieuDe: string; cauHoi: string } {
   if (doiTuong.targetType === 'USER') {
     return {
-      tieuDe: doiTuong.tenNguoi ? `Báo cáo ${doiTuong.tenNguoi}` : 'Báo cáo người dùng',
-      cauHoi: 'Vì sao bạn báo cáo người này?',
+      tieuDe: doiTuong.tenNguoi ? t.baoCaoTen(doiTuong.tenNguoi) : t.baoCaoNguoiDung,
+      cauHoi: t.cauHoiNguoi,
     };
   }
-  return { tieuDe: 'Báo cáo tin nhắn', cauHoi: 'Vì sao bạn báo cáo tin nhắn này?' };
+  return { tieuDe: t.baoCaoTin, cauHoi: t.cauHoiTin };
 }
+
+/** Lỗi của phiếu giữ ở dạng nguồn, dịch lúc vẽ. */
+type KhoaLoiPhieu = 'quaNhieuBaoCao' | 'chuaGuiDuoc';
 
 /**
  * Phiếu báo cáo tin nhắn hoặc người dùng.
@@ -59,7 +68,10 @@ function cauHoi(doiTuong: DoiTuongBaoCao): { tieuDe: string; cauHoi: string } {
 export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
   const [lyDo, setLyDo] = useState<LyDoBaoCao | null>(null);
   const [ghiChu, setGhiChu] = useState('');
-  const [loi, setLoi] = useState('');
+  const t = useTuDien(tuDienKiemDuyet);
+  const chung = useTuDien(tuDienChung);
+  const dichLoi = useDichLoi();
+  const [loi, setLoi] = useState<NguonLoi<KhoaLoiPhieu> | null>(null);
   const [daGui, setDaGui] = useState(false);
 
   /*
@@ -75,7 +87,7 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
     setKhoaDangMo(khoa);
     setLyDo(null);
     setGhiChu('');
-    setLoi('');
+    setLoi(null);
     setDaGui(false);
   }
 
@@ -84,7 +96,7 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
   async function gui() {
     if (!doiTuong || !lyDo || guiMutation.isPending) return;
 
-    setLoi('');
+    setLoi(null);
     try {
       await guiMutation.mutateAsync({
         targetType: doiTuong.targetType,
@@ -100,14 +112,14 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
         dùng đợi tới mai trong khi chỉ cần bấm lại sau vài giây là nói sai.
       */
       if (err instanceof ApiError && err.code === MA_QUA_NHIEU_BAO_CAO) {
-        setLoi(CAU_QUA_NHIEU_BAO_CAO);
+        setLoi({ khoa: 'quaNhieuBaoCao' });
       } else {
-        setLoi(err instanceof Error ? err.message : 'Chưa gửi được báo cáo. Thử lại sau.');
+        setLoi({ loi: err, duPhong: 'chuaGuiDuoc' });
       }
     }
   }
 
-  const chu = doiTuong ? cauHoi(doiTuong) : null;
+  const chu = doiTuong ? cauHoi(doiTuong, t) : null;
 
   return (
     <Modal
@@ -133,10 +145,10 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
             <View style={styles.xong}>
               <Ionicons name="checkmark-circle" size={48} color={colors.success} />
               <Text testID="bao-cao-da-gui" style={styles.xongChu}>
-                {CAU_DA_BAO_CAO}
+                {t.daGui}
               </Text>
               <View style={styles.nutDay}>
-                <Button testID="bao-cao-dong" label="Đóng" onPress={onDong} />
+                <Button testID="bao-cao-dong" label={chung.dong} onPress={onDong} />
               </View>
             </View>
           ) : (
@@ -144,9 +156,9 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
               <Text style={styles.tieuDe}>{chu?.tieuDe}</Text>
               <Text style={styles.cauHoi}>{chu?.cauHoi}</Text>
 
-              {loi ? <ErrorBanner message={loi} /> : null}
+              {loi ? <ErrorBanner message={chuLoi(t, loi, dichLoi)} /> : null}
 
-              {LY_DO_BAO_CAO.map(({ ma, nhan }) => {
+              {MA_LY_DO_BAO_CAO.map((ma) => {
                 const dangChon = lyDo === ma;
                 return (
                   <Pressable
@@ -156,7 +168,7 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
                     accessibilityState={{ checked: dangChon }}
                     onPress={() => {
                       setLyDo(ma);
-                      setLoi('');
+                      setLoi(null);
                     }}
                     style={({ pressed }) => [styles.lyDo, pressed ? styles.lyDoNhan : null]}
                   >
@@ -165,18 +177,18 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
                       size={22}
                       color={dangChon ? colors.primary : colors.textMuted}
                     />
-                    <Text style={styles.lyDoChu}>{nhan}</Text>
+                    <Text style={styles.lyDoChu}>{t.lyDo[ma]}</Text>
                   </Pressable>
                 );
               })}
 
-              <Text style={styles.nhanO}>Ghi chú thêm (không bắt buộc)</Text>
+              <Text style={styles.nhanO}>{t.ghiChuThem}</Text>
               <TextInput
                 testID="bao-cao-ghi-chu"
-                accessibilityLabel="Ghi chú thêm cho báo cáo"
+                accessibilityLabel={t.ghiChuNhan}
                 value={ghiChu}
                 onChangeText={setGhiChu}
-                placeholder="Mô tả ngắn điều bạn thấy không ổn"
+                placeholder={t.moTaNgan}
                 placeholderTextColor={colors.textMuted}
                 style={styles.o}
                 multiline
@@ -191,7 +203,7 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
 
               <Button
                 testID="bao-cao-gui"
-                label="Gửi báo cáo"
+                label={t.guiBaoCao}
                 variant="danger"
                 loading={guiMutation.isPending}
                 disabled={!lyDo}
@@ -199,7 +211,7 @@ export function PhieuBaoCao({ doiTuong, onDong }: PhieuBaoCaoProps) {
               />
 
               <Pressable testID="bao-cao-huy" onPress={onDong} style={styles.huy}>
-                <Text style={styles.huyChu}>Huỷ</Text>
+                <Text style={styles.huyChu}>{chung.huy}</Text>
               </Pressable>
             </ScrollView>
           )}

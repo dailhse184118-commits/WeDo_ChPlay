@@ -13,7 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui/Button';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { TextField } from '../ui/TextField';
-import { docHanChotAI } from '../../lib/chat/create-task-from-message';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
+import { docHanChotTheoMa } from '../../lib/chat/create-task-from-message';
 import type { ChatTaskSuggestion, UserSummary } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, shadows, spacing } from '../../theme/tokens';
 
@@ -40,11 +43,8 @@ interface TaskSuggestionSheetProps {
   submitting?: boolean;
 }
 
-const CONFIDENCE_LABEL: Record<ChatTaskSuggestion['confidence'], string> = {
-  low: 'Tin cậy thấp',
-  medium: 'Tin cậy trung bình',
-  high: 'Tin cậy cao',
-};
+/** Lỗi nhập liệu giữ ở dạng MÃ (câu chữ tra trong từ điển lúc vẽ), để đổi ngôn ngữ thì băng đỏ đổi theo. */
+type MaLoiNhap = 'nhapTenViec' | 'loiNgay' | 'loiGio';
 
 /** Sinh viên hầu như luôn để hạn cuối ngày, nên đây là mặc định hợp lý nhất. */
 const DEFAULT_DUE_TIME = '23:59';
@@ -75,7 +75,9 @@ export function TaskSuggestionSheet({
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
-  const [localError, setLocalError] = useState('');
+  const t = useTuDien(tuDienChat).goiY;
+  const chung = useTuDien(tuDienChung);
+  const [localError, setLocalError] = useState<MaLoiNhap | ''>('');
 
   useEffect(() => {
     if (!suggestion) return;
@@ -93,7 +95,7 @@ export function TaskSuggestionSheet({
 
   const handleConfirm = () => {
     if (!title.trim()) {
-      setLocalError('Vui lòng nhập tên công việc');
+      setLocalError('nhapTenViec');
       return;
     }
     setLocalError('');
@@ -109,9 +111,9 @@ export function TaskSuggestionSheet({
       Kiểm ngay tại đây. Trước đây ngày gõ sai dạng bị bỏ đi trong im lặng: việc
       tạo ra không có hạn chót mà màn vẫn báo "Đã tạo công việc".
     */
-    const han = docHanChotAI(date, date ? time || DEFAULT_DUE_TIME : undefined);
-    if (han.loi) {
-      setLocalError(han.loi);
+    const han = docHanChotTheoMa(date, date ? time || DEFAULT_DUE_TIME : undefined);
+    if (han.ma) {
+      setLocalError(han.ma);
       return;
     }
 
@@ -137,29 +139,27 @@ export function TaskSuggestionSheet({
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
             {/* Nói rõ là AI: người dùng phải biết tin nhắn đang được gửi đi đâu. */}
-            <Text style={styles.loadingTitle}>AI đang đọc tin nhắn…</Text>
-            <Text style={styles.loadingBody}>
-              Thường mất vài giây. Bạn có thể đóng lại và làm việc khác.
-            </Text>
+            <Text style={styles.loadingTitle}>{t.aiDangDoc}</Text>
+            <Text style={styles.loadingBody}>{t.thuongMatVaiGiay}</Text>
           </View>
         ) : (
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.headingRow}>
               <View style={styles.headingBlock}>
-                <Text style={styles.heading}>Đề xuất công việc</Text>
-                <Text style={styles.headingSub}>Bạn kiểm tra lại trước khi tạo nhé</Text>
+                <Text style={styles.heading}>{t.deXuat}</Text>
+                <Text style={styles.headingSub}>{t.kiemTraLai}</Text>
               </View>
               {suggestion?.hasTask ? (
                 <View style={styles.confidence}>
                   <Text style={styles.confidenceText}>
-                    {CONFIDENCE_LABEL[suggestion.confidence]}
+                    {t.tinCay[suggestion.confidence]}
                   </Text>
                 </View>
               ) : null}
             </View>
 
             {error ? <ErrorBanner message={error} /> : null}
-            {localError ? <ErrorBanner message={localError} /> : null}
+            {localError ? <ErrorBanner message={t[localError]} /> : null}
 
             {sourceMessage ? (
               <View style={styles.quote}>
@@ -177,33 +177,31 @@ export function TaskSuggestionSheet({
             */}
             {suggestion && !suggestion.hasTask && !error ? (
               <View style={styles.notice}>
-                <Text style={styles.noticeText}>Tin nhắn này có vẻ không chứa công việc</Text>
-                <Text style={styles.noticeBody}>
-                  Bạn vẫn có thể tự nhập nội dung bên dưới để tạo công việc.
-                </Text>
+                <Text style={styles.noticeText}>{t.khongCoViec}</Text>
+                <Text style={styles.noticeBody}>{t.tuNhap}</Text>
               </View>
             ) : null}
 
             <TextField
               testID="suggestion-title"
-              label="Tên công việc"
+              label={t.tenViec}
               value={title}
               onChangeText={setTitle}
-              placeholder="Ví dụ: Khảo sát người dùng"
+              placeholder={t.viDuTen}
               autoCapitalize="sentences"
             />
 
             <TextField
               testID="suggestion-description"
-              label="Mô tả"
+              label={t.moTa}
               value={description}
               onChangeText={setDescription}
-              placeholder="Không bắt buộc"
+              placeholder={t.khongBatBuoc}
               autoCapitalize="sentences"
               multiline
             />
 
-            <Text style={styles.label}>Người phụ trách</Text>
+            <Text style={styles.label}>{t.nguoiPhuTrach}</Text>
             <View style={styles.memberList}>
               <Pressable
                 testID="assignee-none"
@@ -211,13 +209,13 @@ export function TaskSuggestionSheet({
                 style={[styles.chip, !assigneeId ? styles.chipActive : null]}
               >
                 <Text style={[styles.chipText, !assigneeId ? styles.chipTextActive : null]}>
-                  Chưa giao
+                  {t.chuaGiao}
                 </Text>
               </Pressable>
 
               {members.map((member) => {
                 const selected = assigneeId === member.id;
-                const label = member.id === currentUserId ? 'Bạn' : member.fullName;
+                const label = member.id === currentUserId ? t.ban : member.fullName;
                 return (
                   <Pressable
                     key={member.id}
@@ -245,7 +243,7 @@ export function TaskSuggestionSheet({
               <View style={styles.dueDate}>
                 <TextField
                   testID="suggestion-due-date"
-                  label="Ngày hết hạn"
+                  label={t.ngayHetHan}
                   value={dueDate}
                   onChangeText={setDueDate}
                   placeholder="30/09/2026"
@@ -255,7 +253,7 @@ export function TaskSuggestionSheet({
               <View style={styles.dueTime}>
                 <TextField
                   testID="suggestion-due-time"
-                  label="Giờ"
+                  label={t.gio}
                   value={dueTime}
                   onChangeText={setDueTime}
                   placeholder={DEFAULT_DUE_TIME}
@@ -265,7 +263,7 @@ export function TaskSuggestionSheet({
 
             <Button
               testID="suggestion-confirm"
-              label="Tạo công việc"
+              label={t.taoViec}
               onPress={handleConfirm}
               loading={submitting}
               disabled={!title.trim()}
@@ -279,7 +277,7 @@ export function TaskSuggestionSheet({
             */}
             <View style={styles.footer}>
               <Pressable testID="suggestion-cancel" onPress={onDismiss}>
-                <Text style={styles.footerLink}>Huỷ</Text>
+                <Text style={styles.footerLink}>{chung.huy}</Text>
               </Pressable>
             </View>
           </ScrollView>

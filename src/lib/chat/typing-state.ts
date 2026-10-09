@@ -1,3 +1,7 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
+
 /** Thời gian một dấu hiệu đang gõ còn hiệu lực, tính bằng mili giây. */
 export const TYPING_TTL_MS = 5000;
 
@@ -31,9 +35,10 @@ export function activeTypers(
     .map(([userId]) => userId);
 }
 
-export function typingLabel(names: string[]): string {
+export function typingLabel(names: string[], ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienChat, ngonNgu);
   if (names.length === 0) return '';
-  if (names.length === 1) return `${names[0]} đang nhập…`;
-  if (names.length === 2) return `${names[0]} và ${names[1]} đang nhập…`;
-  return `${names.length} người đang nhập…`;
+  if (names.length === 1) return t.dangNhap1(names[0]);
+  if (names.length === 2) return t.dangNhap2(names[0], names[1]);
+  return t.dangNhapNhieu(names.length);
 }

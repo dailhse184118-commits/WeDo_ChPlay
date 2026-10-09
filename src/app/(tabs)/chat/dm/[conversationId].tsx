@@ -21,6 +21,10 @@ import { useBangThaoTac } from '../../../../components/moderation/BangThaoTac';
 import { PhieuBaoCao, type DoiTuongBaoCao } from '../../../../components/moderation/PhieuBaoCao';
 import { ErrorBanner } from '../../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../../components/ui/GradientHeader';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../../../i18n/tu-dien/chung';
+import { tuDienKiemDuyet } from '../../../../i18n/tu-dien/kiem-duyet';
 import { LoiGuiDoDang, cauGuiDoDang } from '../../../../lib/api/chat-files';
 import {
   SO_TIN_RIENG_MOI_NHAT,
@@ -53,6 +57,11 @@ export default function ManTinNhanRieng() {
   const { user } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
+  const t = useTuDien(tuDienChat);
+  const kd = useTuDien(tuDienKiemDuyet);
+  const chung = useTuDien(tuDienChung);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const { conversationId, ten } = useLocalSearchParams<{
     conversationId: string;
     ten?: string;
@@ -63,7 +72,8 @@ export default function ManTinNhanRieng() {
   const [anhChoGui, setAnhChoGui] = useState<TepChon[]>([]);
   const [anhDangXem, setAnhDangXem] = useState<string | null>(null);
   /** Lỗi từ máy ảnh hoặc thư viện ảnh — không phải lỗi máy chủ nên để riêng. */
-  const [loiChonAnh, setLoiChonAnh] = useState('');
+  // Lỗi giữ ở dạng đối tượng gốc, dịch lúc vẽ.
+  const [loiChonAnh, setLoiChonAnh] = useState<{ e: unknown } | null>(null);
 
   const headerTep = useHeaderTep();
 
@@ -138,7 +148,7 @@ export default function ManTinNhanRieng() {
   const [tinCu, setTinCu] = useState<DirectMessage[]>([]);
   const [hetTinCu, setHetTinCu] = useState(false);
   const [dangTaiCu, setDangTaiCu] = useState(false);
-  const [loiTaiCu, setLoiTaiCu] = useState('');
+  const [loiTaiCu, setLoiTaiCu] = useState<{ e: unknown } | null>(null);
   const dangTaiCuRef = useRef(false);
   const hoiThoaiDangHien = useRef(conversationId);
   hoiThoaiDangHien.current = conversationId;
@@ -150,7 +160,7 @@ export default function ManTinNhanRieng() {
     setTinCu([]);
     setHetTinCu(false);
     setDangTaiCu(false);
-    setLoiTaiCu('');
+    setLoiTaiCu(null);
     dangTaiCuRef.current = false;
   }
 
@@ -175,7 +185,7 @@ export default function ManTinNhanRieng() {
 
     dangTaiCuRef.current = true;
     setDangTaiCu(true);
-    setLoiTaiCu('');
+    setLoiTaiCu(null);
     try {
       const trang = await getDirectHistory(hoiThoai, cuNhat);
       // Đã sang hội thoại khác trong lúc chờ: bỏ trang này.
@@ -184,7 +194,7 @@ export default function ManTinNhanRieng() {
       if (!trang.nextCursor || trang.items.length === 0) setHetTinCu(true);
     } catch (loi) {
       if (hoiThoaiDangHien.current !== hoiThoai) return;
-      setLoiTaiCu(loi instanceof Error ? loi.message : 'Không tải được tin nhắn cũ hơn.');
+      setLoiTaiCu({ e: loi });
     } finally {
       if (hoiThoaiDangHien.current === hoiThoai) {
         dangTaiCuRef.current = false;
@@ -267,7 +277,7 @@ export default function ManTinNhanRieng() {
       thaoTac: [
         {
           khoa: 'bao-cao-nguoi',
-          nhan: 'Báo cáo người này',
+          nhan: kd.baoCaoNguoi,
           onChon: () =>
             setDoiTuongBaoCao({
               targetType: 'USER',
@@ -275,7 +285,7 @@ export default function ManTinNhanRieng() {
               tenNguoi: nguoiKia.fullName,
             }),
         },
-        { khoa: 'chan', nhan: 'Chặn người này', nguyHiem: true, onChon: () => chan(nguoiKia) },
+        { khoa: 'chan', nhan: kd.chanNguoi, nguyHiem: true, onChon: () => chan(nguoiKia) },
       ],
     });
   }
@@ -292,7 +302,7 @@ export default function ManTinNhanRieng() {
       thaoTac: [
         {
           khoa: 'bao-cao',
-          nhan: 'Báo cáo tin nhắn',
+          nhan: kd.baoCaoTin,
           onChon: () =>
             setDoiTuongBaoCao({
               targetType: 'DIRECT_MESSAGE',
@@ -304,7 +314,7 @@ export default function ManTinNhanRieng() {
           ? [
               {
                 khoa: 'chan',
-                nhan: 'Chặn người này',
+                nhan: kd.chanNguoi,
                 nguyHiem: true,
                 onChon: () => chan(nguoiGui),
               },
@@ -399,14 +409,14 @@ export default function ManTinNhanRieng() {
   }, [tinHien]);
 
   async function nhanAnh(lay: () => Promise<TepChon[]>) {
-    setLoiChonAnh('');
+    setLoiChonAnh(null);
     try {
       const them = await lay();
       if (them.length === 0) return;
 
       setAnhChoGui((hienCo) => [...hienCo, ...them]);
     } catch (loi) {
-      setLoiChonAnh(loi instanceof Error ? loi.message : 'Không mở được ảnh.');
+      setLoiChonAnh({ e: loi });
     }
   }
 
@@ -447,24 +457,22 @@ export default function ManTinNhanRieng() {
     biết đây không phải lỗi mạng để khỏi bấm gửi lại mãi.
   */
   const loiGui = guiMutation.error ?? guiAnhMutation.error;
-  const loi =
-    loiChonAnh ||
-    (loiGui instanceof LoiGuiDoDang
-      ? cauGuiDoDang(loiGui, 'ảnh')
+  const loi = loiChonAnh
+    ? dichLoi(loiChonAnh.e, t.khongMoDuocAnh)
+    : loiGui instanceof LoiGuiDoDang
+      ? cauGuiDoDang(loiGui, ngonNgu)
       : loiGui instanceof Error
-        ? loiGui.message
+        ? dichLoi(loiGui, chung.loiChung)
         : loiTaiCu
-          ? loiTaiCu
+          ? dichLoi(loiTaiCu.e, t.khongTaiDuocTinCu)
           : messagesQuery.isError && !messagesQuery.data
-            ? messagesQuery.error instanceof Error
-              ? messagesQuery.error.message
-              : 'Không tải được tin nhắn.'
-            : '');
+            ? dichLoi(messagesQuery.error, t.khongTaiDuocTin)
+            : '';
 
   return (
     <View style={styles.man}>
       <GradientHeader
-        title={ten || nguoiKia?.fullName || 'Tin nhắn'}
+        title={ten || nguoiKia?.fullName || t.tinNhan}
         onBack={() => router.back()}
         dense
         right={
@@ -472,7 +480,7 @@ export default function ManTinNhanRieng() {
             <Pressable
               testID="dm-thao-tac"
               accessibilityRole="button"
-              accessibilityLabel={`Thao tác với ${nguoiKia.fullName}`}
+              accessibilityLabel={t.thaoTacVoi(nguoiKia.fullName)}
               onPress={moThaoTacHoiThoai}
               hitSlop={8}
               style={styles.nutThem}
@@ -513,8 +521,8 @@ export default function ManTinNhanRieng() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <EmptyChat
-                title="Chưa có tin nhắn nào"
-                body="Gửi lời chào để bắt đầu cuộc trò chuyện."
+                title={t.chuaCoTinNhan}
+                body={t.trongRieng}
               />
             }
             renderItem={({ item }) => (

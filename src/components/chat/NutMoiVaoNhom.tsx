@@ -3,6 +3,8 @@ import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MoiVaoNhomSheet } from './MoiVaoNhomSheet';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { laLeaderDuAn } from '../../lib/tasks/task-permissions';
 import type { Project, Workspace } from '../../lib/types';
 import { colors, radius, scale } from '../../theme/tokens';
@@ -20,6 +22,7 @@ interface NutMoiVaoNhomProps {
  * mà bấm vào chỉ nhận 403.
  */
 export function NutMoiVaoNhom({ meId, project, workspace }: NutMoiVaoNhomProps) {
+  const t = useTuDien(tuDienChat);
   const [mo, setMo] = useState(false);
   if (!laLeaderDuAn(meId, project, workspace)) return null;
 
@@ -28,7 +31,7 @@ export function NutMoiVaoNhom({ meId, project, workspace }: NutMoiVaoNhomProps) 
       <Pressable
         testID="nut-moi-vao-nhom"
         accessibilityRole="button"
-        accessibilityLabel="Mời vào nhóm"
+        accessibilityLabel={t.moi.moiVaoNhom}
         onPress={() => setMo(true)}
         hitSlop={8}
         style={styles.nut}

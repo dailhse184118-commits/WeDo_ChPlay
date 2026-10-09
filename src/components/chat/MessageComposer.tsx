@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import type { TepChon } from '../../lib/api/tasks';
 import { colors, fontSize, radius, scale, scaleWithFont, spacing } from '../../theme/tokens';
 
@@ -37,6 +39,7 @@ export function MessageComposer({
   onChonAnh,
   onBoAnh,
 }: MessageComposerProps) {
+  const t = useTuDien(tuDienChat);
   const coAnh = Array.isArray(anhDaChon);
   const anh = anhDaChon ?? [];
 
@@ -84,7 +87,7 @@ export function MessageComposer({
               <Pressable
                 testID={`composer-bo-anh-${viTri}`}
                 accessibilityRole="button"
-                accessibilityLabel={`Bỏ ảnh ${viTri + 1}`}
+                accessibilityLabel={t.boAnh(viTri + 1)}
                 onPress={() => {
                   if (!sending) onBoAnh?.(viTri);
                 }}
@@ -104,7 +107,7 @@ export function MessageComposer({
             <Pressable
               testID="composer-chup"
               accessibilityRole="button"
-              accessibilityLabel="Chụp ảnh"
+              accessibilityLabel={t.chupAnh}
               accessibilityState={{ disabled: sending }}
               onPress={() => {
                 if (!sending) onChup?.();
@@ -118,7 +121,7 @@ export function MessageComposer({
             <Pressable
               testID="composer-chon-anh"
               accessibilityRole="button"
-              accessibilityLabel="Chọn ảnh từ máy"
+              accessibilityLabel={t.chonAnhTuMay}
               accessibilityState={{ disabled: sending }}
               onPress={() => {
                 if (!sending) onChonAnh?.();
@@ -133,10 +136,10 @@ export function MessageComposer({
 
         <TextInput
           testID="composer-input"
-          accessibilityLabel="Soạn tin nhắn"
+          accessibilityLabel={t.soanTin}
           value={value}
           onChangeText={onChangeText}
-          placeholder="Nhập tin nhắn…"
+          placeholder={t.nhapTin}
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           multiline
@@ -149,7 +152,7 @@ export function MessageComposer({
         <Pressable
           testID="composer-send"
           accessibilityRole="button"
-          accessibilityLabel="Gửi"
+          accessibilityLabel={t.gui}
           accessibilityState={{ disabled: !canSend }}
           onPress={() => {
             if (canSend) onSend();
@@ -159,7 +162,7 @@ export function MessageComposer({
           {sending ? (
             <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
-            <Text style={styles.sendText}>Gửi</Text>
+            <Text style={styles.sendText}>{t.gui}</Text>
           )}
         </Pressable>
       </View>

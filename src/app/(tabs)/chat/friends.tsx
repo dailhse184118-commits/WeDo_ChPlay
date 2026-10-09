@@ -17,6 +17,10 @@ import { useBangThaoTac } from '../../../components/moderation/BangThaoTac';
 import { PhieuBaoCao, type DoiTuongBaoCao } from '../../../components/moderation/PhieuBaoCao';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { useDichLoi, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../../i18n/tu-dien/chung';
+import { tuDienKiemDuyet } from '../../../i18n/tu-dien/kiem-duyet';
 import { startConversation } from '../../../lib/api/direct-chat';
 import {
   DO_DAI_TU_KHOA_TOI_THIEU,
@@ -49,6 +53,10 @@ export default function FriendsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const t = useTuDien(tuDienChat).ban;
+  const kd = useTuDien(tuDienKiemDuyet);
+  const chung = useTuDien(tuDienChung);
+  const dichLoi = useDichLoi();
 
   const [tuKhoa, setTuKhoa] = useState('');
   /*
@@ -100,11 +108,11 @@ export default function FriendsScreen() {
       thaoTac: [
         {
           khoa: 'bao-cao',
-          nhan: 'Báo cáo người này',
+          nhan: kd.baoCaoNguoi,
           onChon: () =>
             setDoiTuongBaoCao({ targetType: 'USER', targetId: nguoi.id, tenNguoi: nguoi.fullName }),
         },
-        { khoa: 'chan', nhan: 'Chặn người này', nguyHiem: true, onChon: () => hoiRoiChan(nguoi) },
+        { khoa: 'chan', nhan: kd.chanNguoi, nguyHiem: true, onChon: () => hoiRoiChan(nguoi) },
       ],
     });
   }
@@ -144,28 +152,23 @@ export default function FriendsScreen() {
   const tuKhoaQuaNgan = tuKhoa.trim().length > 0 && tuKhoa.trim().length < DO_DAI_TU_KHOA_TOI_THIEU;
   const nguoiTimDuoc = (timQuery.data ?? []).filter((nguoi) => !daChan.has(nguoi.id));
 
-  const loi =
-    danhSachQuery.error instanceof Error
-      ? danhSachQuery.error.message
-      : guiLoiMoi.error instanceof Error
-        ? guiLoiMoi.error.message
-        : traLoi.error instanceof Error
-          ? traLoi.error.message
-          : moHoiThoai.error instanceof Error
-            ? moHoiThoai.error.message
-            : null;
+  // Lỗi đầu tiên đang có; dịch lúc vẽ để đổi ngôn ngữ thì băng đỏ đổi theo.
+  const loiGoc = [danhSachQuery.error, guiLoiMoi.error, traLoi.error, moHoiThoai.error].find(
+    (e) => e instanceof Error,
+  );
+  const loi = loiGoc ? dichLoi(loiGoc, chung.loiChung) : null;
 
   return (
     <View style={styles.screen}>
-      <GradientHeader title="Bạn bè" onBack={() => router.back()}>
+      <GradientHeader title={t.tieuDe} onBack={() => router.back()}>
         <View style={styles.search}>
           <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.9)" />
           <TextInput
             testID="tim-nguoi"
-            accessibilityLabel="Tìm theo tên, email hoặc số điện thoại"
+            accessibilityLabel={t.timTheo}
             value={tuKhoa}
             onChangeText={setTuKhoa}
-            placeholder="Tên, email hoặc số điện thoại"
+            placeholder={t.oTim}
             placeholderTextColor="rgba(255,255,255,0.75)"
             style={styles.searchInput}
             spellCheck={false}
@@ -192,19 +195,16 @@ export default function FriendsScreen() {
 
         {tuKhoaQuaNgan ? (
           <Text testID="goi-y-tu-khoa" style={styles.trong}>
-            {`Gõ ít nhất ${DO_DAI_TU_KHOA_TOI_THIEU} ký tự để tìm.`}
+            {t.goiYTuKhoa(DO_DAI_TU_KHOA_TOI_THIEU)}
           </Text>
         ) : null}
 
         {dangTim && !tuKhoaQuaNgan ? (
-          <Muc tieuDe="Kết quả tìm kiếm">
+          <Muc tieuDe={t.ketQuaTim}>
             {timQuery.isLoading ? (
               <ActivityIndicator color={colors.primary} style={styles.cho} />
             ) : nguoiTimDuoc.length === 0 ? (
-              <Text style={styles.trong}>
-                Không tìm thấy ai khớp "{tuKhoaCho.trim()}". Thử email đầy đủ hoặc số điện thoại
-                của bạn ấy.
-              </Text>
+              <Text style={styles.trong}>{t.khongThayAi(tuKhoaCho.trim())}</Text>
             ) : (
               nguoiTimDuoc.map((nguoi) => {
                 const trangThai = trangThaiKetBan(nguoi, user?.id ?? '');
@@ -252,7 +252,7 @@ export default function FriendsScreen() {
         ) : (
           <>
             {nhom.denMinh.length > 0 ? (
-              <Muc tieuDe={`Lời mời đang chờ bạn (${nhom.denMinh.length})`}>
+              <Muc tieuDe={t.loiMoiChoBan(nhom.denMinh.length)}>
                 {nhom.denMinh.map((dong) => (
                   <FriendRow
                     key={dong.tinhBanId}
@@ -273,12 +273,9 @@ export default function FriendsScreen() {
               </Muc>
             ) : null}
 
-            <Muc tieuDe={`Bạn bè (${nhom.banBe.length})`}>
+            <Muc tieuDe={t.banBeDem(nhom.banBe.length)}>
               {nhom.banBe.length === 0 ? (
-                <Text style={styles.trong}>
-                  Chưa có ai. Gõ tên, email hoặc số điện thoại của bạn học vào ô tìm kiếm ở trên
-                  rồi bấm "Kết bạn".
-                </Text>
+                <Text style={styles.trong}>{t.chuaCoAi}</Text>
               ) : (
                 nhom.banBe.map((dong) => (
                   <FriendRow
@@ -297,7 +294,7 @@ export default function FriendsScreen() {
             </Muc>
 
             {nhom.daGui.length > 0 ? (
-              <Muc tieuDe={`Đã gửi, đang chờ (${nhom.daGui.length})`}>
+              <Muc tieuDe={t.daGuiDangCho(nhom.daGui.length)}>
                 {nhom.daGui.map((dong) => (
                   <FriendRow
                     key={dong.tinhBanId}

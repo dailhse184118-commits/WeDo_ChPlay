@@ -4,6 +4,9 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '../ui/Avatar';
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { MA_VUNG, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { tapFeedback } from '../../lib/haptics';
 import { duongDanTepDinhKem, laAnh } from '../../lib/chat/tep-dinh-kem';
 import type { ChatAttachment, UserSummary } from '../../lib/types';
@@ -64,9 +67,16 @@ interface MessageBubbleProps {
   onXemAnh?: (url: string) => void;
 }
 
-function formatTime(iso: string): string {
+/**
+ * Giờ của tin nhắn, theo giờ MÁY (nhìn tin lúc nào ở chỗ mình). Tiếng Việt giữ
+ * dạng 24 giờ `14:05`; tiếng Anh dùng `2:05 PM`.
+ */
+function formatTime(iso: string, ngonNgu: NgonNgu): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
+  if (ngonNgu === 'en') {
+    return new Intl.DateTimeFormat(MA_VUNG.en, { hour: 'numeric', minute: '2-digit' }).format(date);
+  }
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
@@ -83,6 +93,8 @@ export function MessageBubble({
   onRetry,
   onXemAnh,
 }: MessageBubbleProps) {
+  const t = useTuDien(tuDienChat);
+  const { ngonNgu } = useNgonNgu();
   const recalled = Boolean(message.deletedAt);
   const dinhKem = recalled ? [] : message.attachments ?? [];
 
@@ -123,7 +135,7 @@ export function MessageBubble({
         <Pressable
           testID={`message-${message.id}`}
           accessibilityRole="button"
-          accessibilityHint={nhanGiuDuoc ? 'Nhấn giữ để xem thao tác với tin nhắn này' : undefined}
+          accessibilityHint={nhanGiuDuoc ? t.giuDeXem : undefined}
           onLongPress={handleLongPress}
           delayLongPress={350}
           style={[
@@ -137,7 +149,7 @@ export function MessageBubble({
         >
           {recalled ? (
             <Text style={[styles.recalled, isMine ? styles.recalledMine : null]}>
-              Tin nhắn đã được thu hồi
+              {t.daThuHoi}
             </Text>
           ) : null}
 
@@ -149,7 +161,7 @@ export function MessageBubble({
                     key={tep.id}
                     testID={`dinh-kem-anh-${tep.id}`}
                     accessibilityRole="imagebutton"
-                    accessibilityLabel={`Ảnh ${tep.originalName}`}
+                    accessibilityLabel={t.anhCua(tep.originalName)}
                     onPress={() => onXemAnh?.(duongDanTepDinhKem(tep, goc))}
                   >
                     <Image
@@ -197,7 +209,7 @@ export function MessageBubble({
                 <Ionicons name="checkmark" size={14} color={colors.primary} />
               </View>
               <View style={styles.taskBody}>
-                <Text style={styles.taskLabel}>Đã tạo công việc</Text>
+                <Text style={styles.taskLabel}>{t.daTaoViec}</Text>
                 <Text style={styles.taskTitle} numberOfLines={3}>
                   {message.task.title}
                 </Text>
@@ -206,13 +218,13 @@ export function MessageBubble({
           ) : null}
 
           <Text style={[styles.time, isMine ? styles.timeMine : null]}>
-            {isPending ? 'Đang gửi…' : formatTime(message.createdAt)}
+            {isPending ? t.dangGui : formatTime(message.createdAt, ngonNgu)}
           </Text>
         </Pressable>
 
         {isFailed && onRetry ? (
           <Pressable testID={`retry-${message.id}`} onPress={onRetry} style={styles.retry}>
-            <Text style={styles.retryText}>Gửi lại</Text>
+            <Text style={styles.retryText}>{t.guiLai}</Text>
           </Pressable>
         ) : null}
       </View>

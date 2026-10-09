@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '../ui/Avatar';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import type { TrangThaiKetBan } from '../../lib/friends/quan-he';
 import type { UserSummary } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
@@ -43,6 +45,7 @@ export function FriendRow({
 }: FriendRowProps) {
   // Bọc mọi thao tác: chạm hai lần nhanh sẽ gửi hai lời mời, và máy chủ trả lỗi
   // "lời mời đang chờ phản hồi" cho lượt thứ hai — người dùng thấy báo đỏ vô cớ.
+  const t = useTuDien(tuDienChat).ban;
   const chay = (viec?: () => void) => () => {
     if (!dangXuLy) viec?.();
   };
@@ -73,7 +76,7 @@ export function FriendRow({
           onPress={chay(onNhanTin)}
           style={styles.nutChinh}
         >
-          <Text style={styles.nutChinhChu}>Nhắn tin</Text>
+          <Text style={styles.nutChinhChu}>{t.nhanTin}</Text>
         </Pressable>
       ) : null}
 
@@ -84,12 +87,12 @@ export function FriendRow({
           onPress={chay(onGuiLoiMoi)}
           style={styles.nutChinh}
         >
-          <Text style={styles.nutChinhChu}>Kết bạn</Text>
+          <Text style={styles.nutChinhChu}>{t.ketBan}</Text>
         </Pressable>
       ) : null}
 
       {trangThai === 'da-gui-loi-moi' ? (
-        <Text style={styles.dangCho}>Đã gửi lời mời</Text>
+        <Text style={styles.dangCho}>{t.daGuiLoiMoi}</Text>
       ) : null}
 
       {trangThai === 'cho-minh-duyet' ? (
@@ -100,7 +103,7 @@ export function FriendRow({
             onPress={chay(onDuyet)}
             style={styles.nutChinh}
           >
-            <Text style={styles.nutChinhChu}>Duyệt</Text>
+            <Text style={styles.nutChinhChu}>{t.duyet}</Text>
           </Pressable>
           <Pressable
             testID="friend-row-tu-choi"
@@ -108,7 +111,7 @@ export function FriendRow({
             onPress={chay(onTuChoi)}
             style={styles.nutPhu}
           >
-            <Text style={styles.nutPhuChu}>Từ chối</Text>
+            <Text style={styles.nutPhuChu}>{t.tuChoi}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -117,7 +120,7 @@ export function FriendRow({
         <Pressable
           testID="friend-row-them"
           accessibilityRole="button"
-          accessibilityLabel={`Thao tác khác với ${nguoi.fullName}`}
+          accessibilityLabel={t.thaoTacKhac(nguoi.fullName)}
           onPress={chay(onThem)}
           hitSlop={8}
           style={styles.nutThem}

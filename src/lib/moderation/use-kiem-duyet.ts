@@ -2,9 +2,12 @@ import { useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
+import { tuDienKiemDuyet } from '../../i18n/tu-dien/kiem-duyet';
 import { blockUser, listBlocks, unblockUser, type NguoiDaChan } from '../api/moderation';
 import { tapNguoiDaChan } from './loc-chan';
-import { NOI_DUNG_XAC_NHAN_CHAN, tieuDeXacNhanChan } from './noi-dung';
+import { noiDungXacNhanChan, tieuDeXacNhanChan } from './noi-dung';
 
 /**
  * Khoá cache của danh sách chặn.
@@ -49,6 +52,10 @@ export interface NguoiCanChan {
  */
 export function useChanNguoi() {
   const queryClient = useQueryClient();
+  const t = useTuDien(tuDienKiemDuyet);
+  const chung = useTuDien(tuDienChung);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
 
   const { mutate, isPending } = useMutation({
     mutationFn: (nguoi: NguoiCanChan) => blockUser(nguoi.id),
@@ -76,24 +83,21 @@ export function useChanNguoi() {
 
   const hoiRoiChan = useCallback(
     (nguoi: NguoiCanChan, sauKhiChan?: () => void) => {
-      Alert.alert(tieuDeXacNhanChan(nguoi.fullName), NOI_DUNG_XAC_NHAN_CHAN, [
-        { text: 'Huỷ', style: 'cancel' },
+      Alert.alert(tieuDeXacNhanChan(nguoi.fullName, ngonNgu), noiDungXacNhanChan(ngonNgu), [
+        { text: chung.huy, style: 'cancel' },
         {
-          text: 'Chặn',
+          text: t.chan,
           style: 'destructive',
           onPress: () =>
             mutate(nguoi, {
               onSuccess: () => sauKhiChan?.(),
               onError: (loi) =>
-                Alert.alert(
-                  'Chưa chặn được',
-                  loi instanceof Error ? loi.message : 'Có lỗi xảy ra. Thử lại sau.',
-                ),
+                Alert.alert(t.chuaChanDuoc, dichLoi(loi, t.coLoi)),
             }),
         },
       ]);
     },
-    [mutate],
+    [mutate, t, chung, dichLoi, ngonNgu],
   );
 
   return { hoiRoiChan, dangChan: isPending };

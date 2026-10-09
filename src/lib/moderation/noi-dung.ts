@@ -1,7 +1,12 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienKiemDuyet } from '../../i18n/tu-dien/kiem-duyet';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
 import type { LyDoBaoCao } from '../api/moderation';
 
 /*
-  Chữ trên giao diện của báo cáo và chặn, gom một chỗ.
+  Chữ trên giao diện của báo cáo và chặn nằm ở i18n/tu-dien/kiem-duyet.ts; tệp
+  này chỉ giữ thứ tự lý do và các hàm ghép câu theo ngôn ngữ.
 
   Điều khoản sử dụng hứa với người dùng đúng những lời này, và reviewer của
   Apple đọc chúng khi thử luồng báo cáo. Để rải trong từng màn thì sớm muộn hai
@@ -9,27 +14,34 @@ import type { LyDoBaoCao } from '../api/moderation';
 */
 
 /** Thứ tự hiện trên phiếu báo cáo. "Lý do khác" luôn nằm cuối. */
-export const LY_DO_BAO_CAO: ReadonlyArray<{ ma: LyDoBaoCao; nhan: string }> = [
-  { ma: 'SPAM', nhan: 'Spam, quảng cáo' },
-  { ma: 'HARASSMENT', nhan: 'Quấy rối, bắt nạt' },
-  { ma: 'HATE', nhan: 'Thù ghét, phân biệt đối xử' },
-  { ma: 'SEXUAL', nhan: 'Nội dung tình dục' },
-  { ma: 'VIOLENCE', nhan: 'Bạo lực, đe doạ' },
-  { ma: 'OTHER', nhan: 'Lý do khác' },
+export const MA_LY_DO_BAO_CAO: ReadonlyArray<LyDoBaoCao> = [
+  'SPAM',
+  'HARASSMENT',
+  'HATE',
+  'SEXUAL',
+  'VIOLENCE',
+  'OTHER',
 ];
 
-export const CAU_DA_BAO_CAO = 'Đã gửi báo cáo. WeDo sẽ xem xét trong vòng 24 giờ.';
-
-/**
- * Máy chủ giới hạn 30 báo cáo mỗi người mỗi 24 giờ. Nói thẳng là phải đợi, đừng
- * để người dùng tưởng app hỏng rồi bấm gửi lại mãi.
- */
-export const CAU_QUA_NHIEU_BAO_CAO =
-  'Bạn đã gửi nhiều báo cáo trong 24 giờ qua. Vui lòng thử lại sau.';
-
-export function tieuDeXacNhanChan(ten: string): string {
-  return `Chặn ${ten.trim() || 'người này'}?`;
+export function lyDoBaoCao(ngonNgu: NgonNgu = layNgonNgu()): ReadonlyArray<{ ma: LyDoBaoCao; nhan: string }> {
+  const t = theoNgonNgu(tuDienKiemDuyet, ngonNgu);
+  return MA_LY_DO_BAO_CAO.map((ma) => ({ ma, nhan: t.lyDo[ma] }));
 }
 
-export const NOI_DUNG_XAC_NHAN_CHAN =
-  'Bạn sẽ không thấy tin nhắn của người này nữa, và hai người không thể nhắn tin riêng hay kết bạn với nhau. Bạn có thể bỏ chặn trong Tài khoản → Người đã chặn.';
+export function tieuDeXacNhanChan(ten: string, ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienKiemDuyet, ngonNgu);
+  return t.tieuDeChan(ten.trim() || t.nguoiNay);
+}
+
+/**
+ * Đường dẫn để bỏ chặn, ghép từ tên tab Tài khoản và tên màn Người đã chặn của
+ * từ điển Tài khoản: "Tài khoản → Người đã chặn" / "Account → Blocked people".
+ */
+export function duongBoChan(ngonNgu: NgonNgu = layNgonNgu()): string {
+  const tk = theoNgonNgu(tuDienTaiKhoan, ngonNgu);
+  return `${tk.tieuDe} → ${tk.chan.tieuDe}`;
+}
+
+export function noiDungXacNhanChan(ngonNgu: NgonNgu = layNgonNgu()): string {
+  return theoNgonNgu(tuDienKiemDuyet, ngonNgu).noiDungChan(duongBoChan(ngonNgu));
+}

@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../ui/Button';
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
 import { layLoiMoi, taoLoiMoi, tatLoiMoi, type LoiMoiDuAn } from '../../lib/api/loi-moi';
 import { cauLoiMoi, hienThiHanMoi, hienThiMaMoi, noiDungChiaSe } from '../../lib/loi-moi';
 import { colors, fontSize, lineHeight, radius, scaleWithFont, shadows, spacing } from '../../theme/tokens';
@@ -21,7 +24,11 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
   const [loiMoi, setLoiMoi] = useState<LoiMoiDuAn | null>(null);
   const [dangTai, setDangTai] = useState(false);
   const [dang, setDang] = useState<'chia-se' | 'tao' | 'tat' | null>(null);
-  const [loi, setLoi] = useState<string | null>(null);
+  const t = useTuDien(tuDienChat).moi;
+  const chung = useTuDien(tuDienChung);
+  const { ngonNgu } = useNgonNgu();
+  // Giữ lỗi gốc, dịch lúc vẽ.
+  const [loi, setLoi] = useState<{ e: unknown } | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -36,7 +43,7 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
           if (!huy) setLoiMoi(ketQua);
         },
         (e: unknown) => {
-          if (!huy) setLoi(cauLoiMoi(e));
+          if (!huy) setLoi({ e });
         },
       )
       .finally(() => {
@@ -54,9 +61,9 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
       // Chưa có link thì tạo luôn: Leader bấm "Chia sẻ" là muốn mời ngay.
       const hienCo = loiMoi ?? (await taoLoiMoi(projectId));
       setLoiMoi(hienCo);
-      await Share.share({ message: noiDungChiaSe(projectName, hienCo) });
+      await Share.share({ message: noiDungChiaSe(projectName, hienCo, ngonNgu) });
     } catch (e) {
-      setLoi(cauLoiMoi(e));
+      setLoi({ e });
     } finally {
       setDang(null);
     }
@@ -68,7 +75,7 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
     try {
       setLoiMoi(await taoLoiMoi(projectId));
     } catch (e) {
-      setLoi(cauLoiMoi(e));
+      setLoi({ e });
     } finally {
       setDang(null);
     }
@@ -79,9 +86,9 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
       void lamTaoMoi();
       return;
     }
-    Alert.alert('Tạo link mới?', 'Link và mã cũ sẽ không dùng được nữa.', [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Tạo link mới', style: 'destructive', onPress: () => void lamTaoMoi() },
+    Alert.alert(t.taoLinkMoiHoi, t.taoLinkMoiNoiDung, [
+      { text: chung.huy, style: 'cancel' },
+      { text: t.taoLinkMoi, style: 'destructive', onPress: () => void lamTaoMoi() },
     ]);
   };
 
@@ -92,27 +99,27 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
       await tatLoiMoi(projectId);
       setLoiMoi(null);
     } catch (e) {
-      setLoi(cauLoiMoi(e));
+      setLoi({ e });
     } finally {
       setDang(null);
     }
   };
 
   const tat = () => {
-    Alert.alert('Tắt link mời?', 'Không ai vào được bằng link hay mã này nữa.', [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Tắt link', style: 'destructive', onPress: () => void lamTat() },
+    Alert.alert(t.tatLinkHoi, t.tatLinkNoiDung, [
+      { text: chung.huy, style: 'cancel' },
+      { text: t.tatLink, style: 'destructive', onPress: () => void lamTat() },
     ]);
   };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-      <Pressable style={styles.nen} onPress={onDismiss} accessibilityLabel="Đóng" />
+      <Pressable style={styles.nen} onPress={onDismiss} accessibilityLabel={chung.dong} />
 
       <View style={styles.sheet}>
         <View style={styles.tay} />
-        <Text style={styles.tieuDe}>Mời vào nhóm</Text>
-        <Text style={styles.moTa}>Ai có link hoặc mã sẽ vào thẳng dự án với vai trò Thành viên.</Text>
+        <Text style={styles.tieuDe}>{t.moiVaoNhom}</Text>
+        <Text style={styles.moTa}>{t.moTaChiaSe}</Text>
 
         {dangTai ? (
           <ActivityIndicator color={colors.primary} />
@@ -122,25 +129,25 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
               {hienThiMaMoi(loiMoi.code)}
             </Text>
             <Text style={styles.chiTiet}>
-              {`Hết hạn ${hienThiHanMoi(loiMoi.expiresAt)} · ${loiMoi.useCount} người đã tham gia`}
+              {t.chiTiet(hienThiHanMoi(loiMoi.expiresAt, ngonNgu), loiMoi.useCount)}
             </Text>
           </View>
         ) : (
-          <Text style={styles.chiTiet}>Dự án chưa có link mời đang dùng.</Text>
+          <Text style={styles.chiTiet}>{t.chuaCoLink}</Text>
         )}
 
-        {loi ? <Text style={styles.loi}>{loi}</Text> : null}
+        {loi ? <Text style={styles.loi}>{cauLoiMoi(loi.e, ngonNgu)}</Text> : null}
 
         <Button
           testID="nut-chia-se-loi-moi"
-          label="Chia sẻ link mời"
+          label={t.chiaSeLink}
           onPress={() => void chiaSe()}
           loading={dang === 'chia-se'}
           disabled={dangTai || dang !== null}
         />
         <Button
           testID="nut-tao-link-moi"
-          label="Tạo link mới"
+          label={t.taoLinkMoi}
           variant="secondary"
           onPress={taoMoi}
           loading={dang === 'tao'}
@@ -149,7 +156,7 @@ export function MoiVaoNhomSheet({ visible, projectId, projectName, onDismiss }: 
         {loiMoi ? (
           <Button
             testID="nut-tat-link"
-            label="Tắt link"
+            label={t.tatLink}
             variant="danger"
             onPress={tat}
             loading={dang === 'tat'}

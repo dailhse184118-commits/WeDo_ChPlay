@@ -4,6 +4,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { colors, radius, scale, spacing } from '../../theme/tokens';
 
 interface ImageViewerProps {
@@ -25,6 +27,7 @@ interface ImageViewerProps {
  */
 export function ImageViewer({ url, headers, onDong }: ImageViewerProps) {
   const insets = useSafeAreaInsets();
+  const t = useTuDien(tuDienChat);
 
   if (!url) return null;
 
@@ -41,7 +44,7 @@ export function ImageViewer({ url, headers, onDong }: ImageViewerProps) {
         <Pressable
           testID="xem-anh-dong"
           accessibilityRole="button"
-          accessibilityLabel="Đóng ảnh"
+          accessibilityLabel={t.dongAnh}
           onPress={onDong}
           hitSlop={12}
           style={[styles.nutDong, { top: insets.top + spacing.md }]}

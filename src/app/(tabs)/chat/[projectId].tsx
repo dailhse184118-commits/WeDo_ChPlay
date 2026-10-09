@@ -36,7 +36,12 @@ import {
   sendProjectMessage,
 } from '../../../lib/api/chat';
 import type { TepChon } from '../../../lib/api/tasks';
-import { MA_HET_LUOT_AI, getEntitlements } from '../../../lib/api/entitlements';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../../i18n/tu-dien/chung';
+import { tuDienKiemDuyet } from '../../../i18n/tu-dien/kiem-duyet';
+import { tuDienNangCap } from '../../../i18n/tu-dien/nang-cap';
+import { MA_HET_LUOT_AI, getEntitlements, type HanMucAI } from '../../../lib/api/entitlements';
 import { listProjects } from '../../../lib/api/projects';
 import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
@@ -68,6 +73,19 @@ interface PendingItem {
   failed: boolean;
 }
 
+/*
+  Lỗi giữ ở dạng NGUỒN chứ không giữ câu đã dựng: dịch lúc vẽ để đổi ngôn ngữ
+  giữa chừng thì băng đỏ đổi theo.
+*/
+type KhoaLoiKhung = 'khongTaiDuocTin' | 'khongGuiDuocAnh' | 'khongMoDuocAnh';
+type NguonLoiKhung = { loi: unknown; duPhong: KhoaLoiKhung };
+
+type NguonLoiPhieu =
+  /** Hết lượt AI: câu hạn mức tính lại lúc vẽ từ số liệu `han`; không có thì dùng câu của lỗi. */
+  | { kieu: 'het-luot'; han: HanMucAI | null; loi: unknown }
+  | { kieu: 'loi'; loi: unknown; duPhong: 'khongPhanTichDuoc' | 'loiChung' }
+  | { kieu: 'chua-gan' };
+
 export default function ChatThreadScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
@@ -80,6 +98,12 @@ export default function ChatThreadScreen() {
   }, [router]);
 
   const { user } = useAuth();
+  const t = useTuDien(tuDienChat);
+  const kd = useTuDien(tuDienKiemDuyet);
+  const chung = useTuDien(tuDienChung);
+  const nangCap = useTuDien(tuDienNangCap);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const { xinDongYRoiChay } = useDongYAI();
   const { active, workspaces } = useWorkspace();
   const { socket } = useSocket();
@@ -87,7 +111,7 @@ export default function ChatThreadScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [loadError, setLoadError] = useState<NguonLoiKhung | null>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -138,7 +162,7 @@ export default function ChatThreadScreen() {
     (duAnNgoaiKhongGian
       ? projectsKhacQuery.data?.find((item) => item.id === projectId)
       : undefined);
-  const projectName = project?.name ?? 'Trò chuyện';
+  const projectName = project?.name ?? t.tieuDe;
   const members = useMemo<UserSummary[]>(
     () => (project?.members ?? []).map((member) => member.user),
     [project],
@@ -146,7 +170,7 @@ export default function ChatThreadScreen() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetLoading, setSheetLoading] = useState(false);
-  const [sheetError, setSheetError] = useState('');
+  const [sheetError, setSheetError] = useState<NguonLoiPhieu | null>(null);
   const [sheetSubmitting, setSheetSubmitting] = useState(false);
   const [suggestion, setSuggestion] = useState<ChatTaskSuggestion | undefined>(undefined);
   const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
@@ -176,7 +200,7 @@ export default function ChatThreadScreen() {
     setCursor(undefined);
     setTypingBy({});
     setLoading(true);
-    setLoadError('');
+    setLoadError(null);
     setDraft('');
     setAnhChoGui([]);
     setAnhDangXem(null);
@@ -225,7 +249,7 @@ export default function ChatThreadScreen() {
   });
 
   const hanMuc = hanMucQuery.data
-    ? trangThaiHanMuc(hanMucQuery.data.usage.aiDetections)
+    ? trangThaiHanMuc(hanMucQuery.data.usage.aiDetections, ngonNgu)
     : null;
 
   /**
@@ -342,11 +366,11 @@ export default function ChatThreadScreen() {
         // Trang cũ nào đang tải dở thuộc mốc cũ — bỏ khi nó về (xem `loadMore`).
         theHeMoc.current += 1;
       }
-      setLoadError('');
+      setLoadError(null);
       void datChuaDocVe0(duAn);
     } catch (err) {
       if (luot === luotNap.current && duAnDangHien.current === duAn) {
-        setLoadError(err instanceof Error ? err.message : 'Không tải được tin nhắn.');
+        setLoadError({ loi: err, duPhong: 'khongTaiDuocTin' });
       }
     } finally {
       if (luot === luotNap.current && duAnDangHien.current === duAn) setLoading(false);
@@ -507,7 +531,7 @@ export default function ChatThreadScreen() {
       } catch {
         // Đã đổi dự án (kể cả A→B→A): bong bóng "gửi lỗi" đã bị dọn — phải báo bằng hộp thoại.
         if (theHe.current !== theHeLucGui) {
-          Alert.alert('Chưa gửi được tin nhắn', `"${content}" chưa tới nhóm. Mở lại dự án đó để gửi lại.`);
+          Alert.alert(t.chuaGuiDuocTin, t.tinChuaToiNhom(content));
           return;
         }
         setPending((current) =>
@@ -549,7 +573,7 @@ export default function ChatThreadScreen() {
       if (!duAn) return;
       const theHeLucGui = theHe.current;
       setSending(true);
-      setLoadError('');
+      setLoadError(null);
       try {
         // Mỗi tệp thành một tin nhắn riêng — xem `taiNhieuTepLen`.
         const saved = await sendProjectFiles(duAn, files, content);
@@ -581,25 +605,23 @@ export default function ChatThreadScreen() {
           setAnhChoGui((hienCo) => hienCo.filter((tep) => !daToi.has(tep)));
           setDraft('');
         }
-        const cauLoi = doDang
-          ? cauGuiDoDang(doDang, 'ảnh')
-          : loi instanceof Error
-            ? loi.message
-            : 'Không gửi được ảnh.';
         if (theHe.current !== theHeLucGui) {
-          Alert.alert('Chưa gửi được ảnh', `${cauLoi} Ảnh chưa tới nhóm trước — mở lại dự án đó để gửi lại.`);
+          const cauLoi = doDang
+            ? cauGuiDoDang(doDang, ngonNgu)
+            : dichLoi(loi, t.khongGuiDuocAnh);
+          Alert.alert(t.chuaGuiDuocAnh, t.anhChuaToiNhom(cauLoi));
           return;
         }
-        setLoadError(cauLoi);
+        setLoadError({ loi: doDang ?? loi, duPhong: 'khongGuiDuocAnh' });
       } finally {
         if (theHe.current === theHeLucGui) setSending(false);
       }
     },
-    [projectId],
+    [projectId, t, dichLoi, ngonNgu],
   );
 
   const nhanAnh = useCallback(async (lay: () => Promise<TepChon[]>) => {
-    setLoadError('');
+    setLoadError(null);
     try {
       const them = await lay();
       if (them.length === 0) return;
@@ -607,7 +629,7 @@ export default function ChatThreadScreen() {
       setAnhChoGui((hienCo) => [...hienCo, ...them]);
     } catch (loi) {
       baoLoi(loi, 'chon-anh-chat-du-an');
-      setLoadError(loi instanceof Error ? loi.message : 'Không mở được ảnh.');
+      setLoadError({ loi, duPhong: 'khongMoDuocAnh' });
     }
   }, []);
 
@@ -643,7 +665,7 @@ export default function ChatThreadScreen() {
 
       setSourceMessageId(messageId);
       setSuggestion(undefined);
-      setSheetError('');
+      setSheetError(null);
       setSheetOpen(true);
       setSheetLoading(true);
       orphanTaskId.current = null;
@@ -665,12 +687,13 @@ export default function ChatThreadScreen() {
         */
         if (err instanceof ApiError && err.code === MA_HET_LUOT_AI) {
           const moi = await hanMucQuery.refetch();
-          const trangThai = moi.data
-            ? trangThaiHanMuc(moi.data.usage.aiDetections)
-            : null;
-          setSheetError(trangThai?.loiNhan ?? err.message);
+          setSheetError({
+            kieu: 'het-luot',
+            han: moi.data?.usage.aiDetections ?? null,
+            loi: err,
+          });
         } else {
-          setSheetError(err instanceof Error ? err.message : 'Không phân tích được tin nhắn.');
+          setSheetError({ kieu: 'loi', loi: err, duPhong: 'khongPhanTichDuoc' });
         }
         setSuggestion({ hasTask: false, title: '', confidence: 'low' });
       } finally {
@@ -720,7 +743,7 @@ export default function ChatThreadScreen() {
       if (duocDungAI) {
         thaoTac.push({
           khoa: 'ai',
-          nhan: 'Tạo công việc bằng AI',
+          nhan: t.aiTaoViec,
           // Chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem `useDongYAI`.
           onChon: () => xinDongYRoiChay(() => void batDauGoiYAI(tin)),
         });
@@ -729,7 +752,7 @@ export default function ChatThreadScreen() {
       if (tin.authorId !== user?.id) {
         thaoTac.push({
           khoa: 'bao-cao',
-          nhan: 'Báo cáo tin nhắn',
+          nhan: kd.baoCaoTin,
           onChon: () =>
             setDoiTuongBaoCao({
               targetType: 'PROJECT_MESSAGE',
@@ -739,7 +762,7 @@ export default function ChatThreadScreen() {
         });
         thaoTac.push({
           khoa: 'chan',
-          nhan: 'Chặn người này',
+          nhan: kd.chanNguoi,
           nguyHiem: true,
           onChon: () =>
             hoiRoiChan({
@@ -752,7 +775,7 @@ export default function ChatThreadScreen() {
 
       moBang({ tieuDe: tenNguoiGui || undefined, thaoTac });
     },
-    [pending, members, duocDungAI, batDauGoiYAI, xinDongYRoiChay, user?.id, hoiRoiChan, moBang],
+    [pending, members, duocDungAI, batDauGoiYAI, xinDongYRoiChay, user?.id, hoiRoiChan, moBang, t, kd],
   );
 
   const handleConfirm = useCallback(
@@ -760,7 +783,7 @@ export default function ChatThreadScreen() {
       if (!projectId || !sourceMessageId || !active?.id) return;
 
       setSheetSubmitting(true);
-      setSheetError('');
+      setSheetError(null);
 
       /* Không gian của CHÍNH dự án, không phải không gian đang chọn — xem `khongGianCuaKhung`. */
       const workspaceId =
@@ -793,10 +816,10 @@ export default function ChatThreadScreen() {
         void queryClient.invalidateQueries({ queryKey: ['tasks'] });
         void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
 
-        Alert.alert('Đã tạo công việc', result.task.title ?? values.title, [
-          { text: 'Đóng', style: 'cancel' },
+        Alert.alert(t.daTaoViec, result.task.title ?? values.title, [
+          { text: chung.dong, style: 'cancel' },
           {
-            text: 'Xem công việc',
+            text: t.xemCongViec,
             /* Mang theo khung chat này để Quay lại ở màn công việc về đúng đây. */
             onPress: () =>
               router.push({
@@ -812,15 +835,13 @@ export default function ChatThreadScreen() {
         // Công việc ĐÃ được tạo thật. Giữ lại id để lần thử tiếp theo chỉ gắn,
         // không tạo thêm công việc trùng.
         orphanTaskId.current = result.task.id;
-        setSheetError(
-          'Đã tạo công việc nhưng chưa gắn được vào tin nhắn. Bấm "Tạo công việc" để thử gắn lại — sẽ không tạo thêm công việc mới.',
-        );
+        setSheetError({ kieu: 'chua-gan' });
         return;
       }
 
-      setSheetError(result.error.message);
+      setSheetError({ kieu: 'loi', loi: result.error, duPhong: 'loiChung' });
     },
-    [projectId, sourceMessageId, active?.id, messages, project?.workspaceId, router, queryClient],
+    [projectId, sourceMessageId, active?.id, messages, project?.workspaceId, router, queryClient, t, chung],
   );
 
   // Danh sách hiển thị: tin thật cộng tin đang gửi, đảo ngược cho FlatList inverted.
@@ -862,8 +883,23 @@ export default function ChatThreadScreen() {
     const names = ids
       .map((id) => members.find((member) => member.id === id)?.fullName)
       .filter((name): name is string => Boolean(name));
-    return typingLabel(names);
-  }, [typingBy, typingTick, members, daChan]);
+    return typingLabel(names, ngonNgu);
+  }, [typingBy, typingTick, members, daChan, ngonNgu]);
+
+  /* Câu báo lỗi dựng lúc vẽ từ nguồn, theo ngôn ngữ đang dùng. */
+  const chuLoiKhung = loadError
+    ? loadError.loi instanceof LoiGuiDoDang
+      ? cauGuiDoDang(loadError.loi, ngonNgu)
+      : dichLoi(loadError.loi, t[loadError.duPhong])
+    : '';
+  const chuLoiPhieu = !sheetError
+    ? undefined
+    : sheetError.kieu === 'chua-gan'
+      ? t.chuaGanDuoc
+      : sheetError.kieu === 'het-luot'
+        ? ((sheetError.han ? trangThaiHanMuc(sheetError.han, ngonNgu).loiNhan : null) ??
+          dichLoi(sheetError.loi, t.khongPhanTichDuoc))
+        : dichLoi(sheetError.loi, sheetError.duPhong === 'loiChung' ? chung.loiChung : t.khongPhanTichDuoc);
 
   // Vòng quay chỉ khi CHƯA có gì để xem. Nạp lại lúc quay về màn thì chạy ngầm.
   if (loading && messages.length === 0) {
@@ -898,7 +934,7 @@ export default function ChatThreadScreen() {
         tay cho từng màn.
       */}
       <KeyboardAvoidingView style={styles.flex} behavior="padding" automaticOffset>
-        {loadError ? <ErrorBanner message={loadError} /> : null}
+        {loadError ? <ErrorBanner message={chuLoiKhung} /> : null}
 
         {/*
           Nhắc trước khi chạm trần, không phải sau. Người dùng đang giữa việc mà
@@ -915,7 +951,7 @@ export default function ChatThreadScreen() {
                 onPress={() => router.push('/account/nang-cap')}
                 style={styles.hanMucNut}
               >
-                <Text style={styles.hanMucNutChu}>Nâng cấp</Text>
+                <Text style={styles.hanMucNutChu}>{nangCap.tieuDe}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -933,13 +969,9 @@ export default function ChatThreadScreen() {
           }
           ListEmptyComponent={
             <EmptyChat
-              title="Chưa có tin nhắn nào"
+              title={t.chuaCoTinNhan}
               // Chỉ hứa tính năng AI với người thật sự dùng được nó — xem `duocDungAI`.
-              body={
-                duocDungAI
-                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để nhờ AI biến nó thành công việc.'
-                  : 'Gửi tin nhắn đầu tiên cho cả nhóm.'
-              }
+              body={duocDungAI ? t.trongDuAnAI : t.trongDuAn}
             />
           }
           renderItem={({ item }) => {
@@ -996,7 +1028,7 @@ export default function ChatThreadScreen() {
         members={members}
         sourceMessage={messages.find((m) => m.id === sourceMessageId)?.content}
         currentUserId={user?.id}
-        error={sheetError || undefined}
+        error={chuLoiPhieu || undefined}
         submitting={sheetSubmitting}
         onConfirm={handleConfirm}
         onDismiss={() => setSheetOpen(false)}

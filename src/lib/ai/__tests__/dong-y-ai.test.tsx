@@ -3,7 +3,9 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 
 import { datDongYAI } from '../../api/account';
 import { useAuth } from '../../auth/auth-context';
-import { NOI_DUNG_DONG_Y_AI, TIEU_DE_DONG_Y_AI, useDongYAI } from '../dong-y-ai';
+import { theoNgonNgu } from '../../../i18n/dich';
+import { tuDienChat } from '../../../i18n/tu-dien/chat';
+import { useDongYAI } from '../dong-y-ai';
 
 jest.mock('../../api/account', () => ({ datDongYAI: jest.fn() }));
 jest.mock('../../auth/auth-context', () => ({ useAuth: jest.fn() }));
@@ -48,7 +50,8 @@ describe('useDongYAI', () => {
 
     result.current.xinDongYRoiChay(hanhDong);
 
-    expect(Alert.alert).toHaveBeenCalledWith(TIEU_DE_DONG_Y_AI, NOI_DUNG_DONG_Y_AI, expect.any(Array));
+    const t = theoNgonNgu(tuDienChat).dongYAI;
+    expect(Alert.alert).toHaveBeenCalledWith(t.tieuDe, t.noiDung, expect.any(Array));
     expect(hanhDong).not.toHaveBeenCalled();
     expect(mockedDongY).not.toHaveBeenCalled();
   });

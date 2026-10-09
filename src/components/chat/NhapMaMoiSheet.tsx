@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '../ui/Button';
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
 import {
   thamGiaLoiMoi,
   xemTruocLoiMoi,
@@ -32,7 +35,12 @@ interface NhapMaMoiSheetProps {
 export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiSheetProps) {
   const [oNhap, setONhap] = useState('');
   const [xemTruoc, setXemTruoc] = useState<XemTruocLoiMoi | null>(null);
-  const [loi, setLoi] = useState<string | null>(null);
+  const tc = useTuDien(tuDienChat);
+  const t = tc.moi;
+  const chung = useTuDien(tuDienChung);
+  const { ngonNgu } = useNgonNgu();
+  // Giữ lỗi gốc, dịch lúc vẽ.
+  const [loi, setLoi] = useState<{ e: unknown } | null>(null);
   const [dang, setDang] = useState<'xem' | 'vao' | null>(null);
   const ma = maGuiDi(oNhap);
 
@@ -55,7 +63,7 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
     try {
       setXemTruoc(await xemTruocLoiMoi(ma));
     } catch (e) {
-      setLoi(cauLoiMoi(e));
+      setLoi({ e });
     } finally {
       setDang(null);
     }
@@ -70,23 +78,23 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
       datLai();
       onDaThamGia(ketQua);
     } catch (e) {
-      setLoi(cauLoiMoi(e));
+      setLoi({ e });
       setDang(null);
     }
   };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={dong}>
-      <Pressable style={styles.nen} onPress={dong} accessibilityLabel="Đóng" />
+      <Pressable style={styles.nen} onPress={dong} accessibilityLabel={chung.dong} />
 
       <View style={styles.sheet}>
         <View style={styles.tay} />
-        <Text style={styles.tieuDe}>Nhập mã mời</Text>
-        <Text style={styles.moTa}>Mã gồm 8 ký tự Leader gửi kèm link mời, ví dụ 7K3M-9QXA.</Text>
+        <Text style={styles.tieuDe}>{tc.nhapMaMoi}</Text>
+        <Text style={styles.moTa}>{t.moTaNhapMa}</Text>
 
         <TextInput
           testID="o-ma-moi"
-          accessibilityLabel="Mã mời"
+          accessibilityLabel={t.maMoi}
           value={oNhap}
           onChangeText={(giaTri) => {
             setONhap(dinhDangOMaMoi(giaTri));
@@ -104,7 +112,7 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
 
         {loi ? (
           <Text testID="loi-ma-moi" style={styles.loi}>
-            {loi}
+            {cauLoiMoi(loi.e, ngonNgu)}
           </Text>
         ) : null}
 
@@ -112,17 +120,17 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
           <View testID="xem-truoc-loi-moi" style={styles.theDuAn}>
             <Text style={styles.tenDuAn}>{xemTruoc.projectName}</Text>
             <Text style={styles.chiTiet}>
-              {`Không gian ${xemTruoc.workspaceName} · Leader ${xemTruoc.leaderName} · ${xemTruoc.memberCount} thành viên`}
+              {t.xemTruoc(xemTruoc.workspaceName, xemTruoc.leaderName, xemTruoc.memberCount)}
             </Text>
           </View>
         ) : null}
 
         {xemTruoc ? (
-          <Button testID="nut-tham-gia" label="Tham gia" onPress={() => void vao()} loading={dang === 'vao'} />
+          <Button testID="nut-tham-gia" label={t.thamGia} onPress={() => void vao()} loading={dang === 'vao'} />
         ) : (
           <Button
             testID="nut-xem-loi-moi"
-            label="Xem lời mời"
+            label={t.xemLoiMoi}
             onPress={() => void xem()}
             loading={dang === 'xem'}
             disabled={!ma}

@@ -1,3 +1,8 @@
+import { theoNgonNgu } from '../i18n/dich';
+import { dinhDangNgayGio } from '../i18n/dinh-dang';
+import { dichThongBaoLoi } from '../i18n/loi';
+import { layNgonNgu, type NgonNgu } from '../i18n/ngon-ngu';
+import { tuDienChat } from '../i18n/tu-dien/chat';
 import { ApiError } from './api/client';
 
 /** Mã mời có 8 ký tự (máy chủ: src/projects/loi-moi/ma-moi.ts). */
@@ -26,34 +31,50 @@ export function hienThiMaMoi(ma: string): string {
 }
 
 /** Dịch theo mã lỗi chứ không theo câu chữ: máy chủ đổi câu thì app vẫn đúng. */
-const CAU_THEO_MA: Record<string, string> = {
-  INVITE_NOT_FOUND: 'Mã mời không đúng hoặc không còn dùng được.',
-  INVITE_EXPIRED: 'Link mời đã hết hạn. Hãy xin Leader gửi link mới.',
-  INVITE_REVOKED: 'Link mời đã bị tắt. Hãy xin Leader gửi link mới.',
-  INVITE_PROJECT_CLOSED: 'Dự án này đã đóng, không nhận thêm thành viên.',
-};
+const KHOA_THEO_MA = {
+  INVITE_NOT_FOUND: 'maSai',
+  INVITE_EXPIRED: 'hetHan',
+  INVITE_REVOKED: 'daTat',
+  INVITE_PROJECT_CLOSED: 'duAnDong',
+} as const;
 
-export function cauLoiMoi(loi: unknown): string {
+function laMaLoiMoi(ma: string): ma is keyof typeof KHOA_THEO_MA {
+  return Object.prototype.hasOwnProperty.call(KHOA_THEO_MA, ma);
+}
+
+/**
+ * Câu báo lỗi của lời mời. Mã lỗi biết trước và lỗi 429 dịch theo từ điển; câu
+ * lạ của máy chủ giữ nguyên ở tiếng Việt, còn tiếng Anh nhờ `dichThongBaoLoi`
+ * dịch những câu nó nhận ra (không nhận ra thì dùng câu dự phòng).
+ */
+export function cauLoiMoi(loi: unknown, ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienChat, ngonNgu).moi;
   if (loi instanceof ApiError) {
-    if (loi.code && CAU_THEO_MA[loi.code]) return CAU_THEO_MA[loi.code];
-    if (loi.status === 429) return 'Bạn thử quá nhiều lần. Đợi một phút rồi thử lại.';
-    return loi.message;
+    if (loi.code && laMaLoiMoi(loi.code)) return t[KHOA_THEO_MA[loi.code]];
+    if (loi.status === 429) return t.quaNhieuLan;
+    return ngonNgu === 'vi' ? loi.message : dichThongBaoLoi(loi, t.coLoi, ngonNgu);
   }
-  return 'Có lỗi xảy ra. Thử lại sau ít phút.';
+  return t.coLoi;
 }
 
 /** Nội dung bảng chia sẻ của hệ điều hành (spec mục 3.4). */
-export function noiDungChiaSe(tenDuAn: string, loiMoi: { url: string; code: string }): string {
-  return `Tham gia dự án ${tenDuAn} trên WeDo: ${loiMoi.url}. Hoặc nhập mã ${hienThiMaMoi(loiMoi.code)} trong app.`;
+export function noiDungChiaSe(
+  tenDuAn: string,
+  loiMoi: { url: string; code: string },
+  ngonNgu: NgonNgu = layNgonNgu(),
+): string {
+  return theoNgonNgu(tuDienChat, ngonNgu).moi.chiaSeNoiDung(tenDuAn, loiMoi.url, hienThiMaMoi(loiMoi.code));
 }
 
 const LECH_VN_MS = 7 * 60 * 60 * 1000;
 const haiSo = (so: number) => String(so).padStart(2, '0');
 
 /** `HH:mm dd/MM/yyyy` theo giờ Việt Nam (UTC+7 quanh năm), bất kể máy đặt múi giờ nào. */
-export function hienThiHanMoi(iso: string): string {
+export function hienThiHanMoi(iso: string, ngonNgu: NgonNgu = layNgonNgu()): string {
   const luc = new Date(iso);
   if (Number.isNaN(luc.getTime())) return '';
+  // Tiếng Anh: "Sep 30, 2026, 2:05 PM" (vẫn giờ Việt Nam).
+  if (ngonNgu === 'en') return dinhDangNgayGio(luc, 'en');
   const vn = new Date(luc.getTime() + LECH_VN_MS);
   return `${haiSo(vn.getUTCHours())}:${haiSo(vn.getUTCMinutes())} ${haiSo(vn.getUTCDate())}/${haiSo(
     vn.getUTCMonth() + 1,

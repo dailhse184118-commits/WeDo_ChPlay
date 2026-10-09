@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { ActionSheetIOS, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChung } from '../../i18n/tu-dien/chung';
 import { colors, fontSize, radius, scaleWithFont, spacing } from '../../theme/tokens';
 
 /** Một dòng trong bảng hành động. */
@@ -27,6 +29,7 @@ interface BangThaoTacProps {
  * trở đi mất hẳn mà không báo gì.
  */
 export function BangThaoTac({ visible, tieuDe, thaoTac, onDong }: BangThaoTacProps) {
+  const chung = useTuDien(tuDienChung);
   /*
     Đóng TRƯỚC rồi mới chạy thao tác — cùng lý do với `WorkspaceSwitcher`: hai
     Modal chồng nhau trên Android làm cái mở sau không nhận được chạm, mà thao
@@ -69,7 +72,7 @@ export function BangThaoTac({ visible, tieuDe, thaoTac, onDong }: BangThaoTacPro
           onPress={onDong}
           style={({ pressed }) => [styles.dong, styles.huy, pressed ? styles.dongNhan : null]}
         >
-          <Text style={styles.huyChu}>Huỷ</Text>
+          <Text style={styles.huyChu}>{chung.huy}</Text>
         </Pressable>
       </View>
     </Modal>
@@ -92,13 +95,14 @@ interface YeuCauMo {
  * Android dùng `BangThaoTac` ở trên. Màn gọi phải dựng `bang` ở đâu đó trong cây.
  */
 export function useBangThaoTac() {
+  const chung = useTuDien(tuDienChung);
   const [yeuCau, setYeuCau] = useState<YeuCauMo | null>(null);
 
   const moBang = useCallback((moi: YeuCauMo) => {
     if (moi.thaoTac.length === 0) return;
 
     if (Platform.OS === 'ios') {
-      const nhan = [...moi.thaoTac.map((viec) => viec.nhan), 'Huỷ'];
+      const nhan = [...moi.thaoTac.map((viec) => viec.nhan), chung.huy];
       const nguyHiem = moi.thaoTac
         .map((viec, viTri) => (viec.nguyHiem ? viTri : -1))
         .filter((viTri) => viTri >= 0);
@@ -116,7 +120,7 @@ export function useBangThaoTac() {
     }
 
     setYeuCau(moi);
-  }, []);
+  }, [chung.huy]);
 
   const bang = (
     <BangThaoTac
