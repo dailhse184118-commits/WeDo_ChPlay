@@ -74,6 +74,15 @@ const TEP_DA_DICH: string[] = [
   'src/lib/chat/create-task-from-message.ts',
   'src/lib/chat/typing-state.ts',
   'src/lib/loi-moi.ts',
+  'src/app/(tabs)/tasks/index.tsx',
+  'src/app/(tabs)/tasks/new.tsx',
+  'src/app/(tabs)/tasks/[taskId].tsx',
+  'src/components/tasks/RejectTaskSheet.tsx',
+  'src/components/tasks/TaskRow.tsx',
+  'src/components/tasks/TaskSubmissionPanel.tsx',
+  'src/lib/tasks/deadline-groups.ts',
+  'src/lib/tasks/tao-task.ts',
+  'src/lib/tasks/task-permissions.ts',
 ];
 
 describe('bộ quét chữ chưa dịch', () => {

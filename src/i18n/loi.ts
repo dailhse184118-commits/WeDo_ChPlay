@@ -123,6 +123,10 @@ const TIENG_ANH_THEO_CAU: Record<string, string> = {
   'Bạn đã nhập sai quá nhiều lần. Hãy yêu cầu mã mới.': 'Too many incorrect attempts. Please request a new code.',
   'Mã đặt lại mật khẩu gồm 6 chữ số': 'The reset code has 6 digits',
   'Đặt lại mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.': 'Your password has been reset. Sign in with your new password.',
+  // Công việc: kiểm tra trước khi gọi máy chủ (src/lib/api/tasks.ts).
+  'Lý do từ chối phải có ít nhất 3 ký tự': 'The reason must be at least 3 characters',
+  'Lý do trả lại phải có ít nhất 3 ký tự': 'The reason must be at least 3 characters',
+  'Hãy chọn ít nhất một tệp để nộp': 'Choose at least one file to submit',
   // Máy chủ: AI.
   // App: phiên đăng nhập và mạng (src/lib/api/client.ts).
   'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.': 'Your session has ended. Please sign in again.',

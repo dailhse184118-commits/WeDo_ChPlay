@@ -4,6 +4,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { dinhDangNgayGio } from '../../../i18n/dinh-dang';
+import { theoNgonNgu } from '../../../i18n/dich';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import type { NgonNgu } from '../../../i18n/ngon-ngu';
+import { tuDienCongViec } from '../../../i18n/tu-dien/cong-viec';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
 import {
   TaskSubmissionPanel,
@@ -38,21 +44,17 @@ import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../../theme/tokens';
 
-/** Lý do trả bài hay gặp, thay cho ba lý do từ chối nhận việc. */
-const LY_DO_TRA_BAI = ['Thiếu nội dung', 'Sai định dạng', 'Cần bổ sung số liệu'] as const;
-
-const STATUS_LABEL: Record<Task['status'], string> = {
-  TODO: 'Cần làm',
-  IN_PROGRESS: 'Đang làm',
-  REVIEW: 'Chờ duyệt',
-  DONE: 'Xong',
-};
-
-const ASSIGNMENT_LABEL: Record<string, string> = {
-  PENDING: 'Chờ bạn phản hồi',
-  ACCEPTED: 'Đã nhận',
-  REJECTED: 'Đã từ chối',
-};
+/** Lỗi của các thao tác trên màn này; tệp không mở được cần kèm tên tệp nên đứng riêng. */
+type KhoaLoiChiTiet =
+  | 'khongNhan'
+  | 'khongTuChoi'
+  | 'khongBatDau'
+  | 'khongNop'
+  | 'khongGuiDuyet'
+  | 'khongDuyet'
+  | 'khongTraBai'
+  | 'khongChonTep';
+type LoiHanhDong = NguonLoi<KhoaLoiChiTiet> | { tepKhongMo: string };
 
 /**
  * Dòng "Phân công" theo đúng người đang xem.
@@ -60,23 +62,29 @@ const ASSIGNMENT_LABEL: Record<string, string> = {
  * "Chờ bạn phản hồi" chỉ đúng với người được giao. Leader mở việc vừa giao cho
  * người khác mà đọc thấy "Chờ bạn" là tưởng đến lượt mình phải bấm gì đó.
  */
-function nhanPhanCong(task: Task, meId?: string): string {
+function nhanPhanCong(task: Task, meId: string | undefined, ngonNgu: NgonNgu): string {
+  const t = theoNgonNgu(tuDienCongViec, ngonNgu).chiTiet;
   if (!task.assignmentStatus) return '—';
   if (task.assignmentStatus === 'PENDING' && task.assigneeId !== meId) {
-    return `Chờ ${task.assignee?.fullName ?? 'người được giao'} phản hồi`;
+    return t.choPhanHoi(task.assignee?.fullName ?? t.nguoiDuocGiao);
   }
-  return ASSIGNMENT_LABEL[task.assignmentStatus] ?? '—';
+  return t.phanCongTrangThai[task.assignmentStatus] ?? '—';
 }
 
-function formatDateTime(iso?: string | null): string {
+function formatDateTime(iso: string | null | undefined, ngonNgu: NgonNgu): string {
   if (!iso) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
+  // Tiếng Anh theo giờ Việt Nam như mọi ngày giờ khác; tiếng Việt giữ cách tính cũ.
+  if (ngonNgu === 'en') return dinhDangNgayGio(date, 'en');
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const hh = String(date.getHours()).padStart(2, '0');
   const mi = String(date.getMinutes()).padStart(2, '0');
-  return `${dd}/${mm}/${date.getFullYear()} lúc ${hh}:${mi}`;
+  return theoNgonNgu(tuDienCongViec, ngonNgu).chiTiet.ngayGio(
+    `${dd}/${mm}/${date.getFullYear()}`,
+    `${hh}:${mi}`,
+  );
 }
 
 function Row({
@@ -104,6 +112,9 @@ function Row({
 }
 
 export default function TaskDetailScreen() {
+  const t = useTuDien(tuDienCongViec);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const { taskId, tu, chatId } = useLocalSearchParams<{
     taskId: string;
     tu?: string;
@@ -133,7 +144,13 @@ export default function TaskDetailScreen() {
 
   const [rejecting, setRejecting] = useState(false);
   const [rejectingReview, setRejectingReview] = useState(false);
-  const [actionError, setActionError] = useState('');
+  // Giữ NGUỒN lỗi, dịch lúc vẽ: đổi ngôn ngữ thì băng đỏ đổi theo.
+  const [actionError, setActionError] = useState<LoiHanhDong | null>(null);
+  const actionErrorText = !actionError
+    ? ''
+    : 'tepKhongMo' in actionError
+      ? t.khongMoDuocTep(actionError.tepKhongMo)
+      : chuLoi(t.loi, actionError, dichLoi);
 
   const { user } = useAuth();
   const { workspaces } = useWorkspace();
@@ -184,38 +201,35 @@ export default function TaskDetailScreen() {
   const acceptMutation = useMutation({
     mutationFn: () => acceptTask(taskId as string),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không nhận được việc này.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongNhan' }),
   });
 
   const rejectMutation = useMutation({
     mutationFn: (reason: string) => rejectTask(taskId as string, reason),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       setRejecting(false);
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không từ chối được việc này.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongTuChoi' }),
   });
 
   const startMutation = useMutation({
     mutationFn: () => updateTaskStatus(taskId as string, 'IN_PROGRESS'),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không bắt đầu được việc này.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongBatDau' }),
   });
 
   const uploadMutation = useMutation({
     mutationFn: (files: TepChon[]) => uploadSubmissions(taskId as string, files),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       invalidate();
     },
     onError: (err) => {
@@ -225,37 +239,36 @@ export default function TaskDetailScreen() {
         hai bản.
       */
       if (err instanceof LoiGuiDoDang) invalidate();
-      setActionError(err instanceof Error ? err.message : 'Không nộp được tài liệu.');
+      setActionError({ loi: err, duPhong: 'khongNop' });
     },
   });
 
   const sendReviewMutation = useMutation({
     mutationFn: () => submitForReview(taskId as string),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không gửi duyệt được.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongGuiDuyet' }),
   });
 
   const approveMutation = useMutation({
     mutationFn: () => approveReview(taskId as string),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       invalidate();
     },
-    onError: (err) => setActionError(err instanceof Error ? err.message : 'Không duyệt được bài.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongDuyet' }),
   });
 
   const rejectReviewMutation = useMutation({
     mutationFn: (reason: string) => rejectReview(taskId as string, reason),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       setRejectingReview(false);
       invalidate();
     },
-    onError: (err) => setActionError(err instanceof Error ? err.message : 'Không trả bài được.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongTraBai' }),
   });
 
   /*
@@ -263,14 +276,14 @@ export default function TaskDetailScreen() {
     vòng quay trên nút chạy suốt lúc người dùng còn đang lục tìm tệp trong máy.
   */
   const chonVaNop = useCallback(async () => {
-    setActionError('');
+    setActionError(null);
     try {
       const files = await chonTaiLieu();
       // Mảng rỗng nghĩa là người dùng bấm huỷ — không phải lỗi, không báo gì.
       if (files.length === 0) return;
       uploadMutation.mutate(files);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Không chọn được tệp.');
+      setActionError({ loi: err, duPhong: 'khongChonTep' });
     }
   }, [uploadMutation]);
 
@@ -280,11 +293,11 @@ export default function TaskDetailScreen() {
     trong app: PDF, ảnh, tài liệu Office đều xem được mà không phải tải về.
   */
   const moTep = useCallback(async (tep: TaskSubmission) => {
-    setActionError('');
+    setActionError(null);
     try {
       await WebBrowser.openBrowserAsync(duongDanTepDinhKem(tep, baseUrl()));
     } catch {
-      setActionError(`Không mở được tệp "${tep.originalName}". Thử lại, hoặc mở trên web WeDo.`);
+      setActionError({ tepKhongMo: tep.originalName });
     }
   }, []);
 
@@ -294,11 +307,11 @@ export default function TaskDetailScreen() {
     làm được việc đó.
   */
   const hoiTruocKhiDuyet = useCallback(() => {
-    Alert.alert('Duyệt bài này?', 'Công việc sẽ chuyển sang Xong và cả nhóm được báo.', [
-      { text: 'Huỷ', style: 'cancel' },
-      { text: 'Duyệt', onPress: () => approveMutation.mutate() },
+    Alert.alert(t.chiTiet.hoiDuyetTieuDe, t.chiTiet.hoiDuyetNoiDung, [
+      { text: t.chiTiet.huy, style: 'cancel' },
+      { text: t.chiTiet.duyet, onPress: () => approveMutation.mutate() },
     ]);
-  }, [approveMutation]);
+  }, [approveMutation, t]);
 
   const dangChay: ThaoTacTask = uploadMutation.isPending
     ? 'nop'
@@ -321,7 +334,7 @@ export default function TaskDetailScreen() {
   if (!task && !taskQuery.isError) {
     return (
       <View style={styles.screen}>
-        <GradientHeader title="Chi tiết công việc" onBack={goBack} dense />
+        <GradientHeader title={t.chiTiet.tieuDe} onBack={goBack} dense />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -331,19 +344,15 @@ export default function TaskDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      <GradientHeader title="Chi tiết công việc" subtitle={task?.project?.name} onBack={goBack} dense />
+      <GradientHeader title={t.chiTiet.tieuDe} subtitle={task?.project?.name} onBack={goBack} dense />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {taskQuery.isError ? (
           <ErrorBanner
-            message={
-              taskQuery.error instanceof Error
-                ? taskQuery.error.message
-                : 'Không tải được công việc.'
-            }
+            message={dichLoi(taskQuery.error, t.loi.khongTaiCongViec)}
           />
         ) : null}
-        {actionError ? <ErrorBanner message={actionError} /> : null}
+        {actionErrorText ? <ErrorBanner message={actionErrorText} /> : null}
 
         {task ? (
           <>
@@ -358,31 +367,31 @@ export default function TaskDetailScreen() {
               <Row
                 icon="ellipse-outline"
                 tone={task.status === 'DONE' ? 'done' : 'info'}
-                label="Trạng thái"
-                value={STATUS_LABEL[task.status]}
+                label={t.chiTiet.trangThai}
+                value={t.trangThai[task.status]}
               />
               <Row
                 icon="hand-left-outline"
                 tone={task.assignmentStatus === 'REJECTED' ? 'rejected' : 'info'}
-                label="Phân công"
-                value={nhanPhanCong(task, user?.id)}
+                label={t.chiTiet.phanCong}
+                value={nhanPhanCong(task, user?.id, ngonNgu)}
               />
               <Row
                 icon="time-outline"
                 tone="deadline"
-                label="Hạn chót"
-                value={formatDateTime(task.dueDate)}
+                label={t.chiTiet.hanChot}
+                value={formatDateTime(task.dueDate, ngonNgu)}
               />
               <Row
                 icon="person-outline"
                 tone="info"
-                label="Người phụ trách"
-                value={task.assignee?.fullName ?? 'Chưa giao'}
+                label={t.chiTiet.nguoiPhuTrach}
+                value={task.assignee?.fullName ?? t.chiTiet.chuaGiao}
               />
               <Row
                 icon="folder-outline"
                 tone="info"
-                label="Dự án"
+                label={t.chiTiet.duAn}
                 value={task.project?.name ?? '—'}
                 last
               />
@@ -390,7 +399,7 @@ export default function TaskDetailScreen() {
 
             {task.rejectionReason ? (
               <View style={styles.rejectBox}>
-                <Text style={styles.rejectTitle}>Lý do từ chối</Text>
+                <Text style={styles.rejectTitle}>{t.chiTiet.lyDoTuChoi}</Text>
                 <Text style={styles.rejectText}>{task.rejectionReason}</Text>
               </View>
             ) : null}
@@ -405,7 +414,7 @@ export default function TaskDetailScreen() {
                 <View style={styles.actionItem}>
                   <Button
                     testID="detail-accept"
-                    label="Nhận việc"
+                    label={t.chiTiet.nhanViec}
                     onPress={() => acceptMutation.mutate()}
                     loading={acceptMutation.isPending}
                   />
@@ -414,10 +423,10 @@ export default function TaskDetailScreen() {
                 <View style={styles.actionItem}>
                   <Button
                     testID="detail-reject"
-                    label="Từ chối"
+                    label={t.chiTiet.tuChoi}
                     variant="danger"
                     onPress={() => {
-                      setActionError('');
+                      setActionError(null);
                       setRejecting(true);
                     }}
                   />
@@ -425,7 +434,7 @@ export default function TaskDetailScreen() {
               </View>
             ) : task.assignmentStatus === 'PENDING' ? (
               <Text testID="detail-cho-phan-hoi" style={styles.choPhanHoi}>
-                {`Đang chờ ${task.assignee?.fullName ?? 'người được giao'} phản hồi`}
+                {t.chiTiet.dangChoPhanHoi(task.assignee?.fullName ?? t.chiTiet.nguoiDuocGiao)}
               </Text>
             ) : null}
 
@@ -434,9 +443,9 @@ export default function TaskDetailScreen() {
                 <View style={styles.actionItem}>
                   <Button
                     testID="detail-start"
-                    label="Bắt đầu làm"
+                    label={t.chiTiet.batDauLam}
                     onPress={() => {
-                      setActionError('');
+                      setActionError(null);
                       startMutation.mutate();
                     }}
                     loading={startMutation.isPending}
@@ -455,7 +464,7 @@ export default function TaskDetailScreen() {
               onApprove={hoiTruocKhiDuyet}
               onMoTep={(tep) => void moTep(tep)}
               onReject={() => {
-                setActionError('');
+                setActionError(null);
                 setRejectingReview(true);
               }}
             />
@@ -466,7 +475,7 @@ export default function TaskDetailScreen() {
       <RejectTaskSheet
         visible={rejecting}
         submitting={rejectMutation.isPending}
-        error={actionError || undefined}
+        error={actionErrorText || undefined}
         onConfirm={(reason) => rejectMutation.mutate(reason)}
         onDismiss={() => setRejecting(false)}
       />
@@ -474,11 +483,11 @@ export default function TaskDetailScreen() {
       <RejectTaskSheet
         visible={rejectingReview}
         submitting={rejectReviewMutation.isPending}
-        error={actionError || undefined}
-        heading="Trả bài lại"
-        body="Người phụ trách sẽ đọc lý do này và làm lại, nên nói rõ phần nào cần sửa."
-        confirmLabel="Gửi yêu cầu sửa"
-        quickReasons={LY_DO_TRA_BAI}
+        error={actionErrorText || undefined}
+        heading={t.chiTiet.traBai.tieuDe}
+        body={t.chiTiet.traBai.noiDung}
+        confirmLabel={t.chiTiet.traBai.nutGui}
+        quickReasons={t.chiTiet.traBai.lyDoNhanh}
         onConfirm={(reason) => rejectReviewMutation.mutate(reason)}
         onDismiss={() => setRejectingReview(false)}
       />

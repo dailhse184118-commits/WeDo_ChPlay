@@ -3,6 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienCongViec } from '../../../i18n/tu-dien/cong-viec';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { Button } from '../../../components/ui/Button';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
@@ -15,6 +18,7 @@ import {
   FORM_TAO_TASK_RONG,
   dungInputTaoTask,
   type FormTaoTask,
+  type KhoaLoiForm,
 } from '../../../lib/tasks/tao-task';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { useQuayLai } from '../../../lib/use-quay-lai';
@@ -95,17 +99,23 @@ interface NguoiNhan {
  */
 function gomNguoiNhan(
   thanhVien: Array<{ user: { id: string; fullName?: string | null; email?: string | null } }>,
+  tenMacDinh: string,
 ): NguoiNhan[] {
   const theoNguoi = new Map<string, NguoiNhan>();
   for (const { user } of thanhVien) {
     if (!user?.id || theoNguoi.has(user.id)) continue;
     // Email có thể là null với người chưa kết bạn — máy chủ giấu đi.
-    theoNguoi.set(user.id, { id: user.id, ten: user.fullName || user.email || 'Thành viên' });
+    theoNguoi.set(user.id, { id: user.id, ten: user.fullName || user.email || tenMacDinh });
   }
   return Array.from(theoNguoi.values());
 }
 
+type KhoaLoiTao = KhoaLoiForm | 'khongTao';
+
 export default function ManTaoCongViec() {
+  const t = useTuDien(tuDienCongViec);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const router = useRouter();
   /* Tạo xong hay bỏ ngang đều về danh sách việc — không dùng `router.back()`, xem `useQuayLai`. */
   const quayLai = useQuayLai(useCallback(() => router.navigate('/tasks'), [router]));
@@ -115,7 +125,9 @@ export default function ManTaoCongViec() {
   const workspaceId = active?.id ?? null;
 
   const [form, setForm] = useState<FormTaoTask>(FORM_TAO_TASK_RONG);
-  const [loi, setLoi] = useState<string | null>(null);
+  // Giữ NGUỒN lỗi, dịch lúc vẽ: đổi ngôn ngữ thì băng đỏ đổi theo.
+  const [loi, setLoi] = useState<NguonLoi<KhoaLoiTao> | null>(null);
+  const cauLoi = chuLoi({ ...t.tao.loiForm, khongTao: t.loi.khongTao }, loi, dichLoi);
 
   const lamTrongForm = useCallback(() => {
     setForm(FORM_TAO_TASK_RONG);
@@ -156,8 +168,11 @@ export default function ManTaoCongViec() {
     người ngoài dự án. Chưa chọn thì là cả không gian làm việc.
   */
   const nguoiNhan = useMemo(
-    () => gomNguoiNhan(duAnDangChon ? (duAnDangChon.members ?? []) : (thanhVien.data?.members ?? [])),
-    [duAnDangChon, thanhVien.data],
+    () => gomNguoiNhan(
+        duAnDangChon ? (duAnDangChon.members ?? []) : (thanhVien.data?.members ?? []),
+        t.tao.thanhVien,
+      ),
+    [duAnDangChon, thanhVien.data, t.tao.thanhVien],
   );
 
   /*
@@ -183,15 +198,14 @@ export default function ManTaoCongViec() {
       /* KHÔNG `router.back()`: trong nhóm tab nó nhảy về Trò chuyện — xem `useQuayLai`. */
       quayLai();
     },
-    onError: (e) =>
-      setLoi(e instanceof Error ? e.message : 'Không tạo được công việc.'),
+    onError: (e) => setLoi({ loi: e, duPhong: 'khongTao' }),
   });
 
   const guiDi = () => {
     setLoi(null);
-    const { input, loi: loiForm } = dungInputTaoTask(form, workspaceId);
+    const { input, khoaLoi } = dungInputTaoTask(form, workspaceId, ngonNgu);
     if (!input) {
-      setLoi(loiForm);
+      setLoi(khoaLoi ? { khoa: khoaLoi } : null);
       return;
     }
     taoMoi.mutate(input);
@@ -200,7 +214,7 @@ export default function ManTaoCongViec() {
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Công việc mới"
+        title={t.tao.tieuDe}
         subtitle={active?.name}
         onBack={quayLai}
         dense
@@ -212,64 +226,63 @@ export default function ManTaoCongViec() {
         contentContainerStyle={styles.thanNoiDung}
         keyboardShouldPersistTaps="handled"
       >
-        {loi ? <ErrorBanner message={loi} /> : null}
+        {cauLoi ? <ErrorBanner message={cauLoi} /> : null}
 
         <TextField
-          label="Tên công việc"
+          label={t.tao.tenViec}
           value={form.tieuDe}
           onChangeText={(v) => capNhat('tieuDe', v)}
-          placeholder="Ví dụ: Dịch tài liệu chương 3"
+          placeholder={t.tao.tenViecViDu}
           testID="o-tieu-de"
         />
 
         <TextField
-          label="Mô tả"
+          label={t.tao.moTa}
           value={form.moTa}
           onChangeText={(v) => capNhat('moTa', v)}
-          placeholder="Không bắt buộc"
+          placeholder={t.tao.khongBatBuoc}
           multiline
           testID="o-mo-ta"
         />
 
         <TextField
-          label="Hạn chót"
+          label={t.tao.hanChot}
           value={form.hanChot}
           onChangeText={(v) => capNhat('hanChot', v)}
-          placeholder="ngày/tháng/năm — ví dụ 02/09/2026"
+          placeholder={t.tao.hanChotGoiY}
           keyboardType="numbers-and-punctuation"
           testID="o-han-chot"
         />
 
         <HangChon
-          nhan="Dự án"
+          nhan={t.tao.duAn}
           danhSach={duAn.data ?? []}
           dangChon={form.projectId}
           nhanCua={(d) => d.name}
           // Người đã chọn ở dự án cũ có thể không thuộc dự án mới — bỏ chọn luôn.
           onChon={(id) => setForm((truoc) => ({ ...truoc, projectId: id, assigneeId: null }))}
-          nhanKhiRong="Không gian làm việc này chưa có dự án nào."
+          nhanKhiRong={t.tao.khongCoDuAn}
         />
 
         {khongPhaiLeader ? (
           <Text testID="ghi-chu-khong-phai-leader" style={styles.ghiChu}>
-            Chỉ Leader của dự án này mới tạo được công việc trong dự án. Bỏ chọn dự án để tạo
-            việc riêng cho bạn.
+            {t.tao.chiLeaderTaoDuoc}
           </Text>
         ) : null}
 
         <HangChon
-          nhan="Giao cho"
+          nhan={t.tao.giaoCho}
           danhSach={nguoiNhan}
           dangChon={form.assigneeId}
           nhanCua={(nguoi) => nguoi.ten}
           onChon={(id) => capNhat('assigneeId', id)}
           nhanKhiRong={
-            duAnDangChon ? 'Dự án này chưa có thành viên nào.' : 'Chưa tải được danh sách thành viên.'
+            duAnDangChon ? t.tao.duAnChuaCoThanhVien : t.tao.chuaTaiDuocThanhVien
           }
         />
 
         <Button
-          label="Tạo công việc"
+          label={t.tao.nutTao}
           onPress={guiDi}
           loading={taoMoi.isPending}
           testID="nut-tao"

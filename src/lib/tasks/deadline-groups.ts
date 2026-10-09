@@ -1,3 +1,6 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienCongViec } from '../../i18n/tu-dien/cong-viec';
 import type { Task } from '../types';
 
 export type DeadlineBucket = 'pending' | 'overdue' | 'today' | 'thisWeek' | 'later' | 'noDueDate';
@@ -17,15 +20,6 @@ const BUCKET_ORDER: DeadlineBucket[] = [
   'later',
   'noDueDate',
 ];
-
-const BUCKET_LABEL: Record<DeadlineBucket, string> = {
-  pending: 'Chờ bạn phản hồi',
-  overdue: 'Quá hạn',
-  today: 'Hôm nay',
-  thisWeek: 'Tuần này',
-  later: 'Sau đó',
-  noDueDate: 'Không có hạn',
-};
 
 /** So sánh theo giờ địa phương của thiết bị, đúng cảm nhận "hôm nay" của người dùng. */
 function isSameDay(a: Date, b: Date): boolean {
@@ -72,7 +66,12 @@ export function bucketOf(task: Task, now: Date): DeadlineBucket {
   return due.getTime() <= sevenDaysLater.getTime() ? 'thisWeek' : 'later';
 }
 
-export function groupByDeadline(tasks: Task[], now: Date): DeadlineGroup[] {
+export function groupByDeadline(
+  tasks: Task[],
+  now: Date,
+  ngonNgu: NgonNgu = layNgonNgu(),
+): DeadlineGroup[] {
+  const nhan = theoNgonNgu(tuDienCongViec, ngonNgu).nhom;
   const byBucket = new Map<DeadlineBucket, Task[]>();
 
   for (const task of tasks) {
@@ -84,7 +83,7 @@ export function groupByDeadline(tasks: Task[], now: Date): DeadlineGroup[] {
 
   return BUCKET_ORDER.filter((bucket) => (byBucket.get(bucket)?.length ?? 0) > 0).map((bucket) => ({
     bucket,
-    label: BUCKET_LABEL[bucket],
+    label: nhan[bucket],
     tasks: (byBucket.get(bucket) ?? []).sort((a, b) => {
       if (!a.dueDate && !b.dueDate) return 0;
       if (!a.dueDate) return 1;

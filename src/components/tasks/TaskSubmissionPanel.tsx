@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { IconTile } from '../ui/IconTile';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienCongViec } from '../../i18n/tu-dien/cong-viec';
 import type { QuyenTrenTask } from '../../lib/tasks/task-permissions';
 import type { TaskSubmission } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../theme/tokens';
@@ -43,6 +45,7 @@ export function TaskSubmissionPanel({
   onReject,
   onMoTep,
 }: TaskSubmissionPanelProps) {
+  const t = useTuDien(tuDienCongViec).nop;
   const coViecDeLam = quyen.nopTaiLieu || quyen.duyetBai;
 
   /*
@@ -57,19 +60,19 @@ export function TaskSubmissionPanel({
     <View>
       {reviewRejectedReason ? (
         <View style={styles.rejectBox}>
-          <Text style={styles.rejectTitle}>Bài bị trả lại</Text>
+          <Text style={styles.rejectTitle}>{t.baiBiTraLai}</Text>
           <Text style={styles.rejectText}>{reviewRejectedReason}</Text>
         </View>
       ) : null}
 
       <Card style={styles.card}>
-        <Text style={styles.heading}>Tài liệu đã nộp</Text>
+        <Text style={styles.heading}>{t.taiLieuDaNop}</Text>
 
         {submissions.length === 0 ? (
           <Text style={styles.empty}>
             {quyen.nopTaiLieu
-              ? 'Chưa có tệp nào. Nộp ít nhất một tệp rồi mới gửi duyệt được.'
-              : 'Chưa có tệp nào.'}
+              ? t.chuaCoTepCanNop
+              : t.chuaCoTep}
           </Text>
         ) : (
           submissions.map((tep, index) => {
@@ -108,7 +111,7 @@ export function TaskSubmissionPanel({
                 key={tep.id}
                 testID={`submission-file-${tep.id}`}
                 accessibilityRole="link"
-                accessibilityLabel={`Mở tệp ${tep.originalName}`}
+                accessibilityLabel={t.moTep(tep.originalName)}
                 onPress={() => onMoTep(tep)}
                 style={({ pressed }) => [...kieuDong, pressed ? styles.rowPressed : null]}
               >
@@ -125,7 +128,7 @@ export function TaskSubmissionPanel({
           <View style={styles.actionItem}>
             <Button
               testID="submission-pick"
-              label="Nộp tài liệu"
+              label={t.nopTaiLieu}
               variant="secondary"
               onPress={onPick}
               loading={dangChay === 'nop'}
@@ -135,7 +138,7 @@ export function TaskSubmissionPanel({
           <View style={styles.actionItem}>
             <Button
               testID="submission-send"
-              label="Gửi duyệt"
+              label={t.guiDuyet}
               onPress={onSubmitForReview}
               loading={dangChay === 'guiDuyet'}
               // Máy chủ từ chối khi chưa có tệp; khoá sẵn thay vì để bấm rồi báo lỗi.
@@ -150,7 +153,7 @@ export function TaskSubmissionPanel({
           <View style={styles.actionItem}>
             <Button
               testID="review-approve"
-              label="Duyệt bài"
+              label={t.duyetBai}
               onPress={onApprove}
               loading={dangChay === 'duyet'}
             />
@@ -159,7 +162,7 @@ export function TaskSubmissionPanel({
           <View style={styles.actionItem}>
             <Button
               testID="review-reject"
-              label="Trả lại"
+              label={t.traLai}
               variant="danger"
               onPress={onReject}
             />

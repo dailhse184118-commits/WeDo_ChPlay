@@ -13,6 +13,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienCongViec } from '../../../i18n/tu-dien/cong-viec';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { RejectTaskSheet } from '../../../components/tasks/RejectTaskSheet';
 import { TaskRow } from '../../../components/tasks/TaskRow';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
@@ -35,14 +38,21 @@ function CountBox({ value, label }: { value: number; label: string }) {
   );
 }
 
+type KhoaLoiDanhSach = 'khongNhan' | 'khongTuChoi';
+
 export default function MyTasksScreen() {
+  const t = useTuDien(tuDienCongViec);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const router = useRouter();
   const { user } = useAuth();
   const { active, workspaces, switchTo } = useWorkspace();
   const queryClient = useQueryClient();
 
   const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState('');
+  // Giữ NGUỒN lỗi, dịch lúc vẽ: đổi ngôn ngữ thì băng đỏ đổi theo.
+  const [actionError, setActionError] = useState<NguonLoi<KhoaLoiDanhSach> | null>(null);
+  const actionErrorText = chuLoi(t.loi, actionError, dichLoi);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [taoMoiOpen, setTaoMoiOpen] = useState(false);
 
@@ -62,23 +72,21 @@ export default function MyTasksScreen() {
   const acceptMutation = useMutation({
     mutationFn: (taskId: string) => acceptTask(taskId),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không nhận được việc này.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongNhan' }),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ taskId, reason }: { taskId: string; reason: string }) =>
       rejectTask(taskId, reason),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       setRejectingId(null);
       invalidate();
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không từ chối được việc này.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongTuChoi' }),
   });
 
   // `now` chốt một lần cho toàn bộ lần render, để mọi việc được phân nhóm theo
@@ -86,7 +94,7 @@ export default function MyTasksScreen() {
   const { sections, counts } = useMemo(() => {
     const now = new Date();
     const mine = myTasks(tasksQuery.data ?? [], user?.id ?? '');
-    const groups = groupByDeadline(mine, now);
+    const groups = groupByDeadline(mine, now, ngonNgu);
 
     return {
       sections: groups.map((group) => ({ title: group.label, data: group.tasks, now })),
@@ -96,12 +104,12 @@ export default function MyTasksScreen() {
         total: mine.length,
       },
     };
-  }, [tasksQuery.data, user?.id]);
+  }, [tasksQuery.data, user?.id, ngonNgu]);
 
   return (
     <View style={styles.screen}>
       <GradientHeader
-        title="Việc của tôi"
+        title={t.danhSach.tieuDe}
         subtitle={active?.name}
         onPressSubtitle={() => setSwitcherOpen(true)}
         right={
@@ -109,7 +117,7 @@ export default function MyTasksScreen() {
             onPress={() => router.push('/tasks/new')}
             style={styles.nutTao}
             accessibilityRole="button"
-            accessibilityLabel="Tạo công việc mới"
+            accessibilityLabel={t.danhSach.taoMoi}
             testID="nut-mo-tao-task"
           >
             <Ionicons name="add" size={scale(22)} color={colors.surface} />
@@ -117,9 +125,9 @@ export default function MyTasksScreen() {
         }
       >
         <View style={styles.counts}>
-          <CountBox value={counts.total} label="Đang mở" />
-          <CountBox value={counts.pending} label="Chờ nhận" />
-          <CountBox value={counts.overdue} label="Quá hạn" />
+          <CountBox value={counts.total} label={t.danhSach.dangMo} />
+          <CountBox value={counts.pending} label={t.danhSach.choNhan} />
+          <CountBox value={counts.overdue} label={t.danhSach.quaHan} />
         </View>
       </GradientHeader>
 
@@ -131,20 +139,14 @@ export default function MyTasksScreen() {
         */}
         {tasksQuery.isError && !tasksQuery.data ? (
           <ErrorBanner
-            message={
-              tasksQuery.error instanceof Error
-                ? tasksQuery.error.message
-                : 'Không tải được danh sách công việc.'
-            }
+            message={dichLoi(tasksQuery.error, t.loi.khongTaiDanhSach)}
           />
         ) : null}
 
         {tasksQuery.isError && tasksQuery.data ? (
-          <Text style={styles.ngoaiTuyen}>
-            Đang xem dữ liệu đã lưu. Kết nối lại để cập nhật.
-          </Text>
+          <Text style={styles.ngoaiTuyen}>{t.danhSach.dangXemDuLieuDaLuu}</Text>
         ) : null}
-        {actionError ? <ErrorBanner message={actionError} /> : null}
+        {actionErrorText ? <ErrorBanner message={actionErrorText} /> : null}
 
         {tasksQuery.isLoading ? (
           <View style={styles.center}>
@@ -168,7 +170,7 @@ export default function MyTasksScreen() {
                 onPress={() => router.push(`/tasks/${item.id}`)}
                 onAccept={() => acceptMutation.mutate(item.id)}
                 onReject={() => {
-                  setActionError('');
+                  setActionError(null);
                   setRejectingId(item.id);
                 }}
               />
@@ -186,17 +188,14 @@ export default function MyTasksScreen() {
                   <View style={styles.emptyIcon}>
                     <Ionicons name="checkbox-outline" size={28} color={colors.primary} />
                   </View>
-                  <Text style={styles.emptyTitle}>Chưa có việc nào cho bạn</Text>
+                  <Text style={styles.emptyTitle}>{t.danhSach.trongTieuDe}</Text>
                   {/*
                     Nêu cả hai đường tạo việc. Nút dấu cộng thì nhìn thấy được,
                     còn cử chỉ nhấn giữ trong chat là tính năng cốt lõi nhưng
                     không có chỗ nào lộ ra — người dùng mới sẽ không tự tìm thấy
                     nếu trạng thái rỗng không nói.
                   */}
-                  <Text style={styles.emptyBody}>
-                    Bấm dấu cộng ở trên để thêm việc mới. Hoặc khi nhóm chốt việc trong chat, nhấn
-                    giữ tin nhắn đó để WeDo tạo công việc. Việc giao cho bạn sẽ xuất hiện ở đây.
-                  </Text>
+                  <Text style={styles.emptyBody}>{t.danhSach.trongThan}</Text>
                 </View>
               )
             }
@@ -207,7 +206,7 @@ export default function MyTasksScreen() {
       <RejectTaskSheet
         visible={rejectingId !== null}
         submitting={rejectMutation.isPending}
-        error={actionError || undefined}
+        error={actionErrorText || undefined}
         onConfirm={(reason) => {
           if (rejectingId) rejectMutation.mutate({ taskId: rejectingId, reason });
         }}

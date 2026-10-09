@@ -1,6 +1,11 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useNgonNgu } from '../../i18n/NgonNguProvider';
+import { dinhDangGio, dinhDangThoiGian } from '../../i18n/dinh-dang';
+import { theoNgonNgu } from '../../i18n/dich';
+import type { NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienCongViec } from '../../i18n/tu-dien/cong-viec';
 import { Card } from '../ui/Card';
 import { IconTile, type IconTileTone } from '../ui/IconTile';
 import { bucketOf, type DeadlineBucket } from '../../lib/tasks/deadline-groups';
@@ -15,13 +20,6 @@ interface TaskRowProps {
   onReject?: () => void;
   accepting?: boolean;
 }
-
-const STATUS_LABEL: Record<Task['status'], string> = {
-  TODO: 'Cần làm',
-  IN_PROGRESS: 'Đang làm',
-  REVIEW: 'Chờ duyệt',
-  DONE: 'Xong',
-};
 
 /** Ô icon đổi màu theo nhóm hạn — chỗ màu sắc vào nhiều nhất mà không phá bảng màu. */
 const TONE_BY_BUCKET: Record<DeadlineBucket, IconTileTone> = {
@@ -48,7 +46,12 @@ function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-function formatHourMinute(date: Date): string {
+/**
+ * Tiếng Việt giữ cách tính cũ (giờ máy, 24 giờ). Tiếng Anh viết "2:05 PM" theo
+ * giờ Việt Nam như mọi ngày giờ khác của bản tiếng Anh.
+ */
+function formatHourMinute(date: Date, ngonNgu: NgonNgu): string {
+  if (ngonNgu === 'en') return dinhDangGio(date, 'en');
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
@@ -56,7 +59,8 @@ function formatHourMinute(date: Date): string {
  * Diễn đạt hạn chót theo cách người dùng nghĩ, không phải theo cách máy lưu.
  * "Quá hạn 2 ngày" dễ hiểu hơn "02/08 10:00" rất nhiều.
  */
-function describeDue(task: Task, now: Date): string | null {
+function describeDue(task: Task, now: Date, ngonNgu: NgonNgu): string | null {
+  const t = theoNgonNgu(tuDienCongViec, ngonNgu).dong;
   if (!task.dueDate) return null;
 
   const due = new Date(task.dueDate);
@@ -64,31 +68,36 @@ function describeDue(task: Task, now: Date): string | null {
 
   if (task.status === 'DONE' && task.completedAt) {
     const done = new Date(task.completedAt);
-    if (!Number.isNaN(done.getTime())) return `Xong lúc ${formatHourMinute(done)}`;
+    if (!Number.isNaN(done.getTime())) return t.xongLuc(formatHourMinute(done, ngonNgu));
   }
 
   const dayDiff = Math.round((startOfDay(due) - startOfDay(now)) / DAY_MS);
 
-  if (dayDiff === 0) return `Hạn hôm nay, ${formatHourMinute(due)}`;
-  if (dayDiff === 1) return `Hạn ngày mai, ${formatHourMinute(due)}`;
+  if (dayDiff === 0) return t.hanHomNay(formatHourMinute(due, ngonNgu));
+  if (dayDiff === 1) return t.hanNgayMai(formatHourMinute(due, ngonNgu));
   if (dayDiff < 0) {
-    const days = Math.abs(dayDiff);
-    return days === 1 ? 'Quá hạn 1 ngày' : `Quá hạn ${days} ngày`;
+    return t.quaHanNgay(Math.abs(dayDiff));
   }
 
   const dd = String(due.getDate()).padStart(2, '0');
   const mm = String(due.getMonth() + 1).padStart(2, '0');
-  return `Hạn ${dd}/${mm}, ${formatHourMinute(due)}`;
+  const ngay =
+    ngonNgu === 'en'
+      ? dinhDangThoiGian(due, 'en', { month: 'short', day: 'numeric' })
+      : `${dd}/${mm}`;
+  return t.hanNgay(ngay, formatHourMinute(due, ngonNgu));
 }
 
 export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: TaskRowProps) {
+  const { ngonNgu } = useNgonNgu();
+  const t = theoNgonNgu(tuDienCongViec, ngonNgu);
   const bucket = bucketOf(task, now);
   const pending = task.assignmentStatus === 'PENDING';
   const rejected = task.assignmentStatus === 'REJECTED';
   const overdue = bucket === 'overdue';
   const done = task.status === 'DONE';
 
-  const dueText = describeDue(task, now);
+  const dueText = describeDue(task, now, ngonNgu);
   const subtitle = [task.project?.name, dueText].filter(Boolean).join(' · ');
 
   return (
@@ -127,7 +136,7 @@ export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: T
         */}
         <View style={[styles.chip, rejected ? styles.chipRejected : null]}>
           <Text style={[styles.chipText, rejected ? styles.chipTextRejected : null]}>
-            {rejected ? 'Đã từ chối' : STATUS_LABEL[task.status]}
+            {rejected ? t.daTuChoi : t.trangThai[task.status]}
           </Text>
         </View>
       </View>
@@ -145,7 +154,7 @@ export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: T
               accepting ? styles.disabled : null,
             ]}
           >
-            <Text style={styles.acceptText}>Nhận việc</Text>
+            <Text style={styles.acceptText}>{t.dong.nhanViec}</Text>
           </Pressable>
 
           <Pressable
@@ -159,7 +168,7 @@ export function TaskRow({ task, now, onPress, onAccept, onReject, accepting }: T
               accepting ? styles.disabled : null,
             ]}
           >
-            <Text style={styles.rejectText}>Từ chối</Text>
+            <Text style={styles.rejectText}>{t.dong.tuChoi}</Text>
           </Pressable>
         </View>
       ) : null}
