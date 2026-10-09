@@ -5,12 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import { TabLabel } from '../../components/ui/TabLabel';
 import { CreateWorkspaceForm } from '../../components/workspace/CreateWorkspaceForm';
 import { KhongTaiDuocKhongGian } from '../../components/workspace/KhongTaiDuocKhongGian';
-import { getUnreadCount } from '../../lib/api/notifications';
+import { getUnreadCount, listNotifications } from '../../lib/api/notifications';
 import { useAuth } from '../../lib/auth/auth-context';
 import { useOpenTaskFromNotification } from '../../lib/notifications/mo-tu-thong-bao';
+import { demChuaDocHienThi } from '../../lib/notifications/thanh-toan';
 import { useRealtimeSync } from '../../lib/realtime/use-realtime-sync';
 import { SocketProvider } from '../../lib/socket/socket-context';
 import { WorkspaceProvider, useWorkspace } from '../../lib/workspace/workspace-context';
@@ -18,15 +21,19 @@ import { colors, fontSize, sizes, spacing } from '../../theme/tokens';
 
 function TabsWithWorkspace() {
   const { status } = useWorkspace();
+  const t = useTuDien(tuDienHeThong).tab;
   const insets = useSafeAreaInsets();
 
   useOpenTaskFromNotification();
   useRealtimeSync();
 
-  // Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
+  /*
+    Badge số thông báo chưa đọc. Poll mỗi phút; rẻ vì endpoint chỉ trả một con số.
+    iPhone trừ đi thông báo gói/thanh toán đang bị giấu — xem `thanh-toan.ts`.
+  */
   const unreadQuery = useQuery({
     queryKey: ['notifications-unread'],
-    queryFn: getUnreadCount,
+    queryFn: () => demChuaDocHienThi(getUnreadCount, listNotifications),
     refetchInterval: 60_000,
     staleTime: 30_000,
     enabled: status === 'ready',
@@ -82,7 +89,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="chat/index"
         options={{
-          title: 'Trò chuyện',
+          title: t.troChuyen,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
@@ -121,6 +128,11 @@ function TabsWithWorkspace() {
       */}
       <Tabs.Screen name="account/contributions" options={{ href: null }} />
       {/*
+        Màn Nâng cấp (mua gói qua App Store, chỉ iOS) cũng gọi `useWorkspace()`,
+        nên cùng luật: nằm trong nhóm này và khai `href: null`.
+      */}
+      <Tabs.Screen name="account/nang-cap" options={{ href: null }} />
+      {/*
         Cuộc họp cũng PHẢI nằm trong nhóm này, cùng lý do với Bảng đóng góp ở
         trên: màn danh sách và màn tạo mới gọi `useWorkspace()`. Ngày 23/09/2026
         ba màn này được đặt ở src/app/meetings/ và đã lên máy người thử nghiệm
@@ -137,7 +149,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="tasks/index"
         options={{
-          title: 'Công việc',
+          title: t.congViec,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'checkbox' : 'checkbox-outline'}
@@ -156,7 +168,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="meetings/index"
         options={{
-          title: 'Cuộc họp',
+          title: t.cuocHop,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'videocam' : 'videocam-outline'}
@@ -169,7 +181,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="notifications/index"
         options={{
-          title: 'Thông báo',
+          title: t.thongBao,
           tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
           /*
             Badge dựng sẵn cao cứng 18dp và cắt phần tràn, nên ở cỡ chữ lớn chữ
@@ -197,7 +209,7 @@ function TabsWithWorkspace() {
       <Tabs.Screen
         name="account/index"
         options={{
-          title: 'Tài khoản',
+          title: t.taiKhoan,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}

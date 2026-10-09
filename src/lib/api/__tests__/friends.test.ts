@@ -33,6 +33,7 @@ describe('API kết bạn', () => {
   it('không gọi máy chủ khi từ khoá quá ngắn', async () => {
     await expect(searchUsers('a')).resolves.toEqual([]);
     await expect(searchUsers('Vy')).resolves.toEqual([]);
+    await expect(searchUsers('ab')).resolves.toEqual([]);
     await expect(searchUsers('   ')).resolves.toEqual([]);
 
     expect(mockedRequest).not.toHaveBeenCalled();

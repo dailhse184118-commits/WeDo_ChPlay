@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../ui/Card';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { doiPhuong } from '../../lib/chat/doi-phuong';
 import type { DirectConversation } from '../../lib/types';
 import { Avatar } from '../ui/Avatar';
@@ -27,6 +29,7 @@ export function ConversationRow({
   online,
   onPress,
 }: ConversationRowProps) {
+  const t = useTuDien(tuDienChat);
   const nguoiKia = doiPhuong(conversation, currentUserId);
   if (!nguoiKia) return null;
 
@@ -50,7 +53,7 @@ export function ConversationRow({
             {nguoiKia.fullName}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {online ? 'Đang hoạt động' : nguoiKia.email}
+            {online ? t.dangHoatDong : nguoiKia.email}
           </Text>
         </View>
 

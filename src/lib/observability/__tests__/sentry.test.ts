@@ -1,4 +1,6 @@
-import { dongMotHang, cauHinhSentry } from '../sentry';
+import { Platform } from 'react-native';
+
+import { dongMotHang, cauHinhSentry, maBuildCuaMay } from '../sentry';
 
 describe('cauHinhSentry', () => {
   /*
@@ -54,6 +56,43 @@ describe('cauHinhSentry', () => {
   it('chỉ gửi thật khi không phải bản đang phát triển', () => {
     expect(cauHinhSentry({ dsn: 'x', dangPhatTrien: true })?.enabled).toBe(false);
     expect(cauHinhSentry({ dsn: 'x', dangPhatTrien: false })?.enabled).toBe(true);
+  });
+
+  it('nhận mã build dạng chuỗi của iOS', () => {
+    expect(cauHinhSentry({ dsn: 'x', maBuild: '3' })?.dist).toBe('3');
+  });
+});
+
+/*
+  iPhone đánh số build riêng. Gắn nhầm `android.versionCode` cho lỗi của bản
+  iOS thì source map không bao giờ ghép đúng.
+*/
+describe('maBuildCuaMay', () => {
+  const CAU_HINH = { android: { versionCode: 17 }, ios: { buildNumber: '4' } };
+  let heDieuHanh: jest.ReplaceProperty<typeof Platform.OS> | undefined;
+
+  afterEach(() => {
+    heDieuHanh?.restore();
+    heDieuHanh = undefined;
+  });
+
+  it('iPhone lấy ios.buildNumber', () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
+
+    expect(maBuildCuaMay(CAU_HINH)).toBe('4');
+    expect(maBuildCuaMay({ android: { versionCode: 17 } })).toBeUndefined();
+  });
+
+  it('Android lấy android.versionCode như trước', () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
+
+    expect(maBuildCuaMay(CAU_HINH)).toBe(17);
+  });
+
+  it('thiếu cấu hình thì không đoán', () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
+
+    expect(maBuildCuaMay(null)).toBeUndefined();
   });
 });
 

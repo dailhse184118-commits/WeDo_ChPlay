@@ -2,6 +2,8 @@ import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import { colors, fontSize, radius, sizes, spacing } from '../../theme/tokens';
 
 interface GoogleButtonProps {
@@ -19,10 +21,11 @@ interface GoogleButtonProps {
  * chiều cao `sizes.control` và bo tròn `radius.pill` để đứng cạnh nút "Đăng nhập"
  * không bị lệch.
  *
- * Nhãn cố định trong component: Google yêu cầu đúng chữ "Tiếp tục với Google"
- * hoặc "Đăng nhập bằng Google", không cho tự đặt.
+ * Nhãn lấy từ từ điển nhưng chỉ được dùng đúng cách nói Google cho phép: "Tiếp tục với Google"
+ * (tiếng Anh "Continue with Google") hoặc "Đăng nhập bằng Google" ("Sign in with Google"), không tự đặt.
  */
 export function GoogleButton({ onPress, loading = false, disabled = false, testID }: GoogleButtonProps) {
+  const t = useTuDien(tuDienDangNhap);
   const inactive = loading || disabled;
 
   return (
@@ -44,7 +47,7 @@ export function GoogleButton({ onPress, loading = false, disabled = false, testI
         <View style={styles.content}>
           <Ionicons name="logo-google" size={20} color={colors.text} />
           <Text style={[styles.label, inactive ? styles.labelInactive : null]}>
-            Tiếp tục với Google
+            {t.tiepTucVoiGoogle}
           </Text>
         </View>
       )}

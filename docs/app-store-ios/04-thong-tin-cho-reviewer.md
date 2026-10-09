@@ -281,6 +281,8 @@ Email: wedosupport6886@gmail.com
 
 ### 6.2. Khối để dán (tiếng Anh)
 
+> Đã thay thế từ 08/10/2026 bằng Notes ở chương 13 §1 (bản IAP 1.0.15).
+
 ```text
 WeDo is a free team-work app for Vietnamese students, the iPhone companion to https://wedofpt.com.vn. The app is in Vietnamese; English meanings are in brackets.
 

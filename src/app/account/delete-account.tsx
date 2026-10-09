@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
@@ -15,36 +17,34 @@ import {
   transferWorkspaceOwner,
 } from '../../lib/api/account';
 import { useAuth } from '../../lib/auth/auth-context';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import type { DeletionBlocker } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, spacing } from '../../theme/tokens';
 
-/** Gõ đúng từ này mới bật được nút xoá. Chặn cú chạm nhầm vào việc không hoàn tác được. */
-const CONFIRM_WORD = 'XOA';
+type KhoaLoiXoa = 'khongChuyenDuoc' | 'khongXoaDuoc';
 
 function WhatGetsDeleted() {
+  const t = useTuDien(tuDienTaiKhoan).xoa;
   const items = [
-    'Hồ sơ, email và mật khẩu của bạn',
-    'Tin nhắn bạn đã gửi trong mọi kênh chat dự án',
+    t.muc[0],
+    t.muc[1],
     // Máy chủ xoá cả tệp trên kho lưu trữ sau khi xoá tài khoản. Không nhắc gói
     // trả phí ở đây: app iPhone không được nói chuyện mua bán (3.1.3(f)).
-    'Tin nhắn riêng, danh sách bạn bè, ảnh và tệp bạn đã tải lên',
-    'Việc bạn đang phụ trách sẽ trở thành chưa giao',
-    'Không gian làm việc chỉ có mình bạn, cùng toàn bộ dự án và công việc bên trong',
+    t.muc[2],
+    t.muc[3],
+    t.muc[4],
   ];
 
   return (
     <Card style={styles.block}>
-      <Text style={styles.blockTitle}>Xoá tài khoản sẽ xoá vĩnh viễn</Text>
+      <Text style={styles.blockTitle}>{t.tieuDeKhoi}</Text>
       {items.map((item) => (
         <View key={item} style={styles.bullet}>
           <Ionicons name="remove-circle-outline" size={16} color={colors.danger} />
           <Text style={styles.bulletText}>{item}</Text>
         </View>
       ))}
-      <Text style={styles.blockNote}>
-        Không có bước hoàn tác và không khôi phục lại được. Nếu chỉ muốn tạm ngừng nhận thông báo,
-        bạn tắt trong phần Cài đặt thông báo là đủ.
-      </Text>
+      <Text style={styles.blockNote}>{t.ghiChuKhoi}</Text>
     </Card>
   );
 }
@@ -58,13 +58,12 @@ function BlockerCard({
   onTransfer: (workspaceId: string, newOwnerId: string, name: string) => void;
   transferring: boolean;
 }) {
+  const t = useTuDien(tuDienTaiKhoan).xoa;
   return (
     <Card style={styles.blocker}>
       <Text style={styles.blockerTitle}>{blocker.workspaceName}</Text>
       <Text style={styles.blockerBody}>
-        Bạn là chủ sở hữu và còn {blocker.otherMemberCount} thành viên khác. Không gian này đang giữ{' '}
-        {blocker.projectCount} dự án và {blocker.taskCount} công việc của cả nhóm — xoá tài khoản
-        bạn sẽ xoá theo tất cả. Hãy chọn người nhận quyền sở hữu.
+        {t.chuSoHuu(blocker.otherMemberCount, blocker.projectCount, blocker.taskCount)}
       </Text>
 
       {blocker.candidates.map((candidate) => (
@@ -90,9 +89,13 @@ export default function DeleteAccountScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { signOut, status } = useAuth();
+  const t = useTuDien(tuDienTaiKhoan).xoa;
+  const dichLoi = useDichLoi();
+  /* Từ phải gõ để bật nút xoá, theo ngôn ngữ ('XOA' / 'DELETE'). Chặn cú chạm nhầm vào việc không hoàn tác được. */
+  const confirmWord = t.tuXacNhan;
 
   const [confirmText, setConfirmText] = useState('');
-  const [actionError, setActionError] = useState('');
+  const [actionError, setActionError] = useState<NguonLoi<KhoaLoiXoa> | null>(null);
 
   const blockersQuery = useQuery({
     queryKey: ['deletion-blockers'],
@@ -109,12 +112,11 @@ export default function DeleteAccountScreen() {
     mutationFn: ({ workspaceId, newOwnerId }: { workspaceId: string; newOwnerId: string }) =>
       transferWorkspaceOwner(workspaceId, newOwnerId),
     onSuccess: () => {
-      setActionError('');
+      setActionError(null);
       void queryClient.invalidateQueries({ queryKey: ['deletion-blockers'] });
       void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không chuyển được quyền sở hữu.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongChuyenDuoc' }),
   });
 
   const deleteMutation = useMutation({
@@ -126,48 +128,47 @@ export default function DeleteAccountScreen() {
     */
     onSuccess: async () => {
       await signOut();
-      Alert.alert('Đã xoá tài khoản', 'Tài khoản WeDo của bạn và dữ liệu đi kèm đã được xoá vĩnh viễn.');
+      Alert.alert(t.daXoaTieuDe, t.daXoaNoiDung);
     },
-    onError: (err) =>
-      setActionError(err instanceof Error ? err.message : 'Không xoá được tài khoản.'),
+    onError: (err) => setActionError({ loi: err, duPhong: 'khongXoaDuoc' }),
   });
 
   const handleTransfer = useCallback(
     (workspaceId: string, newOwnerId: string, name: string) => {
       Alert.alert(
-        'Chuyển quyền sở hữu',
-        `Giao không gian làm việc này cho ${name}? Bạn sẽ vẫn là thành viên nhưng không còn quyền chủ sở hữu.`,
+        t.chuyenTieuDe,
+        t.chuyenNoiDung(name),
         [
-          { text: 'Huỷ', style: 'cancel' },
+          { text: t.huy, style: 'cancel' },
           {
-            text: 'Chuyển',
+            text: t.chuyen,
             onPress: () => transferMutation.mutate({ workspaceId, newOwnerId }),
           },
         ],
       );
     },
-    [transferMutation],
+    [transferMutation, t],
   );
 
   const handleDelete = useCallback(() => {
     Alert.alert(
-      'Xoá tài khoản vĩnh viễn?',
-      'Hành động này không hoàn tác được.',
+      t.hoiXoaTieuDe,
+      t.hoiXoaNoiDung,
       [
-        { text: 'Huỷ', style: 'cancel' },
-        { text: 'Xoá tài khoản', style: 'destructive', onPress: () => deleteMutation.mutate() },
+        { text: t.huy, style: 'cancel' },
+        { text: t.tieuDe, style: 'destructive', onPress: () => deleteMutation.mutate() },
       ],
     );
-  }, [deleteMutation]);
+  }, [deleteMutation, t]);
 
   const data = blockersQuery.data;
   const canDelete = data?.canDelete === true;
-  const confirmed = confirmText.trim().toUpperCase() === CONFIRM_WORD;
+  const confirmed = confirmText.trim().toUpperCase() === confirmWord;
 
   return (
     <View style={styles.screen}>
       <GradientHeader
-        title="Xoá tài khoản"
+        title={t.tieuDe}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/account'))}
         dense
       />
@@ -184,11 +185,11 @@ export default function DeleteAccountScreen() {
           */}
           {blockersQuery.isError ? (
             <>
-              <ErrorBanner message="Không tải được thông tin tài khoản." />
+              <ErrorBanner message={t.khongTaiDuoc} />
               <View style={styles.thuLai}>
                 <Button
                   testID="delete-retry"
-                  label="Thử lại"
+                  label={t.thuLai}
                   variant="secondary"
                   loading={blockersQuery.isRefetching}
                   onPress={() => void blockersQuery.refetch()}
@@ -196,7 +197,7 @@ export default function DeleteAccountScreen() {
               </View>
             </>
           ) : null}
-          {actionError ? <ErrorBanner message={actionError} /> : null}
+          {actionError ? <ErrorBanner message={chuLoi(t, actionError, dichLoi)} /> : null}
 
           <WhatGetsDeleted />
 
@@ -211,23 +212,21 @@ export default function DeleteAccountScreen() {
 
           {canDelete ? (
             <Card style={styles.block}>
-              <Text style={styles.blockTitle}>Xác nhận</Text>
-              <Text style={styles.blockNote}>
-                Gõ {CONFIRM_WORD} vào ô dưới để bật nút xoá.
-              </Text>
+              <Text style={styles.blockTitle}>{t.xacNhan}</Text>
+              <Text style={styles.blockNote}>{t.goDeBat(confirmWord)}</Text>
               <View style={styles.confirmField}>
                 <TextField
                   testID="delete-confirm"
-                  label={`Gõ ${CONFIRM_WORD}`}
+                  label={t.nhanO(confirmWord)}
                   value={confirmText}
                   onChangeText={setConfirmText}
-                  placeholder={CONFIRM_WORD}
+                  placeholder={confirmWord}
                   autoCapitalize="characters"
                 />
               </View>
               <Button
                 testID="delete-account"
-                label="Xoá tài khoản vĩnh viễn"
+                label={t.nutXoa}
                 variant="danger"
                 disabled={!confirmed}
                 loading={deleteMutation.isPending}

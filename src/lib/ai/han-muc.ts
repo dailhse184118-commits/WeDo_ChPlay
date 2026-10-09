@@ -1,3 +1,8 @@
+import { Platform } from 'react-native';
+
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, MA_VUNG, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienNangCap } from '../../i18n/tu-dien/nang-cap';
 import type { HanMucAI } from '../api/entitlements';
 
 /**
@@ -26,6 +31,8 @@ export interface TrangThaiHanMuc {
   tong: number;
   /** Câu hiện cho người dùng; `null` khi còn dư dả, không cần nói gì. */
   loiNhan: string | null;
+  /** Hết lượt trên iPhone thì hiện nút sang màn Nâng cấp (mua qua App Store). */
+  coNutNangCap: boolean;
 }
 
 /**
@@ -35,13 +42,16 @@ export interface TrangThaiHanMuc {
  * cuối kỳ theo UTC: `31/08 23:59Z` rơi vào 06:59 sáng 01/09 giờ Việt Nam. Người
  * dùng cần biết ngày HỌ có lượt mới, không phải ngày theo đồng hồ máy chủ.
  */
-export function ngayNapLai(periodEnd: string): string {
+export function ngayNapLai(periodEnd: string, ngonNgu: NgonNgu = layNgonNgu()): string {
   const d = new Date(periodEnd);
   if (Number.isNaN(d.getTime())) return '';
+  // Tiếng Anh viết "Dec 31" (ngày/tháng đảo vị trí sẽ gây hiểu nhầm với người quen kiểu Mỹ).
+  if (ngonNgu === 'en') return new Intl.DateTimeFormat(MA_VUNG.en, { month: 'short', day: 'numeric' }).format(d);
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
-export function trangThaiHanMuc(han: HanMucAI): TrangThaiHanMuc {
+export function trangThaiHanMuc(han: HanMucAI, ngonNgu: NgonNgu = layNgonNgu()): TrangThaiHanMuc {
+  const t = theoNgonNgu(tuDienNangCap, ngonNgu);
   const conLai = Math.max(0, han.remaining);
   const chung = { conLai, tong: han.limit };
 
@@ -49,12 +59,13 @@ export function trangThaiHanMuc(han: HanMucAI): TrangThaiHanMuc {
     return {
       ...chung,
       muc: 'het',
+      coNutNangCap: Platform.OS === 'ios',
       /*
         Nói rõ BAO GIỜ có lại. "Hết lượt" mà không kèm mốc thời gian thì người
         dùng không biết nên chờ hay nên bỏ cuộc, và họ sẽ bấm lại nhiều lần vô
         ích.
       */
-      loiNhan: `Đã dùng hết ${han.limit} lượt AI của tháng này. Hạn mức đầy lại vào ngày ${ngayNapLai(han.periodEnd)}. Bạn vẫn tạo công việc thủ công bằng nút cộng được như thường.`,
+      loiNhan: t.hetLuot(han.limit, ngayNapLai(han.periodEnd, ngonNgu)),
     };
   }
 
@@ -62,11 +73,12 @@ export function trangThaiHanMuc(han: HanMucAI): TrangThaiHanMuc {
     return {
       ...chung,
       muc: 'sap-het',
-      loiNhan: `Còn ${conLai} lượt AI trong tháng này.`,
+      coNutNangCap: false,
+      loiNhan: t.sapHet(conLai),
     };
   }
 
-  return { ...chung, muc: 'du', loiNhan: null };
+  return { ...chung, muc: 'du', loiNhan: null, coNutNangCap: false };
 }
 
 /**

@@ -12,9 +12,11 @@ import {
   View,
 } from 'react-native';
 import Constants from 'expo-constants';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { BangChonNgonNgu } from '../../../components/account/BangChonNgonNgu';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
@@ -22,19 +24,27 @@ import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { IconTile, type IconTileTone } from '../../../components/ui/IconTile';
 import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { capNhatAnhDaiDien, datDongYAI } from '../../../lib/api/account';
+import { getEntitlements } from '../../../lib/api/entitlements';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { chonAnhDaiDien } from '../../../lib/images/anh-dai-dien';
+import {
+  PRIVACY_URL,
+  SUPPORT_EMAIL,
+  SUPPORT_URL,
+  TERMS_URL,
+  openLegalLink,
+} from '../../../lib/legal-links';
+import { dongGoiHienTai } from '../../../lib/payments/goi-hien-tai';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { TEN_NGON_NGU } from '../../../i18n/ngon-ngu';
+import { tuDienTaiKhoan } from '../../../i18n/tu-dien/tai-khoan';
+
+type KhoaLoi = 'khongLuuDuocLuaChon' | 'khongDoiDuocAnh';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import { colors, fontSize, lineHeight, radius, scale, sizes, spacing } from '../../../theme/tokens';
 
 /** Số pixel thẻ danh tính chồng lên mép dưới của gradient header. */
-
-/*
-  Đặt qua biến môi trường chứ không nhúng cứng: trang chính sách còn chưa dựng
-  xong, mà đưa một liên kết hỏng vào bản nộp Play thì bị từ chối ngay. Chưa cấu
-  hình thì giấu hẳn dòng đó đi.
-*/
-const PRIVACY_POLICY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? '';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 
@@ -74,20 +84,32 @@ export default function AccountScreen() {
   const router = useRouter();
   const { user, signOut, capNhatHoSo } = useAuth();
   const { active } = useWorkspace();
+  const t = useTuDien(tuDienTaiKhoan);
+  const dichLoi = useDichLoi();
+  const { luaChon, ngonNgu } = useNgonNgu();
+  const [moBangNgonNgu, setMoBangNgonNgu] = useState(false);
+
+  // Cùng khoá với màn chat và màn Nâng cấp (invalidate ['entitlements']).
+  const entitlementsQuery = useQuery({
+    queryKey: ['entitlements', active?.id],
+    queryFn: () => getEntitlements(active?.id),
+    enabled: Platform.OS === 'ios' && Boolean(active?.id),
+  });
 
   const [dangLuuAnh, setDangLuuAnh] = useState(false);
-  const [loiAnh, setLoiAnh] = useState('');
+  /* Giữ lỗi ở dạng nguồn, dịch lúc vẽ: đổi ngôn ngữ giữa chừng thì băng đỏ đổi theo. */
+  const [loiAnh, setLoiAnh] = useState<NguonLoi<KhoaLoi> | null>(null);
 
   const { daDongY: choPhepAI, xinDongYRoiChay } = useDongYAI();
   const [dangLuuAI, setDangLuuAI] = useState(false);
-  const [loiAI, setLoiAI] = useState('');
+  const [loiAI, setLoiAI] = useState<NguonLoi<KhoaLoi> | null>(null);
 
   /*
     Bật: đi qua ĐÚNG hộp thoại xin đồng ý như lúc dùng AI lần đầu, để người dùng
-    đọc được sẽ gửi gì đi trước khi cho phép. Không có việc gì để chạy tiếp —
-    đồng ý xong là công tắc tự bật theo hồ sơ.
+    đọc được sẽ gửi gì đi trước khi cho phép (Guideline 5.1.2(i)). Không có việc
+    gì để chạy tiếp — đồng ý xong là công tắc tự bật theo hồ sơ.
 
-    Tắt: rút lại ngay, không hỏi — rút lại phải dễ như cho phép.
+    Tắt: rút lại ngay, không hỏi (5.1.1(ii) — rút lại phải dễ như cho phép).
   */
   async function doiChoPhepAI(bat: boolean) {
     if (bat) {
@@ -96,25 +118,25 @@ export default function AccountScreen() {
     }
     if (!user) return;
 
-    setLoiAI('');
+    setLoiAI(null);
     setDangLuuAI(true);
     try {
       const { aiConsentAt } = await datDongYAI(false);
       capNhatHoSo({ ...user, aiConsentAt });
     } catch (loi) {
-      setLoiAI(loi instanceof Error ? loi.message : 'Không lưu được lựa chọn.');
+      setLoiAI({ loi, duPhong: 'khongLuuDuocLuaChon' });
     } finally {
       setDangLuuAI(false);
     }
   }
 
   async function luuAnh(anhUrl: string | null) {
-    setLoiAnh('');
+    setLoiAnh(null);
     setDangLuuAnh(true);
     try {
       capNhatHoSo(await capNhatAnhDaiDien(anhUrl));
     } catch (loi) {
-      setLoiAnh(loi instanceof Error ? loi.message : 'Không đổi được ảnh đại diện.');
+      setLoiAnh({ loi, duPhong: 'khongDoiDuocAnh' });
     } finally {
       setDangLuuAnh(false);
     }
@@ -127,7 +149,7 @@ export default function AccountScreen() {
     trị để GỠ ảnh. Gộp lại thì mở trình chọn rồi đổi ý là mất luôn ảnh đang có.
   */
   async function chonVaLuuAnh() {
-    setLoiAnh('');
+    setLoiAnh(null);
     setDangLuuAnh(true);
     try {
       const anh = await chonAnhDaiDien();
@@ -135,7 +157,7 @@ export default function AccountScreen() {
 
       capNhatHoSo(await capNhatAnhDaiDien(anh));
     } catch (loi) {
-      setLoiAnh(loi instanceof Error ? loi.message : 'Không đổi được ảnh đại diện.');
+      setLoiAnh({ loi, duPhong: 'khongDoiDuocAnh' });
     } finally {
       setDangLuuAnh(false);
     }
@@ -151,16 +173,16 @@ export default function AccountScreen() {
       return;
     }
 
-    Alert.alert('Ảnh đại diện', undefined, [
-      { text: 'Chọn ảnh khác', onPress: () => void chonVaLuuAnh() },
-      { text: 'Gỡ ảnh', style: 'destructive', onPress: () => void luuAnh(null) },
-      { text: 'Thôi', style: 'cancel' },
+    Alert.alert(t.anhDaiDien, undefined, [
+      { text: t.chonAnhKhac, onPress: () => void chonVaLuuAnh() },
+      { text: t.goAnh, style: 'destructive', onPress: () => void luuAnh(null) },
+      { text: t.thoi, style: 'cancel' },
     ]);
   }
 
   return (
     <View style={styles.screen}>
-      <GradientHeader title="Tài khoản" />
+      <GradientHeader title={t.tieuDe} />
 
       {/*
         Kéo cả khung cuộn lên, không phải chỉ kéo thẻ bên trong. ScrollView xén mọi
@@ -181,7 +203,7 @@ export default function AccountScreen() {
         */}
         <View style={styles.identityBlock}>
           <Card style={styles.identity}>
-            <Text style={styles.name}>{user?.fullName ?? 'Đang tải…'}</Text>
+            <Text style={styles.name}>{user?.fullName ?? t.dangTai}</Text>
             <Text testID="account-email" style={styles.email}>
               {user?.email ?? ''}
             </Text>
@@ -202,7 +224,7 @@ export default function AccountScreen() {
               testID="account-avatar"
               accessibilityRole="button"
               accessibilityLabel={
-                user?.avatarUrl ? 'Đổi hoặc gỡ ảnh đại diện' : 'Chọn ảnh đại diện'
+                user?.avatarUrl ? t.doiHoacGoAnh : t.chonAnh
               }
               onPress={chamVaoAnh}
               style={styles.avatarNut}
@@ -225,8 +247,8 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        {loiAnh ? <ErrorBanner message={loiAnh} /> : null}
-        {loiAI ? <ErrorBanner message={loiAI} /> : null}
+        {loiAnh ? <ErrorBanner message={chuLoi(t, loiAnh, dichLoi)} /> : null}
+        {loiAI ? <ErrorBanner message={chuLoi(t, loiAI, dichLoi)} /> : null}
 
         <Card style={styles.menu}>
           {/*
@@ -238,52 +260,90 @@ export default function AccountScreen() {
             testID="account-profile"
             icon="person-outline"
             tone="info"
-            label="Thông tin cá nhân"
-            hint="Họ tên, số điện thoại, ngày sinh"
+            label={t.thongTinCaNhan}
+            hint={t.thongTinCaNhanGoiY}
             onPress={() => router.push('/account/profile')}
           />
           <MenuRow
             testID="account-notification-settings"
             icon="notifications-outline"
             tone="info"
-            label="Cài đặt thông báo"
-            hint="Chọn loại thông báo bạn muốn nhận"
+            label={t.caiDatThongBao}
+            hint={t.caiDatThongBaoGoiY}
             onPress={() => router.push('/account/notification-settings')}
           />
+          <MenuRow
+            testID="account-ngon-ngu"
+            icon="language-outline"
+            tone="info"
+            label="Ngôn ngữ / Language"
+            hint={luaChon === 'he-thong' ? t.theoMay : TEN_NGON_NGU[luaChon]}
+            onPress={() => setMoBangNgonNgu(true)}
+          />
           {/*
-            Đặt ngay dưới Cài đặt thông báo, trên Chính sách bảo mật: người thử
+            Đặt ngay dưới Cài đặt thông báo, trên các đường pháp lý: người thử
             nghiệm cần một đường báo lỗi từ trong app, không phải nhắn tin riêng.
           */}
           <MenuRow
             testID="account-contributions"
             icon="podium-outline"
             tone="info"
-            label="Bảng đóng góp"
-            hint="Ai làm bao nhiêu, ai đúng hạn"
+            label={t.bangDongGop}
+            hint={t.bangDongGopGoiY}
             onPress={() => router.push('/account/contributions')}
           />
           {/*
-            Ẩn hẳn trên iPhone: app iPhone luôn tính là gói Miễn phí (Apple
-            3.1.1), hiện ra chỉ để thấy một tính năng bị khoá. Màn đích cũng tự
-            quay về đây nếu lỡ mở trên iPhone.
+            Ẩn hẳn trên iPhone: app iPhone mua gói qua App Store, còn Đồng bộ lịch
+            là tính năng gói Pro/Team bán trên web. Màn đích cũng tự quay về đây
+            nếu lỡ mở trên iPhone.
           */}
           {Platform.OS !== 'ios' ? (
             <MenuRow
               testID="account-calendar-sync"
               icon="calendar-outline"
               tone="info"
-              label="Đồng bộ lịch"
-              hint="Đưa hạn chót và cuộc họp sang Google Calendar, Lịch Apple"
+              label={t.dongBoLich}
+              hint={t.dongBoLichGoiY}
               onPress={() => router.push('/account/calendar-sync')}
+            />
+          ) : null}
+          {/* Mua gói qua App Store — chỉ iPhone. Android không bán gì trong app. */}
+          {Platform.OS === 'ios' ? (
+            <MenuRow
+              testID="account-nang-cap"
+              icon="diamond-outline"
+              tone="info"
+              label={t.nangCapGoi}
+              hint={
+                entitlementsQuery.isLoading
+                  ? t.dangKiemTra
+                  : entitlementsQuery.data
+                    ? dongGoiHienTai(entitlementsQuery.data.subscription ?? null, ngonNgu)
+                    : t.xemCacGoi
+              }
+              onPress={() => router.push('/account/nang-cap')}
             />
           ) : null}
           <MenuRow
             testID="account-feedback"
             icon="chatbox-ellipses-outline"
             tone="info"
-            label="Góp ý cho WeDo"
-            hint="Nói cho chúng tôi biết chỗ nào khó dùng"
+            label={t.gopY}
+            hint={t.gopYGoiY}
             onPress={() => router.push('/account/feedback')}
+          />
+          {/*
+            Câu xác nhận chặn chỉ đường tới đúng chỗ này ("Tài khoản → Người đã
+            chặn"). Đổi tên hay dời đi thì phải sửa cả câu đó trong
+            `src/lib/moderation/noi-dung.ts`.
+          */}
+          <MenuRow
+            testID="account-blocked"
+            icon="ban-outline"
+            tone="info"
+            label={t.nguoiDaChan}
+            hint={t.nguoiDaChanGoiY}
+            onPress={() => router.push('/account/blocked')}
           />
           {/*
             Hộp thoại xin đồng ý AI hứa "có thể tắt trong Tài khoản", và chính
@@ -293,47 +353,80 @@ export default function AccountScreen() {
           <View style={[styles.menuRow, styles.menuDivider]}>
             <IconTile name="sparkles-outline" tone="info" />
             <View style={styles.menuBody}>
-              <Text style={styles.menuLabel}>Cho phép dùng AI</Text>
-              <Text style={styles.menuHint}>
-                Gợi ý công việc từ tin nhắn bạn chọn. Tắt thì app không gửi tin nhắn bạn chọn cho AI nữa.
-              </Text>
+              <Text style={styles.menuLabel}>{t.choPhepAI}</Text>
+              <Text style={styles.menuHint}>{t.choPhepAIGoiY}</Text>
             </View>
             <Switch
               testID="account-ai-consent"
-              accessibilityLabel="Cho phép dùng AI"
+              accessibilityLabel={t.choPhepAI}
               value={choPhepAI}
               disabled={dangLuuAI}
               onValueChange={(bat) => void doiChoPhepAI(bat)}
               trackColor={{ true: colors.primary }}
             />
           </View>
+          <MenuRow
+            testID="account-terms"
+            icon="document-text-outline"
+            tone="done"
+            label={t.dieuKhoan}
+            hint={t.moTrongTrinhDuyet}
+            onPress={() => void openLegalLink(TERMS_URL)}
+          />
           {/*
-            Google Play bắt buộc có đường xoá tài khoản NGAY TRONG APP, không được
-            chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ người dùng tìm.
+            Luôn hiện: `PRIVACY_URL` có trang dự phòng, và Apple bắt buộc có đường
+            tới chính sách ngay trong app (5.1.1).
           */}
-          {PRIVACY_POLICY_URL ? (
-            <MenuRow
-              testID="account-privacy"
-              icon="shield-checkmark-outline"
-              tone="done"
-              label="Chính sách bảo mật"
-              hint="Mở trong trình duyệt"
-              onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
-            />
-          ) : null}
+          <MenuRow
+            testID="account-privacy"
+            icon="shield-checkmark-outline"
+            tone="done"
+            label={t.riengTu}
+            hint={t.moTrongTrinhDuyet}
+            onPress={() => void openLegalLink(PRIVACY_URL)}
+          />
+          {/*
+            App có nội dung người dùng tự đăng phải công bố cách liên hệ ngay
+            trong app (Guideline 1.2, 1.5): một trang hỗ trợ, và một địa chỉ thư
+            ghi rõ ra chứ không giấu sau nút bấm.
+          */}
+          <MenuRow
+            testID="account-help"
+            icon="help-buoy-outline"
+            tone="info"
+            label={t.hoTro}
+            hint={t.hoTroGoiY}
+            onPress={() => void openLegalLink(SUPPORT_URL)}
+          />
+          {/* Mở thư trước; máy không có ứng dụng thư thì mở trang hỗ trợ. */}
+          <MenuRow
+            testID="account-support"
+            icon="mail-outline"
+            tone="info"
+            label={t.lienHe(SUPPORT_EMAIL)}
+            hint={t.guiThu}
+            onPress={() =>
+              void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => openLegalLink(SUPPORT_URL))
+            }
+          />
+          {/*
+            Google Play và App Store đều bắt buộc có đường xoá tài khoản NGAY TRONG
+            APP, không được chỉ đưa link web. Đặt ngay cạnh Đăng xuất vì đó là chỗ
+            người dùng tìm.
+          */}
           <MenuRow
             testID="account-delete"
             icon="trash-outline"
             tone="rejected"
-            label="Xoá tài khoản"
-            hint="Xoá vĩnh viễn dữ liệu của bạn"
+            label={t.xoaTaiKhoan}
+            hint={t.xoaTaiKhoanGoiY}
             onPress={() => router.push('/account/delete-account')}
           />
           <MenuRow
             testID="account-signout"
             icon="log-out-outline"
             tone="rejected"
-            label="Đăng xuất"
+            label={t.dangXuat}
             onPress={() => void signOut()}
             last
           />
@@ -341,6 +434,7 @@ export default function AccountScreen() {
 
         <Text style={styles.note}>WeDo {APP_VERSION}</Text>
       </ScrollView>
+      <BangChonNgonNgu visible={moBangNgonNgu} onDismiss={() => setMoBangNgonNgu(false)} />
     </View>
   );
 }

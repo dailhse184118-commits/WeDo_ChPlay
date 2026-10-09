@@ -9,9 +9,17 @@ import { Card } from '../../../components/ui/Card';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { TextField } from '../../../components/ui/TextField';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienCuocHop } from '../../../i18n/tu-dien/cuoc-hop';
+import { chuLoi, type NguonLoi } from '../../../lib/auth/nguon-loi';
 import { listProjects } from '../../../lib/api/projects';
 import { taoCuocHop } from '../../../lib/api/meetings';
-import { ghepNgayGio, tuThemDauGachGio } from '../../../lib/meetings/thoi-diem';
+import {
+  cauLoiThoiDiem,
+  ghepNgayGio,
+  tuThemDauGachGio,
+  type KhoaLoiThoiDiem,
+} from '../../../lib/meetings/thoi-diem';
 import { DINH_DANG_NGAY, tuThemDauGach } from '../../../lib/ngay-sinh';
 import { useQuayLai } from '../../../lib/use-quay-lai';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
@@ -21,6 +29,9 @@ export default function ManTaoCuocHop() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { active } = useWorkspace();
+  const t = useTuDien(tuDienCuocHop);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
 
   const quayLai = useQuayLai(useCallback(() => router.navigate('/meetings'), [router]));
 
@@ -30,9 +41,10 @@ export default function ManTaoCuocHop() {
   const [ngay, setNgay] = useState('');
   const [gio, setGio] = useState('');
 
-  const [loiTieuDe, setLoiTieuDe] = useState<string | null>(null);
-  const [loiThoiDiem, setLoiThoiDiem] = useState<string | null>(null);
-  const [loiChung, setLoiChung] = useState<string | null>(null);
+  /* Lỗi giữ ở dạng NGUỒN, dịch lúc vẽ: đổi ngôn ngữ giữa chừng thì băng đỏ đổi theo. */
+  const [loiTieuDe, setLoiTieuDe] = useState(false);
+  const [loiThoiDiem, setLoiThoiDiem] = useState<KhoaLoiThoiDiem | null>(null);
+  const [loiChung, setLoiChung] = useState<NguonLoi<'chonDuAn' | 'khongTaoDuoc'> | null>(null);
 
   const lamTrongForm = useCallback(() => {
     setDuAnId(null);
@@ -40,7 +52,7 @@ export default function ManTaoCuocHop() {
     setNoiDung('');
     setNgay('');
     setGio('');
-    setLoiTieuDe(null);
+    setLoiTieuDe(false);
     setLoiThoiDiem(null);
     setLoiChung(null);
   }, []);
@@ -80,7 +92,7 @@ export default function ManTaoCuocHop() {
         một câu chung chung: người dùng cần biết mình thiếu quyền chứ không phải
         nghĩ là app hỏng.
       */
-      setLoiChung(loi instanceof Error ? loi.message : 'Không tạo được cuộc họp.');
+      setLoiChung({ loi, duPhong: 'khongTaoDuoc' });
     },
   });
 
@@ -89,19 +101,19 @@ export default function ManTaoCuocHop() {
 
     const ten = tieuDe.trim();
     if (!ten) {
-      setLoiTieuDe('Tiêu đề không được để trống.');
+      setLoiTieuDe(true);
       return;
     }
-    setLoiTieuDe(null);
+    setLoiTieuDe(false);
 
     if (!duAnId) {
-      setLoiChung('Hãy chọn dự án cho cuộc họp.');
+      setLoiChung({ khoa: 'chonDuAn' });
       return;
     }
 
     const thoiDiem = ghepNgayGio(ngay, gio);
-    if (thoiDiem.loi) {
-      setLoiThoiDiem(thoiDiem.loi);
+    if (thoiDiem.khoaLoi) {
+      setLoiThoiDiem(thoiDiem.khoaLoi);
       return;
     }
     setLoiThoiDiem(null);
@@ -118,7 +130,7 @@ export default function ManTaoCuocHop() {
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Tạo cuộc họp"
+        title={t.danhSach.taoCuocHop}
         onBack={quayLai}
         dense
       />
@@ -128,17 +140,15 @@ export default function ManTaoCuocHop() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {loiChung ? <ErrorBanner message={loiChung} /> : null}
+        {loiChung ? <ErrorBanner message={chuLoi(t.tao, loiChung, dichLoi)} /> : null}
 
         <Card style={styles.khoi}>
-          <Text style={styles.nhan}>Dự án</Text>
+          <Text style={styles.nhan}>{t.tao.duAn}</Text>
 
           {duAnQuery.isLoading ? (
             <ActivityIndicator color={colors.primary} />
           ) : danhSachDuAn.length === 0 ? (
-            <Text style={styles.ghiChu}>
-              Không gian này chưa có dự án nào. Cuộc họp phải thuộc về một dự án.
-            </Text>
+            <Text style={styles.ghiChu}>{t.tao.khongCoDuAn}</Text>
           ) : (
             danhSachDuAn.map((duAn) => {
               const dangChon = duAn.id === duAnId;
@@ -168,65 +178,62 @@ export default function ManTaoCuocHop() {
         <Card style={styles.khoi}>
           <TextField
             testID="meeting-title"
-            label="Tiêu đề"
+            label={t.tao.tieuDe}
             value={tieuDe}
             onChangeText={(v) => {
               setTieuDe(v);
-              setLoiTieuDe(null);
+              setLoiTieuDe(false);
             }}
-            placeholder="Họp chốt nội dung chương 2"
+            placeholder={t.tao.tieuDeMau}
             autoCapitalize="sentences"
-            error={loiTieuDe ?? undefined}
+            error={loiTieuDe ? t.tao.tieuDeTrong : undefined}
           />
 
           <TextField
             testID="meeting-agenda"
-            label="Nội dung dự kiến"
+            label={t.tao.noiDung}
             value={noiDung}
             onChangeText={setNoiDung}
-            placeholder="Không bắt buộc"
+            placeholder={t.tao.khongBatBuoc}
             autoCapitalize="sentences"
             multiline
           />
 
           <TextField
             testID="meeting-date"
-            label={`Ngày họp (${DINH_DANG_NGAY})`}
+            label={t.tao.ngayHop(DINH_DANG_NGAY)}
             value={ngay}
             onChangeText={(v) => {
               setNgay(tuThemDauGach(v));
               setLoiThoiDiem(null);
             }}
-            placeholder="25/09/2026"
+            placeholder={t.tao.ngayMau}
             keyboardType="number-pad"
           />
 
           <TextField
             testID="meeting-time"
-            label="Giờ họp (hh:mm)"
+            label={t.tao.gioHop}
             value={gio}
             onChangeText={(v) => {
               setGio(tuThemDauGachGio(v));
               setLoiThoiDiem(null);
             }}
-            placeholder="20:00"
+            placeholder={t.tao.gioMau}
             keyboardType="number-pad"
-            error={loiThoiDiem ?? undefined}
+            error={loiThoiDiem ? cauLoiThoiDiem(loiThoiDiem, ngonNgu) : undefined}
           />
         </Card>
 
         <Button
           testID="meeting-create"
-          label="Tạo cuộc họp"
+          label={t.danhSach.taoCuocHop}
           onPress={bamTao}
           loading={tao.isPending}
           disabled={danhSachDuAn.length === 0}
         />
 
-        <Text style={styles.ghiChuCuoi}>
-          Chỉ Leader của dự án mới tạo được cuộc họp. Mọi thành viên dự án sẽ được
-          thêm vào và nhận thông báo.
-        </Text>
+        <Text style={styles.ghiChuCuoi}>{t.tao.ghiChuCuoi}</Text>
       </ScrollView>
     </View>
   );

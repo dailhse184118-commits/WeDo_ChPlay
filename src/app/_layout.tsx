@@ -6,15 +6,20 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { CongDieuKhoan } from '../components/auth/CongDieuKhoan';
 import { VeDangNhapKhiDangXuat } from '../components/auth/VeDangNhapKhiDangXuat';
 import { UpdateGate } from '../components/update/UpdateGate';
 import { baoLoi, khoiDongSentry } from '../lib/observability/sentry';
-import { AuthProvider } from '../lib/auth/auth-context';
+import { AuthProvider, useAuth } from '../lib/auth/auth-context';
+import { batDongBoNgonNgu, quenNgonNguDaGui } from '../lib/i18n/dong-bo-ngon-ngu';
 import { bridgeAppStateToQueryFocus } from '../lib/app-focus';
 import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
 import { HAN_CACHE_BEN_BI_MS, cacheBenBi, nenLuuXuongMay, queryClient } from '../lib/query';
 import { usePhienBan } from '../lib/version/use-phien-ban';
+import { NgonNguProvider, useTuDien } from '../i18n/NgonNguProvider';
+import { tuDienChung } from '../i18n/tu-dien/chung';
+import { tuDienHeThong } from '../i18n/tu-dien/he-thong';
 
 /*
   Đặt trên hết: chỉ những lỗi xảy ra SAU lời gọi này mới được ghi nhận, nên nó
@@ -55,21 +60,23 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
     Đặt trong effect chứ không giữa lúc render: render phải thuần, và React có
     thể gọi lại nó nhiều lần cho cùng một lỗi.
   */
+  // Hook cũng chạy được ngoài NgonNguProvider (đọc thẳng kho ngôn ngữ), nên dùng được ở ranh giới lỗi.
+  const t = useTuDien(tuDienHeThong);
+  const tChung = useTuDien(tuDienChung);
+
   useEffect(() => {
     baoLoi(error, 'error-boundary');
   }, [error]);
 
   return (
     <View style={styles.loi}>
-      <Text style={styles.loiTieuDe}>Màn hình này gặp trục trặc</Text>
-      <Text style={styles.loiThan}>
-        Phần còn lại của WeDo vẫn dùng được. Thử mở lại, nếu vẫn lỗi thì báo giúp đội ngũ WeDo.
-      </Text>
+      <Text style={styles.loiTieuDe}>{t.manLoi.tieuDe}</Text>
+      <Text style={styles.loiThan}>{t.manLoi.noiDung}</Text>
       {/* Giữ nguyên câu lỗi gốc: đó là thứ duy nhất lần ra nguyên nhân khi người
           kiểm thử chụp màn hình gửi về. */}
       <Text style={styles.loiChiTiet}>{error.message}</Text>
       <Pressable onPress={() => void retry()} style={styles.loiNut}>
-        <Text style={styles.loiNutChu}>Thử lại</Text>
+        <Text style={styles.loiNutChu}>{tChung.thuLai}</Text>
       </Pressable>
     </View>
   );
@@ -83,49 +90,76 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
  * nhập cũng có thể hỏng.
  */
 function CongPhienBan({ children }: { children: React.ReactNode }) {
-  const { muc, notes } = usePhienBan();
+  const { muc, notes, storeUrl } = usePhienBan();
 
   if (muc === 'bat-buoc') {
-    return <UpdateGate notes={notes} />;
+    return <UpdateGate notes={notes} storeUrl={storeUrl} />;
   }
 
   return <>{children}</>;
+}
+
+/**
+ * Báo máy chủ ngôn ngữ đang dùng khi đã đăng nhập và mỗi lần đổi. Đăng xuất thì
+ * quên giá trị đã gửi, để tài khoản kế tiếp trên máy này được báo lại.
+ */
+function DongBoNgonNgu() {
+  const { status } = useAuth();
+  useEffect(() => {
+    if (status === 'signedOut') {
+      void quenNgonNguDaGui();
+      return;
+    }
+    if (status !== 'signedIn') return;
+    return batDongBoNgonNgu(() => true);
+  }, [status]);
+  return null;
 }
 
 export default function RootLayout() {
   useEffect(() => bridgeAppStateToQueryFocus(), []);
 
   return (
-    <SafeAreaProvider>
-      {/*
-        Bọc cả app để bàn phím được đọc từ `WindowInsetsAnimation` của Android —
-        nguồn sự thật của hệ điều hành — thay vì sự kiện `keyboardDidShow` mà
-        bàn phím của mỗi hãng báo mỗi kiểu khi chạy edge-to-edge. Đó là nguyên
-        nhân ô soạn tin bị che trên một số máy, người kiểm thử báo 18/09/2026.
-      */}
-      <KeyboardProvider>
+    <NgonNguProvider>
+      <SafeAreaProvider>
         {/*
-          Khôi phục cache từ đĩa trước khi dựng cây màn hình, để mở app lúc không
-          có mạng vẫn thấy dữ liệu lần trước thay vì màn hình trắng.
+          Bọc cả app để bàn phím được đọc từ `WindowInsetsAnimation` của Android —
+          nguồn sự thật của hệ điều hành — thay vì sự kiện `keyboardDidShow` mà
+          bàn phím của mỗi hãng báo mỗi kiểu khi chạy edge-to-edge. Đó là nguyên
+          nhân ô soạn tin bị che trên một số máy, người kiểm thử báo 18/09/2026.
         */}
-        <PersistQueryClientProvider
-          client={queryClient}
-          persistOptions={{
-            persister: cacheBenBi,
-            maxAge: HAN_CACHE_BEN_BI_MS,
-            dehydrateOptions: { shouldDehydrateQuery: nenLuuXuongMay },
-          }}
-        >
-          <AuthProvider>
-            <StatusBar style="dark" />
-            <VeDangNhapKhiDangXuat />
-            <CongPhienBan>
-              <Stack screenOptions={{ headerShown: false }} />
-            </CongPhienBan>
-          </AuthProvider>
-        </PersistQueryClientProvider>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+        <KeyboardProvider>
+          {/*
+            Khôi phục cache từ đĩa trước khi dựng cây màn hình, để mở app lúc không
+            có mạng vẫn thấy dữ liệu lần trước thay vì màn hình trắng.
+          */}
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+              persister: cacheBenBi,
+              maxAge: HAN_CACHE_BEN_BI_MS,
+              dehydrateOptions: { shouldDehydrateQuery: nenLuuXuongMay },
+            }}
+          >
+            <AuthProvider>
+              <StatusBar style="dark" />
+              <VeDangNhapKhiDangXuat />
+              <DongBoNgonNgu />
+              <CongPhienBan>
+                {/*
+                  Người đã đăng nhập mà chưa đồng ý Điều khoản sử dụng thì không
+                  vào được màn nào — kể cả màn mở từ thông báo. Nằm DƯỚI cổng phiên
+                  bản: app quá cũ thì cập nhật trước đã.
+                */}
+                <CongDieuKhoan>
+                  <Stack screenOptions={{ headerShown: false }} />
+                </CongDieuKhoan>
+              </CongPhienBan>
+            </AuthProvider>
+          </PersistQueryClientProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </NgonNguProvider>
   );
 }
 

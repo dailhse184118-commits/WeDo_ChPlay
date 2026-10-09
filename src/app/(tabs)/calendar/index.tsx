@@ -14,6 +14,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienLich } from '../../../i18n/tu-dien/lich';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspaceForm';
@@ -51,15 +53,17 @@ const MAU_THEO_LOAI: Record<MucLich['kind'], string> = {
   lần chạm không có gì.
 */
 function Muc({ item, onPress }: { item: MucLich; onPress?: () => void }) {
+  const t = useTuDien(tuDienLich);
+  const { ngonNgu } = useNgonNgu();
   const than = (
     <View style={styles.muc}>
       <View style={[styles.vach, { backgroundColor: MAU_THEO_LOAI[item.kind] }]} />
       <View style={styles.mucThan}>
         <View style={styles.mucDau}>
           <Text style={[styles.huyHieu, { color: MAU_THEO_LOAI[item.kind] }]}>
-            {nhanLoai(item.kind)}
+            {nhanLoai(item.kind, ngonNgu)}
           </Text>
-          <Text style={styles.gio}>{gioTrongNgay(item.startTime)}</Text>
+          <Text style={styles.gio}>{gioTrongNgay(item.startTime, ngonNgu)}</Text>
         </View>
         <Text style={styles.tieuDe} numberOfLines={2}>
           {item.title}
@@ -79,7 +83,7 @@ function Muc({ item, onPress }: { item: MucLich; onPress?: () => void }) {
     <Pressable
       testID={`calendar-meeting-${item.id}`}
       accessibilityRole="button"
-      accessibilityLabel={`Mở cuộc họp ${item.title}`}
+      accessibilityLabel={t.moCuocHop(item.title)}
       onPress={onPress}
       style={({ pressed }) => (pressed ? styles.mucNhan : null)}
     >
@@ -96,6 +100,9 @@ function khoaHomNay(): string {
 
 export default function ManLich() {
   const router = useRouter();
+  const t = useTuDien(tuDienLich);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const { active, workspaces, switchTo } = useWorkspace();
 
   /*
@@ -147,17 +154,17 @@ export default function ManLich() {
 
   const sections = useMemo(
     () =>
-      nhomTheoNgay(lich.data ?? [], khoang.bayGio).map((nhom) => ({
+      nhomTheoNgay(lich.data ?? [], khoang.bayGio, ngonNgu).map((nhom) => ({
         title: nhom.nhan,
         data: nhom.muc,
       })),
-    [lich.data, khoang.bayGio],
+    [lich.data, khoang.bayGio, ngonNgu],
   );
 
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Lịch"
+        title={t.tieuDe}
         subtitle={active?.name}
         onPressSubtitle={() => setSwitcherOpen(true)}
         onBack={quayLai}
@@ -171,17 +178,11 @@ export default function ManLich() {
           danh sách vẫn đọc được là làm người dùng tưởng app hỏng.
         */}
         {lich.isError && !lich.data ? (
-          <ErrorBanner
-            message={
-              lich.error instanceof Error ? lich.error.message : 'Không tải được lịch.'
-            }
-          />
+          <ErrorBanner message={dichLoi(lich.error, t.khongTaiDuoc)} />
         ) : null}
 
         {lich.isError && lich.data ? (
-          <Text style={styles.ngoaiTuyen}>
-            Đang xem dữ liệu đã lưu. Kết nối lại để cập nhật.
-          </Text>
+          <Text style={styles.ngoaiTuyen}>{t.dangXemDuLieuDaLuu}</Text>
         ) : null}
 
         {lich.isLoading ? (
@@ -226,11 +227,8 @@ export default function ManLich() {
                   <View style={styles.trongIcon}>
                     <Ionicons name="calendar-outline" size={28} color={colors.primary} />
                   </View>
-                  <Text style={styles.trongTieuDe}>Chưa có gì trong lịch</Text>
-                  <Text style={styles.trongThan}>
-                    Cuộc họp, sự kiện và hạn chót công việc của nhóm sẽ hiện ở đây, gộp chung theo
-                    từng ngày.
-                  </Text>
+                  <Text style={styles.trongTieuDe}>{t.trongTieuDe}</Text>
+                  <Text style={styles.trongThan}>{t.trongThan}</Text>
                 </View>
               )
             }

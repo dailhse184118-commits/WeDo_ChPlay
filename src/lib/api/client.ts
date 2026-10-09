@@ -1,4 +1,11 @@
+import { tuDienLoiMang } from '../../i18n/tu-dien/loi-mang';
 import { loadRefreshToken, loadToken, saveRefreshToken, saveToken } from '../auth/token-storage';
+
+/*
+  Câu lỗi lớp mạng luôn ném bản TIẾNG VIỆT: `i18n/loi.ts` nhận ra chúng theo nguyên
+  văn để dịch lúc hiển thị (xem tu-dien/loi-mang.ts).
+*/
+const loiMang = tuDienLoiMang.vi;
 
 export class ApiError extends Error {
   status: number;
@@ -23,6 +30,14 @@ export class ApiError extends Error {
    */
   nguyenNhan?: string;
 
+  /**
+   * Thân JSON của phản hồi lỗi, nguyên văn từ máy chủ.
+   *
+   * Giữ lại để nơi bắt lỗi đọc được các trường ngoài `code`, ví dụ `currentPeriodEnd`
+   * đi kèm `SUBSCRIPTION_CONFLICT`. Không có trường này thì mất hết.
+   */
+  chiTiet?: unknown;
+
   constructor(message: string, status: number, code?: string, nguyenNhan?: string) {
     super(message);
     // Cần thiết để `instanceof ApiError` vẫn đúng sau khi transpile.
@@ -46,7 +61,7 @@ export const MA_PHAN_HOI_LA = 'PHAN_HOI_KHONG_PHAI_JSON';
 
 /** Câu báo cho người dùng khi máy chủ trả về thứ không đọc được. */
 export function thongBaoMayChuBan(status: number): string {
-  return `Máy chủ đang bận hoặc đang khởi động lại (mã ${status}). Thử lại sau ít phút.`;
+  return loiMang.mayChuBan(status);
 }
 
 /**
@@ -154,7 +169,7 @@ function extractMessage(payload: unknown, status: number): string {
     if (typeof message === 'string' && message.trim()) return message;
     if (Array.isArray(message) && message.length) return message.join('. ');
   }
-  return `Máy chủ trả lỗi ${status}.`;
+  return loiMang.mayChuTraLoi(status);
 }
 
 /**
@@ -195,6 +210,32 @@ export async function ketThucPhien(): Promise<void> {
 /** Gọi khi vừa đăng nhập xong — cho phép gia hạn trở lại. */
 export function batDauPhien(): void {
   dangDangXuat = false;
+  lyDoHetPhien = null;
+}
+
+/** Mã máy chủ gắn khi tài khoản bị đình chỉ — ở đăng nhập, gia hạn và mọi lượt gọi. */
+export const MA_TAI_KHOAN_BI_KHOA = 'ACCOUNT_SUSPENDED';
+
+/**
+ * Câu máy chủ giải thích vì sao phiên vừa bị cắt, nếu có.
+ *
+ * Tài khoản bị khoá giữa chừng thì người dùng bị đưa ra màn đăng nhập mà không
+ * hề bấm gì. Không nói lý do thì họ tưởng app lỗi và cứ đăng nhập lại mãi. Máy
+ * chủ trả câu đó kèm mã `ACCOUNT_SUSPENDED`; giữ lại ở đây để màn đăng nhập hiện.
+ *
+ * Đọc bao nhiêu lần cũng được — chỉ xoá khi một phiên mới bắt đầu, nên màn đăng
+ * nhập dựng lại (hay StrictMode gọi hai lần) vẫn thấy.
+ */
+let lyDoHetPhien: string | null = null;
+
+export function docLyDoHetPhien(): string | null {
+  return lyDoHetPhien;
+}
+
+/** Nhận ra câu "tài khoản bị khoá" trong thân lỗi; bỏ qua mọi thứ khác. */
+function ghiLyDoNeuBiKhoa(payload: unknown): void {
+  if (extractCode(payload) !== MA_TAI_KHOAN_BI_KHOA) return;
+  lyDoHetPhien = extractMessage(payload, 403);
 }
 
 async function giaHanPhien(): Promise<string | null> {
@@ -211,7 +252,7 @@ async function giaHanPhien(): Promise<string | null> {
   } catch (loi) {
     // Mất mạng giữa chừng là "mất mạng" (trạng thái 0) như mọi lượt gọi khác — không phải hết phiên.
     throw new ApiError(
-      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
+      loiMang.khongKetNoi,
       0,
       undefined,
       loi instanceof Error ? loi.message : String(loi),
@@ -224,9 +265,20 @@ async function giaHanPhien(): Promise<string | null> {
     thử lại sau. Trước đây mọi lỗi đều thành "hết phiên", nên máy chủ trục trặc
     vài giây là người dùng bị đá ra màn đăng nhập.
   */
-  if (response.status === 400 || response.status === 401 || response.status === 403) return null;
+  if (response.status === 400 || response.status === 401 || response.status === 403) {
+    // Phiên hết vì tài khoản bị khoá thì giữ lại lý do — xem `lyDoHetPhien`.
+    if (response.status === 403) {
+      try {
+        const raw = await response.text();
+        ghiLyDoNeuBiKhoa(raw ? JSON.parse(raw) : undefined);
+      } catch {
+        // Thân không phải JSON (trang lỗi của cổng Azure chẳng hạn): không có lý do để giữ.
+      }
+    }
+    return null;
+  }
   if (!response.ok) {
-    throw new ApiError(`Gia hạn phiên đăng nhập lỗi ${response.status}.`, response.status);
+    throw new ApiError(loiMang.giaHanLoi(response.status), response.status);
   }
 
   // Đọc bằng `text()` rồi tự parse, giống hệt phần còn lại của tệp này.
@@ -302,7 +354,7 @@ export async function apiRequest<T = unknown>(
       mọi sự cố mạng đều trông y hệt nhau từ phía người sửa.
     */
     throw new ApiError(
-      'Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.',
+      loiMang.khongKetNoi,
       0,
       undefined,
       loi instanceof Error ? `${loi.name}: ${loi.message}` : String(loi),
@@ -342,13 +394,17 @@ export async function apiRequest<T = unknown>(
     }
 
     if (response.status === 401) {
+      // Ghi TRƯỚC khi báo 401: báo xong là đăng xuất, màn đăng nhập hiện ra ngay.
+      if (!skipAuth) ghiLyDoNeuBiKhoa(payload);
       unauthorizedHandlers.forEach((handler) => handler());
     }
-    throw new ApiError(
+    const loi = new ApiError(
       extractMessage(payload, response.status),
       response.status,
       extractCode(payload),
     );
+    loi.chiTiet = payload;
+    throw loi;
   }
 
   return payload as T;

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,14 +13,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { KhungCuonBieuMau, khungCuonTuLoBanPhim } from '../../components/ui/KhungCuonBieuMau';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 import { forgotPassword, resetPassword } from '../../lib/api/auth';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import { colors, fontSize, gradients, lineHeight, radius, spacing } from '../../theme/tokens';
 
 type Buoc = 'email' | 'ma';
 
+type KhoaLoi = 'thieuEmail' | 'khongGuiDuocMa' | 'maSauLoi' | 'matKhauNgan' | 'datLaiThatBai';
+
 export default function ForgotPasswordScreen() {
+  const t = useTuDien(tuDienDangNhap);
+  const dichLoi = useDichLoi();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -29,17 +36,19 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [error, setError] = useState('');
+  const [loi, setLoi] = useState<NguonLoi<KhoaLoi> | null>(null);
+  const error = chuLoi(t, loi, dichLoi);
+  // Câu tiếng Việt của máy chủ; dịch lúc vẽ.
   const [thongBao, setThongBao] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleGuiMa = async () => {
     if (!email.trim()) {
-      setError('Vui lòng nhập email');
+      setLoi({ khoa: 'thieuEmail' });
       return;
     }
 
-    setError('');
+    setLoi(null);
     setSubmitting(true);
     try {
       /*
@@ -51,7 +60,7 @@ export default function ForgotPasswordScreen() {
       setThongBao(ketQua.message);
       setBuoc('ma');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không gửi được mã. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'khongGuiDuocMa' });
     } finally {
       setSubmitting(false);
     }
@@ -59,23 +68,23 @@ export default function ForgotPasswordScreen() {
 
   const handleDatLai = async () => {
     if (!/^\d{6}$/.test(code.trim())) {
-      setError('Mã gồm 6 chữ số');
+      setLoi({ khoa: 'maSauLoi' });
       return;
     }
     // Khớp ràng buộc MinLength(6) của ResetPasswordDto phía máy chủ.
     if (newPassword.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      setLoi({ khoa: 'matKhauNgan' });
       return;
     }
 
-    setError('');
+    setLoi(null);
     setSubmitting(true);
     try {
       await resetPassword(email.trim(), code.trim(), newPassword);
-      Alert.alert('Đã đổi mật khẩu', 'Hãy đăng nhập bằng mật khẩu mới.');
+      Alert.alert(t.daDoiMatKhau, t.dangNhapBangMatKhauMoi);
       router.replace('/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'datLaiThatBai' });
     } finally {
       setSubmitting(false);
     }
@@ -91,11 +100,18 @@ export default function ForgotPasswordScreen() {
         ô nhập bị che trên máy này mà không che trên máy khác. Bản này đọc thẳng
         `WindowInsetsAnimation` của hệ điều hành, không còn phụ thuộc máy.
 
-        Nhờ vậy `behavior="padding"` dùng được cho cả Android, không phải tách
-        theo nền tảng như trước.
+        Nhờ vậy `behavior="padding"` dùng được cho Android.
+
+        iPhone thì tắt nó đi: `KhungCuonBieuMau` trên iPhone tự cuộn ô đang gõ
+        lên trên bàn phím, bật cả hai là bàn phím bị tính hai lần.
       */}
-      <KeyboardAvoidingView style={styles.flex} behavior="padding" automaticOffset>
-        <ScrollView
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior="padding"
+        automaticOffset
+        enabled={!khungCuonTuLoBanPhim()}
+      >
+        <KhungCuonBieuMau
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -110,19 +126,19 @@ export default function ForgotPasswordScreen() {
             ]}
           >
             <WeDoLogo testID="wedo-logo" width={140} tintColor={colors.onPrimary} />
-            <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
+            <Text style={styles.tagline}>{t.khauHieu}</Text>
           </View>
 
           <View style={styles.body}>
             <Card overlap={spacing.lg} style={styles.form}>
-              <Text style={styles.formTitle}>Quên mật khẩu</Text>
+              <Text style={styles.formTitle}>{t.quenMatKhau}</Text>
 
               {error ? <ErrorBanner message={error} /> : null}
 
               {buoc === 'email' ? (
                 <>
                   <Text style={styles.huongDan}>
-                    Nhập email bạn dùng để đăng ký. WeDo sẽ gửi cho bạn một mã gồm 6 chữ số.
+                    {t.huongDanNhapEmail}
                   </Text>
 
                   <TextField
@@ -130,44 +146,52 @@ export default function ForgotPasswordScreen() {
                     label="Email"
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="ban@example.com"
+                    placeholder={t.emailMau}
                     keyboardType="email-address"
+                    textContentType="username"
+                    autoComplete="email"
                   />
 
                   <Button
                     testID="send-code"
-                    label="Gửi mã"
+                    label={t.guiMa}
                     onPress={handleGuiMa}
                     loading={submitting}
                   />
                 </>
               ) : (
                 <>
-                  {thongBao ? <Text style={styles.huongDan}>{thongBao}</Text> : null}
+                  {thongBao ? (
+                    <Text style={styles.huongDan}>{dichLoi(new Error(thongBao), t.daGuiMaDuPhong)}</Text>
+                  ) : null}
                   <Text style={styles.huongDan}>
-                    Mã có hiệu lực trong 10 phút. Nhớ xem cả hộp thư rác.
+                    {t.maHieuLuc}
                   </Text>
 
                   <TextField
                     testID="code"
-                    label="Mã 6 số"
+                    label={t.maSau}
                     value={code}
                     onChangeText={setCode}
                     placeholder="123456"
                     keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    autoComplete="one-time-code"
                   />
                   <TextField
                     testID="new-password"
-                    label="Mật khẩu mới"
+                    label={t.matKhauMoi}
                     value={newPassword}
                     onChangeText={setNewPassword}
-                    placeholder="Ít nhất 6 ký tự"
+                    placeholder={t.matKhauGoiY}
                     secureTextEntry
+                    textContentType="newPassword"
+                    autoComplete="new-password"
                   />
 
                   <Button
                     testID="reset"
-                    label="Đặt lại mật khẩu"
+                    label={t.datLaiMatKhau}
                     onPress={handleDatLai}
                     loading={submitting}
                   />
@@ -177,18 +201,18 @@ export default function ForgotPasswordScreen() {
                     accessibilityRole="button"
                     onPress={() => {
                       setBuoc('email');
-                      setError('');
+                      setLoi(null);
                       setCode('');
                     }}
                     hitSlop={8}
                   >
-                    <Text style={styles.link}>Gõ nhầm email? Nhập lại</Text>
+                    <Text style={styles.link}>{t.nhapLaiEmail}</Text>
                   </Pressable>
                 </>
               )}
             </Card>
           </View>
-        </ScrollView>
+        </KhungCuonBieuMau>
       </KeyboardAvoidingView>
     </View>
   );

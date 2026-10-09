@@ -1,3 +1,7 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { dichThongBaoLoi, LoiDaDich } from '../../i18n/loi';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { taiMotTepLen } from './tai-tep';
 import type { TepChon } from './tasks';
 
@@ -9,7 +13,7 @@ import type { TepChon } from './tasks';
  * trong ô soạn — bấm Gửi lại là người nhận thấy ảnh đầu hai lần. Lỗi này mang
  * theo những gì đã gửi để chỗ gọi bỏ chúng ra và chỉ gửi lại phần còn lại.
  */
-export class LoiGuiDoDang<T> extends Error {
+export class LoiGuiDoDang<T> extends LoiDaDich {
   /** Kết quả máy chủ trả cho từng tệp đã lên, theo đúng thứ tự gửi. */
   readonly daGui: T[];
   /** Số tệp của cả lô. `daGui.length` tệp đầu đã tới, phần còn lại thì chưa. */
@@ -18,8 +22,10 @@ export class LoiGuiDoDang<T> extends Error {
   readonly loiGoc: unknown;
 
   constructor(daGui: T[], tongSo: number, loiGoc: unknown) {
-    const cau = loiGoc instanceof Error ? loiGoc.message : 'Không gửi được tệp.';
-    super(`Đã gửi ${daGui.length}/${tongSo} tệp. ${cau}`);
+    // Câu dựng ngay lúc ném, theo ngôn ngữ đang dùng (xem LoiDaDich).
+    const t = theoNgonNgu(tuDienChat);
+    const cau = dichThongBaoLoi(loiGoc, t.khongGuiDuocTep, layNgonNgu());
+    super(t.guiDoDangMotPhan(daGui.length, tongSo, cau));
     // Cần thiết để `instanceof LoiGuiDoDang` vẫn đúng sau khi transpile — như `ApiError`.
     Object.setPrototypeOf(this, LoiGuiDoDang.prototype);
     this.name = 'LoiGuiDoDang';
@@ -33,10 +39,11 @@ export class LoiGuiDoDang<T> extends Error {
  * Câu báo cho người dùng, gọi đúng tên thứ đang gửi ("ảnh", "tệp"), và nhắc rằng
  * bấm Gửi lần nữa chỉ gửi phần còn lại.
  */
-export function cauGuiDoDang(loi: LoiGuiDoDang<unknown>, loai: string): string {
-  const cau = loi.loiGoc instanceof Error ? loi.loiGoc.message : 'Không gửi được.';
+export function cauGuiDoDang(loi: LoiGuiDoDang<unknown>, ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienChat, ngonNgu);
+  const cau = dichThongBaoLoi(loi.loiGoc, t.khongGuiDuoc, ngonNgu);
   const conLai = loi.tongSo - loi.daGui.length;
-  return `Đã gửi ${loi.daGui.length}/${loi.tongSo} ${loai}. ${cau} Bấm Gửi để gửi tiếp ${conLai} ${loai} còn lại.`;
+  return t.guiDoDang(loi.daGui.length, loi.tongSo, t.loaiAnh, cau, conLai);
 }
 
 /**
@@ -64,7 +71,7 @@ export async function taiNhieuTepLen<T>(
   content: string,
 ): Promise<T[]> {
   if (files.length === 0) {
-    throw new Error('Hãy chọn ít nhất một ảnh để gửi.');
+    throw new LoiDaDich(theoNgonNgu(tuDienChat).chonItNhatMotAnh);
   }
 
   const ketQua: T[] = [];

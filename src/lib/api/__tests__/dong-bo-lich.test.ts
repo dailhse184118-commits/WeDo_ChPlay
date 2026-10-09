@@ -1,4 +1,5 @@
 import { ApiError, MA_PHAN_HOI_LA, apiRequest } from '../client';
+import { datNgonNguChoKiemThu } from '../../../i18n/ngon-ngu';
 import { cauLoiDongBoLich, layDongBoLich, taoLinkDongBoLich, tatDongBoLich } from '../dong-bo-lich';
 
 // Giữ `ApiError` thật: `cauLoiDongBoLich` phân loại bằng `instanceof`.
@@ -27,13 +28,20 @@ describe('API đồng bộ lịch', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/calendar-feed');
   });
 
-  it('POST tạo/đổi link luôn gửi tiếng Việt', async () => {
-    mockedRequest.mockResolvedValueOnce(CO_LINK as never);
+  it('POST tạo/đổi link gửi ngôn ngữ đang dùng: vi gửi vi, en gửi en', async () => {
+    mockedRequest.mockResolvedValue(CO_LINK as never);
 
     await expect(taoLinkDongBoLich()).resolves.toEqual(CO_LINK);
-    expect(mockedRequest).toHaveBeenCalledWith('/calendar-feed', {
+    expect(mockedRequest).toHaveBeenLastCalledWith('/calendar-feed', {
       method: 'POST',
       body: { lang: 'vi' },
+    });
+
+    datNgonNguChoKiemThu('en');
+    await taoLinkDongBoLich();
+    expect(mockedRequest).toHaveBeenLastCalledWith('/calendar-feed', {
+      method: 'POST',
+      body: { lang: 'en' },
     });
   });
 

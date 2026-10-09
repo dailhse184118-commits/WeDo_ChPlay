@@ -1,3 +1,6 @@
+import { LoiDaDich } from '../../i18n/loi';
+import { theoNgonNgu } from '../../i18n/dich';
+import { tuDienMayChon } from '../../i18n/tu-dien/may-chon';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
@@ -23,6 +26,9 @@ const CHAT_LUONG = 0.7;
  * trong hội thoại. Web cho tới 2MB; một ảnh như thế nhân bốn mươi tin là hàng
  * chục MB dữ liệu di động mỗi lần mở hội thoại. Nên phải thu về
  * `CANH_ANH_DAI_DIEN` trước khi mã hoá — còn chừng hai chục KB.
+ *
+ * Bước dựng lại rồi lưu JPEG này lo luôn ảnh HEIC của iPhone: web và Android
+ * không hiện được HEIC, nhưng ra khỏi đây thì ảnh nào cũng là JPEG.
  *
  * Trả `null` khi người dùng bấm huỷ: huỷ không phải lỗi.
  */
@@ -53,7 +59,7 @@ export async function chonAnhDaiDien(): Promise<string | null> {
     thành ảnh. Thà hỏng ngay ở đây.
   */
   if (!daLuu.base64) {
-    throw new Error('Không đọc được ảnh vừa chọn. Thử lại với ảnh khác nhé.');
+    throw new LoiDaDich(theoNgonNgu(tuDienMayChon).khongDocDuocAnhVuaChon);
   }
 
   return `data:image/jpeg;base64,${daLuu.base64}`;

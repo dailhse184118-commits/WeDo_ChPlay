@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Sentry from '@sentry/react-native';
 
@@ -5,7 +6,26 @@ interface DauVaoCauHinh {
   dsn?: string;
   dangPhatTrien?: boolean;
   phienBan?: string;
-  maBuild?: number;
+  /** `android.versionCode` là số, `ios.buildNumber` là chuỗi. */
+  maBuild?: number | string;
+}
+
+/** Phần cấu hình app mà `maBuildCuaMay` đọc. */
+interface CauHinhBuild {
+  android?: { versionCode?: number };
+  ios?: { buildNumber?: string };
+}
+
+/**
+ * Mã build của đúng nền tảng đang chạy.
+ *
+ * iPhone đánh số build riêng (`ios.buildNumber`), không đi theo
+ * `android.versionCode`. Lấy nhầm số của Android thì lỗi của bản iOS bị gắn
+ * `dist` của một bản Android nào đó, và source map không bao giờ ghép đúng.
+ */
+export function maBuildCuaMay(cauHinh: CauHinhBuild | null | undefined): number | string | undefined {
+  if (Platform.OS === 'ios') return cauHinh?.ios?.buildNumber || undefined;
+  return cauHinh?.android?.versionCode;
 }
 
 /** Đúng những trường `Sentry.init` cần, tách ra để test được mà không gọi Sentry thật. */
@@ -63,7 +83,7 @@ export function khoiDongSentry(): void {
       dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       dangPhatTrien: __DEV__,
       phienBan: Constants.expoConfig?.version,
-      maBuild: Constants.expoConfig?.android?.versionCode,
+      maBuild: maBuildCuaMay(Constants.expoConfig),
     });
 
     if (cauHinh) Sentry.init(cauHinh);

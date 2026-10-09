@@ -22,3 +22,14 @@ jest.mock('react-native-keyboard-controller', () =>
   require('react-native-keyboard-controller/jest'),
 );
 
+
+/*
+  Ngôn ngữ mặc định của mọi test là tiếng Việt: jest-expo tự mock expo-localization
+  với languageCode 'en', nhưng các bộ test cũ so khớp chữ tiếng Việt. Test nào cần
+  tiếng Anh thì tự gọi datNgonNguChoKiemThu('en') (và nhớ trả lại).
+*/
+const { datNgonNguChoKiemThu } = require('./src/i18n/ngon-ngu');
+
+beforeEach(() => {
+  datNgonNguChoKiemThu('vi');
+});

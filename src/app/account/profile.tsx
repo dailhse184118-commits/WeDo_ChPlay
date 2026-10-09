@@ -3,6 +3,9 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 
+import { useDichLoi, useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
@@ -28,14 +31,22 @@ import { colors, fontSize, lineHeight, spacing } from '../../theme/tokens';
 export default function ManThongTinCaNhan() {
   const router = useRouter();
   const { user, capNhatHoSo } = useAuth();
+  const t = useTuDien(tuDienTaiKhoan).hoSo;
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
 
   const [hoTen, setHoTen] = useState(user?.fullName ?? '');
   const [soDienThoai, setSoDienThoai] = useState(user?.phone ?? '');
   const [ngaySinh, setNgaySinh] = useState(() => hienThiNgaySinh(user?.dob));
 
-  const [loiHoTen, setLoiHoTen] = useState<string | null>(null);
-  const [loiNgaySinh, setLoiNgaySinh] = useState<string | null>(null);
-  const [loiChung, setLoiChung] = useState<string | null>(null);
+  /*
+    Lỗi giữ ở dạng nguồn, dịch lúc vẽ để đổi ngôn ngữ giữa chừng thì câu báo đổi theo.
+    Ô ngày sinh: cờ "đang lỗi" thôi, câu cụ thể tính lại từ chính nội dung ô (ô bị sửa
+    thì cờ được xoá, nên nội dung vẫn là thứ vừa bị từ chối).
+  */
+  const [loiHoTen, setLoiHoTen] = useState(false);
+  const [loiNgaySinh, setLoiNgaySinh] = useState(false);
+  const [loiChung, setLoiChung] = useState<NguonLoi<'khongLuuDuoc'> | null>(null);
   const [daLuu, setDaLuu] = useState(false);
 
   /*
@@ -67,7 +78,7 @@ export default function ManThongTinCaNhan() {
     },
     onError: (loi: unknown) => {
       setDaLuu(false);
-      setLoiChung(loi instanceof Error ? loi.message : 'Không lưu được thay đổi.');
+      setLoiChung({ loi, duPhong: 'khongLuuDuoc' });
     },
   });
 
@@ -77,17 +88,17 @@ export default function ManThongTinCaNhan() {
 
     const ten = hoTen.trim();
     if (!ten) {
-      setLoiHoTen('Họ và tên không được để trống.');
+      setLoiHoTen(true);
       return;
     }
-    setLoiHoTen(null);
+    setLoiHoTen(false);
 
-    const ngay = doiNgaySinhSangMayChu(ngaySinh);
+    const ngay = doiNgaySinhSangMayChu(ngaySinh, ngonNgu);
     if (ngay.loi) {
-      setLoiNgaySinh(ngay.loi);
+      setLoiNgaySinh(true);
       return;
     }
-    setLoiNgaySinh(null);
+    setLoiNgaySinh(false);
 
     luu.mutate({ fullName: ten, phone: soDienThoai.trim(), dob: ngay.giaTri });
   }
@@ -95,7 +106,7 @@ export default function ManThongTinCaNhan() {
   return (
     <View style={styles.screen}>
       <GradientHeader
-        title="Thông tin cá nhân"
+        title={t.tieuDe}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/account'))}
         dense
       />
@@ -105,7 +116,7 @@ export default function ManThongTinCaNhan() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {loiChung ? <ErrorBanner message={loiChung} /> : null}
+        {loiChung ? <ErrorBanner message={chuLoi(t, loiChung, dichLoi)} /> : null}
 
         <Card style={styles.the}>
           {/*
@@ -113,43 +124,43 @@ export default function ManThongTinCaNhan() {
             nhận mã đặt lại mật khẩu. Giấu hẳn đi thì người dùng không biết
             mình đang sửa hồ sơ của tài khoản nào.
           */}
-          <Text style={styles.nhanEmail}>Email đăng nhập</Text>
+          <Text style={styles.nhanEmail}>{t.emailDangNhap}</Text>
           <Text testID="profile-email" style={styles.email}>
             {user?.email ?? ''}
           </Text>
-          <Text style={styles.ghiChuEmail}>Không đổi được email.</Text>
+          <Text style={styles.ghiChuEmail}>{t.khongDoiEmail}</Text>
         </Card>
 
         <Card style={styles.the}>
           <TextField
             testID="profile-fullname"
-            label="Họ và tên"
+            label={t.hoTen}
             value={hoTen}
             onChangeText={(giaTri) => {
               setHoTen(giaTri);
-              setLoiHoTen(null);
+              setLoiHoTen(false);
               setDaLuu(false);
             }}
-            placeholder="Nguyễn Văn A"
+            placeholder={t.hoTenMau}
             autoCapitalize="words"
-            error={loiHoTen ?? undefined}
+            error={loiHoTen ? t.hoTenTrong : undefined}
           />
 
           <TextField
             testID="profile-phone"
-            label="Số điện thoại"
+            label={t.soDienThoai}
             value={soDienThoai}
             onChangeText={(giaTri) => {
               setSoDienThoai(giaTri);
               setDaLuu(false);
             }}
-            placeholder="Không bắt buộc"
+            placeholder={t.khongBatBuoc}
             keyboardType="phone-pad"
           />
 
           <TextField
             testID="profile-dob"
-            label={`Ngày sinh (${DINH_DANG_NGAY})`}
+            label={t.ngaySinh(DINH_DANG_NGAY)}
             value={ngaySinh}
             /*
               Tự chèn dấu gạch trong lúc gõ. Bắt người dùng tự gõ dấu `/` trên
@@ -157,28 +168,26 @@ export default function ManThongTinCaNhan() {
             */
             onChangeText={(giaTri) => {
               setNgaySinh(tuThemDauGach(giaTri));
-              setLoiNgaySinh(null);
+              setLoiNgaySinh(false);
               setDaLuu(false);
             }}
-            placeholder="14/08/2004"
+            placeholder={t.ngaySinhMau}
             keyboardType="number-pad"
-            error={loiNgaySinh ?? undefined}
+            error={loiNgaySinh ? (doiNgaySinhSangMayChu(ngaySinh, ngonNgu).loi ?? undefined) : undefined}
           />
 
-          <Text style={styles.ghiChu}>
-            Để trống ngày sinh nếu bạn không muốn lưu.
-          </Text>
+          <Text style={styles.ghiChu}>{t.ghiChuNgaySinh}</Text>
         </Card>
 
         {daLuu ? (
           <Text testID="profile-saved" style={styles.daLuu}>
-            Đã lưu thay đổi.
+            {t.daLuu}
           </Text>
         ) : null}
 
         <Button
           testID="profile-save"
-          label="Lưu thay đổi"
+          label={t.luu}
           onPress={bamLuu}
           disabled={!coThayDoi}
           loading={luu.isPending}

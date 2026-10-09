@@ -1,3 +1,7 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { dinhDangGio } from '../../i18n/dinh-dang';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienCuocHop } from '../../i18n/tu-dien/cuoc-hop';
 import type { CuocHop, TrangThaiHop } from '../api/meetings';
 
 /**
@@ -60,15 +64,9 @@ export function choVaoPhong(hop: CuocHop): boolean {
   return hop.status !== 'COMPLETED' && hop.status !== 'CANCELLED';
 }
 
-const TEN_TRANG_THAI: Record<TrangThaiHop, string> = {
-  SCHEDULED: 'Đã lên lịch',
-  IN_PROGRESS: 'Đang họp',
-  COMPLETED: 'Đã xong',
-  CANCELLED: 'Đã huỷ',
-};
-
-export function tenTrangThai(status: TrangThaiHop): string {
-  return TEN_TRANG_THAI[status] ?? 'Đã lên lịch';
+export function tenTrangThai(status: TrangThaiHop, ngonNgu: NgonNgu = layNgonNgu()): string {
+  const ten = theoNgonNgu(tuDienCuocHop, ngonNgu).trangThai;
+  return ten[status] ?? ten.SCHEDULED;
 }
 
 /**
@@ -78,13 +76,16 @@ export function tenTrangThai(status: TrangThaiHop): string {
  * Dùng `toLocaleTimeString` với `hour12: false` chứ không tự cắt chuỗi ISO:
  * chuỗi ISO máy chủ trả về là giờ UTC, cắt tay ra sẽ lệch bảy tiếng ở Việt Nam.
  */
-export function khoangGio(hop: CuocHop): string {
+export function khoangGio(hop: CuocHop, ngonNgu: NgonNgu = layNgonNgu()): string {
+  // Tiếng Anh: `8:00 PM – 9:30 PM`, đọc theo giờ Việt Nam. Tiếng Việt giữ cách cũ.
   const dinhDang = (iso: string) =>
-    new Date(iso).toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
+    ngonNgu === 'en'
+      ? dinhDangGio(iso, 'en')
+      : new Date(iso).toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
 
   const batDau = dinhDang(hop.startTime);
   return hop.endTime ? `${batDau} – ${dinhDang(hop.endTime)}` : batDau;

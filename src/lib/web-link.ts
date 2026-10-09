@@ -22,6 +22,9 @@
  * chỉ mở được các TRANG TĨNH trong `TRANG_DUOC_MO` — không có khung ứng dụng,
  * không có liên kết sang bảng giá. Thêm trang nào vào đó thì mở trang đó ra
  * xem trước: không được có lối nào dẫn tiếp sang trang mua.
+ * App iPhone đã bán gói qua In-App Purchase (10/2026), nhưng Guideline 3.1.1(a)
+ * vẫn cấm dẫn người dùng ra cách mua ngoài, nên nút mở web vẫn ẩn trên iOS và
+ * bộ lọc dưới đây giữ nguyên.
  * ===========================================================================
  */
 

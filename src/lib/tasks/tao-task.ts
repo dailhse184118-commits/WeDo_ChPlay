@@ -1,3 +1,6 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienCongViec } from '../../i18n/tu-dien/cong-viec';
 import type { CreateTaskInput } from '../api/tasks';
 
 export interface FormTaoTask {
@@ -43,10 +46,15 @@ export function hanChotSangISO(chuoi: string): string | null {
   return d.toISOString();
 }
 
+/** Khoá câu báo lỗi của form, tra trong `tuDienCongViec.tao.loiForm`. */
+export type KhoaLoiForm = 'thieuTen' | 'thieuKhongGian' | 'hanChotSai';
+
 export interface KetQuaDungInput {
   input: CreateTaskInput | null;
-  /** Câu báo lỗi để hiện thẳng cho người dùng; `null` khi hợp lệ. */
+  /** Câu báo lỗi theo `ngonNgu` lúc dựng; `null` khi hợp lệ. */
   loi: string | null;
+  /** Khoá của lỗi: màn hình giữ khoá trong state và dịch lúc vẽ. `null` khi hợp lệ. */
+  khoaLoi: KhoaLoiForm | null;
 }
 
 /**
@@ -58,10 +66,17 @@ export interface KetQuaDungInput {
 export function dungInputTaoTask(
   form: FormTaoTask,
   workspaceId: string | null,
+  ngonNgu: NgonNgu = layNgonNgu(),
 ): KetQuaDungInput {
+  const cauLoi = theoNgonNgu(tuDienCongViec, ngonNgu).tao.loiForm;
+  const loiVoi = (khoaLoi: KhoaLoiForm): KetQuaDungInput => ({
+    input: null,
+    loi: cauLoi[khoaLoi],
+    khoaLoi,
+  });
   const tieuDe = form.tieuDe.trim();
   if (!tieuDe) {
-    return { input: null, loi: 'Nhập tên công việc trước đã.' };
+    return loiVoi('thieuTen');
   }
 
   /*
@@ -69,7 +84,7 @@ export function dungInputTaoTask(
     Chặn ở đây để người dùng nhận câu tiếng Việt thay vì lỗi 400 thô.
   */
   if (!workspaceId) {
-    return { input: null, loi: 'Chưa chọn không gian làm việc.' };
+    return loiVoi('thieuKhongGian');
   }
 
   const input: CreateTaskInput = { title: tieuDe, workspaceId };
@@ -80,7 +95,7 @@ export function dungInputTaoTask(
   if (form.hanChot.trim()) {
     const iso = hanChotSangISO(form.hanChot);
     if (!iso) {
-      return { input: null, loi: 'Hạn chót phải theo dạng ngày/tháng/năm, ví dụ 02/09/2026.' };
+      return loiVoi('hanChotSai');
     }
     input.dueDate = iso;
   }
@@ -88,5 +103,5 @@ export function dungInputTaoTask(
   if (form.projectId) input.projectId = form.projectId;
   if (form.assigneeId) input.assigneeId = form.assigneeId;
 
-  return { input, loi: null };
+  return { input, loi: null, khoaLoi: null };
 }

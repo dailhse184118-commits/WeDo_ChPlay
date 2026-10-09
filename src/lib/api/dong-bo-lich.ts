@@ -1,3 +1,7 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { dichThongBaoLoi } from '../../i18n/loi';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienDongBoLich } from '../../i18n/tu-dien/dong-bo-lich';
 import { ApiError, apiRequest } from './client';
 
 /**
@@ -26,11 +30,11 @@ export function layDongBoLich(): Promise<TrangThaiDongBoLich> {
 /**
  * Chưa có link thì tạo, có rồi thì đổi mã — link cũ chết ngay.
  *
- * Luôn `lang: 'vi'`: app chỉ có tiếng Việt, và ngôn ngữ của chữ trong lịch
- * ("Hạn: …", "Họp: …") chốt theo lúc tạo link.
+ * `lang` là ngôn ngữ đang dùng của app: ngôn ngữ của chữ trong lịch ("Hạn: …",
+ * "Họp: …") chốt theo lúc tạo link.
  */
-export function taoLinkDongBoLich(): Promise<TrangThaiDongBoLich> {
-  return apiRequest<TrangThaiDongBoLich>(DUONG_DAN, { method: 'POST', body: { lang: 'vi' } });
+export function taoLinkDongBoLich(ngonNgu: NgonNgu = layNgonNgu()): Promise<TrangThaiDongBoLich> {
+  return apiRequest<TrangThaiDongBoLich>(DUONG_DAN, { method: 'POST', body: { lang: ngonNgu } });
 }
 
 /** Máy chủ trả 204 thân rỗng; gọi lại khi đã tắt cũng không lỗi. */
@@ -39,28 +43,28 @@ export async function tatDongBoLich(): Promise<void> {
 }
 
 /** Dịch theo mã lỗi chứ không theo câu chữ: máy chủ đổi câu thì app vẫn đúng. */
-const CAU_THEO_MA: Record<string, string> = {
-  CALENDAR_FEED_NOT_IN_PLAN:
-    'Gói hiện tại của bạn không có đồng bộ lịch. Tính năng này dành cho gói Pro và Team.',
-};
+const KHOA_THEO_MA = {
+  CALENDAR_FEED_NOT_IN_PLAN: 'khongCoTrongGoi',
+} as const;
 
-const CAU_CHUNG = 'Chưa làm được lúc này. Thử lại sau ít phút.';
-
-export function cauLoiDongBoLich(loi: unknown): string {
+export function cauLoiDongBoLich(loi: unknown, ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienDongBoLich, ngonNgu).loi;
   if (loi instanceof ApiError) {
     /*
       `Object.hasOwn`, không phải `CAU_THEO_MA[loi.code]`: mã lạ như `toString`
       hay `constructor` đọc trúng hàm của Object.prototype, và màn hình sẽ in
       ra mã nguồn của hàm thay vì một câu lỗi.
     */
-    if (loi.code && Object.hasOwn(CAU_THEO_MA, loi.code)) return CAU_THEO_MA[loi.code];
-    if (loi.status === 429) return 'Bạn thao tác quá nhanh. Đợi một phút rồi thử lại.';
-    // Mất mạng: `apiRequest` đã viết sẵn câu tiếng Việt.
-    if (loi.status === 0) return loi.message;
+    if (loi.code && Object.hasOwn(KHOA_THEO_MA, loi.code)) {
+      return t[KHOA_THEO_MA[loi.code as keyof typeof KHOA_THEO_MA]];
+    }
+    if (loi.status === 429) return t.quaNhanh;
+    // Mất mạng: `apiRequest` đã viết sẵn câu tiếng Việt; tiếng Anh nhờ `dichThongBaoLoi` dịch.
+    if (loi.status === 0) return ngonNgu === 'vi' ? loi.message : dichThongBaoLoi(loi, t.chung, ngonNgu);
   }
   /*
     5xx, trang lỗi của cổng Azure, câu kiểm tra dữ liệu tiếng Anh của máy chủ,
     lỗi lúc mở bảng chia sẻ…: người dùng chỉ cần biết thử lại sau.
   */
-  return CAU_CHUNG;
+  return t.chung;
 }

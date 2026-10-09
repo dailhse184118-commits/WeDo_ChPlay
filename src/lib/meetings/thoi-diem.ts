@@ -1,4 +1,7 @@
-import { doiNgaySinhSangMayChu } from '../ngay-sinh';
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienCuocHop } from '../../i18n/tu-dien/cuoc-hop';
+import { DINH_DANG_NGAY } from '../ngay-sinh';
 
 /**
  * Ghép ngày `dd/mm/yyyy` và giờ `hh:mm` người dùng gõ thành chuỗi ISO cho máy
@@ -18,10 +21,22 @@ import { doiNgaySinhSangMayChu } from '../ngay-sinh';
  * tiếng — và không có gì báo lỗi cả.
  */
 
+/** Khoá câu báo lỗi trong `tuDienCuocHop.thoiDiem`. */
+export type KhoaLoiThoiDiem = 'ngayTrong' | 'ngaySai' | 'ngayKhongCo' | 'gioSai' | 'gioNgoai';
+
 export interface KetQuaThoiDiem {
   /** Chuỗi ISO gửi cho máy chủ, hoặc `null` khi chưa hợp lệ. */
   giaTri: string | null;
+  /** Câu báo lỗi theo ngôn ngữ lúc gọi. Màn hình nên giữ `khoaLoi` rồi dịch lúc vẽ. */
   loi: string | null;
+  /** Nguồn của câu báo lỗi, để đổi ngôn ngữ giữa chừng thì câu đổi theo. */
+  khoaLoi: KhoaLoiThoiDiem | null;
+}
+
+/** Câu báo lỗi của một khoá, theo ngôn ngữ (dùng khi màn hình vẽ lỗi từ `khoaLoi`). */
+export function cauLoiThoiDiem(khoa: KhoaLoiThoiDiem, ngonNgu: NgonNgu = layNgonNgu()): string {
+  const t = theoNgonNgu(tuDienCuocHop, ngonNgu).thoiDiem;
+  return khoa === 'ngaySai' ? t.ngaySai(DINH_DANG_NGAY) : t[khoa];
 }
 
 /** Chèn dấu `:` trong lúc gõ giờ, và không cho quá bốn chữ số. */
@@ -31,37 +46,42 @@ export function tuThemDauGachGio(dangGo: string): string {
   return `${so.slice(0, 2)}:${so.slice(2)}`;
 }
 
-export function ghepNgayGio(ngayGo: string, gioGo: string): KetQuaThoiDiem {
-  const ngay = doiNgaySinhSangMayChu(ngayGo);
+export function ghepNgayGio(
+  ngayGo: string,
+  gioGo: string,
+  ngonNgu: NgonNgu = layNgonNgu(),
+): KetQuaThoiDiem {
+  const loi = (khoa: KhoaLoiThoiDiem): KetQuaThoiDiem => ({
+    giaTri: null,
+    loi: cauLoiThoiDiem(khoa, ngonNgu),
+    khoaLoi: khoa,
+  });
 
   /*
-    `doiNgaySinhSangMayChu` từ chối ngày ở tương lai — đúng cho ngày sinh, sai
-    hoàn toàn cho lịch họp. Chỉ mượn phần kiểm tra ĐÚNG LỊCH của nó (31/02 là
-    ngày không có thật), còn câu từ chối "ở tương lai" thì bỏ qua.
+    Chỉ cần kiểm tra ĐÚNG LỊCH (31/02 là ngày không có thật). Ngày ở tương lai
+    là chuyện thường của lịch họp, nên không dùng `doiNgaySinhSangMayChu` — hàm
+    đó từ chối ngày tương lai và có câu báo lỗi riêng của ngày sinh.
   */
-  const ngayHopLe = ngay.giaTri ?? layNgayDuLaTuongLai(ngayGo);
+  const ngayHopLe = layNgayDuLaTuongLai(ngayGo);
 
   if (!ngayHopLe) {
-    return { giaTri: null, loi: ngay.loi ?? 'Ngày họp chưa hợp lệ.' };
+    if (!ngayGo.trim()) return loi('ngayTrong');
+    return loi(/^(\d{2})\/(\d{2})\/(\d{4})$/.test(ngayGo.trim()) ? 'ngayKhongCo' : 'ngaySai');
   }
 
   const khopGio = /^(\d{2}):(\d{2})$/.exec(gioGo.trim());
-  if (!khopGio) {
-    return { giaTri: null, loi: 'Giờ họp cần viết theo dạng hh:mm, ví dụ 20:00.' };
-  }
+  if (!khopGio) return loi('gioSai');
 
   const gio = Number(khopGio[1]);
   const phut = Number(khopGio[2]);
-  if (gio > 23 || phut > 59) {
-    return { giaTri: null, loi: 'Giờ họp phải trong khoảng 00:00 đến 23:59.' };
-  }
+  if (gio > 23 || phut > 59) return loi('gioNgoai');
 
   const [nam, thang, ngayTrongThang] = ngayHopLe.split('-').map(Number);
 
   /* Giờ ĐỊA PHƯƠNG — xem đoạn giải thích ở đầu tệp. */
   const thoiDiem = new Date(nam, thang - 1, ngayTrongThang, gio, phut, 0, 0);
 
-  return { giaTri: thoiDiem.toISOString(), loi: null };
+  return { giaTri: thoiDiem.toISOString(), loi: null, khoaLoi: null };
 }
 
 /**

@@ -3,6 +3,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from 'r
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienTaiKhoan } from '../../i18n/tu-dien/tai-khoan';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../components/ui/GradientHeader';
@@ -11,10 +13,12 @@ import { getPreferences, updatePreferences } from '../../lib/api/notifications';
 import type { NotificationPreferences } from '../../lib/types';
 import { colors, fontSize, lineHeight, spacing } from '../../theme/tokens';
 
+type ChuThongBao = (typeof tuDienTaiKhoan)['vi']['thongBao'];
+
 interface Row {
   key: keyof NotificationPreferences;
-  label: string;
-  hint: string;
+  label: keyof ChuThongBao;
+  hint: keyof ChuThongBao;
   icon: React.ComponentProps<typeof IconTile>['name'];
   tone: IconTileTone;
 }
@@ -29,29 +33,29 @@ interface Row {
 const ROWS: Row[] = [
   {
     key: 'notifyTaskAssignment',
-    label: 'Giao việc',
-    hint: 'Khi có người giao việc cho bạn, hoặc phản hồi việc bạn giao',
+    label: 'giaoViec',
+    hint: 'giaoViecGoiY',
     icon: 'person-add-outline',
     tone: 'info',
   },
   {
     key: 'notifyTaskReview',
-    label: 'Duyệt việc',
-    hint: 'Khi việc được nộp hoặc được duyệt',
+    label: 'duyetViec',
+    hint: 'duyetViecGoiY',
     icon: 'checkmark-done-outline',
     tone: 'done',
   },
   {
     key: 'notifyDeadlineReminder',
-    label: 'Nhắc hạn chót',
-    hint: 'Nhắc trước 24 giờ và đúng giờ hạn',
+    label: 'nhacHan',
+    hint: 'nhacHanGoiY',
     icon: 'alarm-outline',
     tone: 'deadline',
   },
   {
     key: 'notifyMeeting',
-    label: 'Cuộc họp',
-    hint: 'Khi có cuộc họp mới được lên lịch',
+    label: 'cuocHop',
+    hint: 'cuocHopGoiY',
     icon: 'videocam-outline',
     tone: 'info',
   },
@@ -59,6 +63,7 @@ const ROWS: Row[] = [
 
 export default function NotificationSettingsScreen() {
   const router = useRouter();
+  const t = useTuDien(tuDienTaiKhoan).thongBao;
   const queryClient = useQueryClient();
 
   const prefsQuery = useQuery({
@@ -76,7 +81,7 @@ export default function NotificationSettingsScreen() {
   return (
     <View style={styles.screen}>
       <GradientHeader
-        title="Cài đặt thông báo"
+        title={t.tieuDe}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/account'))}
         dense
       />
@@ -87,8 +92,8 @@ export default function NotificationSettingsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {prefsQuery.isError ? <ErrorBanner message="Không tải được cài đặt." /> : null}
-          {mutation.isError ? <ErrorBanner message="Không lưu được thay đổi." /> : null}
+          {prefsQuery.isError ? <ErrorBanner message={t.khongTaiDuoc} /> : null}
+          {mutation.isError ? <ErrorBanner message={t.khongLuuDuoc} /> : null}
 
           {prefs ? (
             <Card style={styles.card}>
@@ -99,8 +104,8 @@ export default function NotificationSettingsScreen() {
                 >
                   <IconTile name={row.icon} tone={row.tone} />
                   <View style={styles.body}>
-                    <Text style={styles.label}>{row.label}</Text>
-                    <Text style={styles.hint}>{row.hint}</Text>
+                    <Text style={styles.label}>{t[row.label]}</Text>
+                    <Text style={styles.hint}>{t[row.hint]}</Text>
                   </View>
                   <Switch
                     testID={`switch-${row.key}`}
@@ -114,10 +119,7 @@ export default function NotificationSettingsScreen() {
             </Card>
           ) : null}
 
-          <Text style={styles.note}>
-            Nhắc hạn chót hoạt động ngay trên máy nên có thể trễ vài phút khi điện thoại ở chế độ
-            tiết kiệm pin.
-          </Text>
+          <Text style={styles.note}>{t.ghiChu}</Text>
         </ScrollView>
       )}
     </View>

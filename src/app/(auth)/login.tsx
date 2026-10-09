@@ -4,49 +4,72 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppleButton } from '../../components/ui/AppleButton';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GoogleButton } from '../../components/ui/GoogleButton';
 import { TextField } from '../../components/ui/TextField';
 import { WeDoLogo } from '../../components/ui/WeDoLogo';
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
+import { ApiError, MA_TAI_KHOAN_BI_KHOA, docLyDoHetPhien } from '../../lib/api/client';
+import { useCoDangNhapApple } from '../../lib/auth/apple-signin';
 import { useAuth } from '../../lib/auth/auth-context';
+import { coDangNhapGoogle } from '../../lib/auth/google-signin';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import { colors, fontSize, gradients, radius, spacing } from '../../theme/tokens';
 
+type KhoaLoi = 'thieuEmail' | 'matKhauNgan' | 'dangNhapThatBai' | 'dangNhapGoogleThatBai' | 'dangNhapAppleThatBai';
+
 export default function LoginScreen() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const t = useTuDien(tuDienDangNhap);
+  const dichLoi = useDichLoi();
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
+  const coApple = useCoDangNhapApple();
+  const coGoogle = coDangNhapGoogle();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  /*
+    Bị đưa ra khỏi app vì tài khoản bị khoá thì màn này là thứ đầu tiên người
+    dùng thấy. Không nói lý do thì họ tưởng app lỗi rồi cứ đăng nhập lại mãi.
+  */
+  const [loi, setLoi] = useState<NguonLoi<KhoaLoi> | null>(() => {
+    const lyDo = docLyDoHetPhien();
+    // Lý do là câu tiếng Việt của máy chủ kèm mã ACCOUNT_SUSPENDED; dịch lúc vẽ theo mã.
+    return lyDo ? { loi: new ApiError(lyDo, 403, MA_TAI_KHOAN_BI_KHOA), duPhong: 'dangNhapThatBai' } : null;
+  });
+  const error = chuLoi(t, loi, dichLoi);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [appleSubmitting, setAppleSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim()) {
-      setError('Vui lòng nhập email');
+      setLoi({ khoa: 'thieuEmail' });
       return;
     }
     // Khớp với ràng buộc MinLength(6) của RegisterDto phía máy chủ.
     if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      setLoi({ khoa: 'matKhauNgan' });
       return;
     }
 
-    setError('');
+    setLoi(null);
     setSubmitting(true);
     try {
       await signIn(email.trim(), password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'dangNhapThatBai' });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleGoogle = async () => {
-    setError('');
+    setLoi(null);
     setGoogleSubmitting(true);
     try {
       /*
@@ -55,9 +78,22 @@ export default function LoginScreen() {
       */
       await signInWithGoogle();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+      setLoi({ loi: err, duPhong: 'dangNhapGoogleThatBai' });
     } finally {
       setGoogleSubmitting(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setLoi(null);
+    setAppleSubmitting(true);
+    try {
+      // Người dùng đóng bảng Apple thì hàm này kết thúc êm — như Google.
+      await signInWithApple();
+    } catch (err) {
+      setLoi({ loi: err, duPhong: 'dangNhapAppleThatBai' });
+    } finally {
+      setAppleSubmitting(false);
     }
   };
 
@@ -92,12 +128,12 @@ export default function LoginScreen() {
           >
             {/* Logo đảo sang trắng để nổi trên gradient xanh. */}
             <WeDoLogo testID="wedo-logo" width={168} tintColor={colors.onPrimary} />
-            <Text style={styles.tagline}>Nghĩ ít hơn, làm nhiều hơn</Text>
+            <Text style={styles.tagline}>{t.khauHieu}</Text>
           </View>
 
           <View style={styles.body}>
             <Card overlap={spacing.lg} style={styles.form}>
-              <Text style={styles.formTitle}>Đăng nhập</Text>
+              <Text style={styles.formTitle}>{t.dangNhap}</Text>
 
               {error ? <ErrorBanner message={error} /> : null}
 
@@ -106,46 +142,75 @@ export default function LoginScreen() {
                 label="Email"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="ban@example.com"
+                placeholder={t.emailMau}
                 keyboardType="email-address"
+                textContentType="username"
+                autoComplete="email"
               />
               <TextField
                 testID="password"
-                label="Mật khẩu"
+                label={t.matKhau}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Ít nhất 6 ký tự"
+                placeholder={t.matKhauGoiY}
                 secureTextEntry
+                textContentType="password"
+                autoComplete="current-password"
               />
 
               <Button
                 testID="submit"
-                label="Đăng nhập"
+                label={t.dangNhap}
                 onPress={handleSubmit}
                 loading={submitting}
-                disabled={googleSubmitting}
+                disabled={googleSubmitting || appleSubmitting}
               />
 
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerLabel}>hoặc</Text>
-                <View style={styles.dividerLine} />
-              </View>
+              {/*
+                Apple chỉ có trên iPhone; Google có trên Android, và trên iPhone
+                khi đã khai client iOS — xem `coDangNhapGoogle`. Không còn nút
+                nào thì không vẽ dòng "hoặc" treo lơ lửng.
 
-              <GoogleButton
-                testID="google"
-                onPress={handleGoogle}
-                loading={googleSubmitting}
-                disabled={submitting}
-              />
+                Apple đứng trước và cùng cỡ với Google: Apple đòi nút của họ nổi
+                bật không kém các cách đăng nhập bên thứ ba khác (4.8).
+              */}
+              {coApple || coGoogle ? (
+                <>
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerLabel}>{t.hoac}</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <View style={styles.nutKhac}>
+                    {coApple ? (
+                      <AppleButton
+                        testID="apple"
+                        onPress={handleApple}
+                        loading={appleSubmitting}
+                        disabled={submitting || googleSubmitting}
+                      />
+                    ) : null}
+
+                    {coGoogle ? (
+                      <GoogleButton
+                        testID="google"
+                        onPress={handleGoogle}
+                        loading={googleSubmitting}
+                        disabled={submitting || appleSubmitting}
+                      />
+                    ) : null}
+                  </View>
+                </>
+              ) : null}
             </Card>
 
             <Link href="/forgot-password" style={styles.link}>
-              Quên mật khẩu?
+              {t.quenMatKhauLink}
             </Link>
 
             <Link href="/register" style={styles.link}>
-              Chưa có tài khoản? Đăng ký
+              {t.chuaCoTaiKhoan}
             </Link>
           </View>
         </ScrollView>
@@ -183,6 +248,7 @@ const styles = StyleSheet.create({
   },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerLabel: { color: colors.textMuted, fontSize: fontSize.sm },
+  nutKhac: { gap: spacing.sm },
   link: {
     marginTop: spacing.lg,
     textAlign: 'center',

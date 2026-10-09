@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { datDongYAI } from '../api/account';
 import { useAuth } from '../auth/auth-context';
 
 /*
-  Chữ của hộp thoại xin đồng ý dùng AI.
+  Chữ của hộp thoại xin đồng ý dùng AI nằm ở i18n/tu-dien/chat.ts (khoá `dongYAI`).
 
   Guideline 5.1.2(i) của Apple nêu đích danh AI bên thứ ba: phải nói rõ gửi GÌ,
   cho AI, và xin phép TRƯỚC lần gửi đầu tiên. Chính sách quyền riêng tư (mục 8.3)
   hứa đúng bước này cho cả Android, và chính sách Dữ liệu người dùng của Google
   Play bắt app làm đúng điều chính sách đã công bố. Máy chủ đã thôi gửi email của thành
-  viên cho AI, nên câu dưới được phép nói "không gửi email hay số điện thoại".
-  Đổi dữ liệu gửi đi ở máy chủ thì phải sửa câu này theo.
+  viên cho AI, nên câu được phép nói "không gửi email hay số điện thoại".
+  Đổi dữ liệu gửi đi ở máy chủ thì phải sửa câu này theo, ở CẢ HAI ngôn ngữ.
 */
-export const TIEU_DE_DONG_Y_AI = 'Dùng AI để gợi ý công việc?';
-
-export const NOI_DUNG_DONG_Y_AI =
-  'Để gợi ý công việc, WeDo sẽ gửi tin nhắn bạn chọn cùng khoảng 12 tin nhắn gần nhất và tên các thành viên trong dự án cho một nhà cung cấp AI bên thứ ba (Google Gemini, Azure OpenAI hoặc OpenAI). WeDo không gửi email hay số điện thoại của ai. Bạn có thể tắt tính năng này bất cứ lúc nào trong Tài khoản.';
 
 /**
  * Chốt chặn trước mọi thao tác gửi dữ liệu cho AI.
@@ -31,6 +29,8 @@ export const NOI_DUNG_DONG_Y_AI =
  */
 export function useDongYAI() {
   const { user, capNhatHoSo } = useAuth();
+  const t = useTuDien(tuDienChat).dongYAI;
+  const dichLoi = useDichLoi();
 
   /*
     Hồ sơ mới nhất, đọc lúc người dùng bấm "Đồng ý" chứ không phải lúc hộp thoại
@@ -57,21 +57,18 @@ export function useDongYAI() {
           const hoSo = hoSoRef.current;
           if (hoSo) capNhatHoSo({ ...hoSo, aiConsentAt });
         } catch (loi) {
-          Alert.alert(
-            'Chưa lưu được lựa chọn',
-            loi instanceof Error ? loi.message : 'Có lỗi xảy ra. Vui lòng thử lại.',
-          );
+          Alert.alert(t.chuaLuuDuoc, dichLoi(loi, t.coLoi));
           return;
         }
         hanhDong();
       };
 
-      Alert.alert(TIEU_DE_DONG_Y_AI, NOI_DUNG_DONG_Y_AI, [
-        { text: 'Không, cảm ơn', style: 'cancel' },
-        { text: 'Đồng ý', onPress: () => void dongY() },
+      Alert.alert(t.tieuDe, t.noiDung, [
+        { text: t.khongCamOn, style: 'cancel' },
+        { text: t.dongY, onPress: () => void dongY() },
       ]);
     },
-    [daDongY, capNhatHoSo],
+    [daDongY, capNhatHoSo, t, dichLoi],
   );
 
   return { daDongY, xinDongYRoiChay };

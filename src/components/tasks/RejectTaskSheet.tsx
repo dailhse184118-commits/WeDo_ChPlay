@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienCongViec } from '../../i18n/tu-dien/cong-viec';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { colors, fontSize, lineHeight, radius, scaleWithFont, shadows, sizes, spacing } from '../../theme/tokens';
 
 /**
  * Ba lý do chọn nhanh. Bắt buộc gõ tay sinh ra những lý do rỗng kiểu "không rảnh";
  * chạm chip điền sẵn vào ô rồi vẫn sửa được, nên vừa nhanh vừa cụ thể hơn.
+ * Bản tiếng Việt, cho test; màn hình lấy bản đúng ngôn ngữ từ từ điển.
  */
-export const QUICK_REASONS = [
-  'Trùng deadline khác',
-  'Đang quá tải',
-  'Không đúng phần mình',
-] as const;
+export const QUICK_REASONS = tuDienCongViec.vi.tuChoiPhieu.lyDoNhanh;
 
 const MAX_LENGTH = 200;
 
@@ -40,24 +39,26 @@ export function RejectTaskSheet({
   submitting = false,
   error,
   assignerName,
-  heading = 'Từ chối công việc',
+  heading,
   body,
-  confirmLabel = 'Gửi từ chối',
-  quickReasons = QUICK_REASONS,
+  confirmLabel,
+  quickReasons,
   onConfirm,
   onDismiss,
 }: RejectTaskSheetProps) {
   const [reason, setReason] = useState('');
-  const [localError, setLocalError] = useState('');
+  const t = useTuDien(tuDienCongViec).tuChoiPhieu;
+  // Giữ cờ chứ không giữ câu đã dựng: dịch lúc vẽ để đổi ngôn ngữ thì băng đỏ đổi theo.
+  const [lyDoNgan, setLyDoNgan] = useState(false);
 
   const handleConfirm = () => {
     const trimmed = reason.trim();
     // Khớp ràng buộc MinLength(3) của RejectTaskDto phía server.
     if (trimmed.length < 3) {
-      setLocalError('Lý do từ chối phải có ít nhất 3 ký tự');
+      setLyDoNgan(true);
       return;
     }
-    setLocalError('');
+    setLyDoNgan(false);
     onConfirm(trimmed);
   };
 
@@ -68,26 +69,21 @@ export function RejectTaskSheet({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        <Text style={styles.heading}>{heading}</Text>
-        <Text style={styles.body}>
-          {body ??
-            `${
-              assignerName ? `${assignerName} sẽ thấy lý do của bạn` : 'Người giao việc sẽ thấy lý do'
-            }, nên viết ngắn gọn và cụ thể giúp nhóm sắp xếp lại.`}
-        </Text>
+        <Text style={styles.heading}>{heading ?? t.tieuDe}</Text>
+        <Text style={styles.body}>{body ?? t.noiDung(assignerName)}</Text>
 
         {error ? <ErrorBanner message={error} /> : null}
-        {localError ? <ErrorBanner message={localError} /> : null}
+        {lyDoNgan ? <ErrorBanner message={t.lyDoNganQua} /> : null}
 
         <View style={styles.chips}>
-          {quickReasons.map((quick, index) => (
+          {(quickReasons ?? t.lyDoNhanh).map((quick, index) => (
             <Pressable
               key={quick}
               testID={`quick-reason-${index}`}
               accessibilityRole="button"
               onPress={() => {
                 setReason(quick);
-                setLocalError('');
+                setLyDoNgan(false);
               }}
               style={({ pressed }) => [styles.chip, pressed ? styles.chipPressed : null]}
             >
@@ -96,16 +92,16 @@ export function RejectTaskSheet({
           ))}
         </View>
 
-        <Text style={styles.label}>Lý do từ chối</Text>
+        <Text style={styles.label}>{t.nhan}</Text>
         <TextInput
           testID="reject-reason"
-          accessibilityLabel="Lý do từ chối"
+          accessibilityLabel={t.nhan}
           value={reason}
           onChangeText={(value) => {
             setReason(value);
-            if (localError) setLocalError('');
+            if (lyDoNgan) setLyDoNgan(false);
           }}
-          placeholder="Ví dụ: tuần này mình thi giữa kỳ, không kịp làm."
+          placeholder={t.goiY}
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           multiline
@@ -116,7 +112,7 @@ export function RejectTaskSheet({
         />
 
         <View style={styles.meta}>
-          <Text style={styles.required}>Bắt buộc nhập</Text>
+          <Text style={styles.required}>{t.batBuoc}</Text>
           <Text testID="reject-counter" style={styles.counter}>
             {reason.length}/{MAX_LENGTH}
           </Text>
@@ -134,11 +130,11 @@ export function RejectTaskSheet({
             submitting ? styles.submitDisabled : null,
           ]}
         >
-          <Text style={styles.submitText}>{submitting ? 'Đang gửi…' : confirmLabel}</Text>
+          <Text style={styles.submitText}>{submitting ? t.dangGui : (confirmLabel ?? t.nutGui)}</Text>
         </Pressable>
 
         <Pressable testID="reject-cancel" onPress={onDismiss} style={styles.cancel}>
-          <Text style={styles.cancelText}>Huỷ</Text>
+          <Text style={styles.cancelText}>{t.huy}</Text>
         </Pressable>
       </View>
     </Modal>

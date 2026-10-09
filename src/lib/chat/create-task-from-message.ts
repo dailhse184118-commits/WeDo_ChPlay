@@ -1,3 +1,7 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { LoiDaDich } from '../../i18n/loi';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { createTask } from '../api/tasks';
 import { linkMessageTask } from '../api/chat';
 import type { ChatMessage, Task } from '../types';
@@ -32,8 +36,13 @@ export interface KetQuaHanChotAI {
   loi: string | null;
 }
 
-const LOI_NGAY = 'Ngày hết hạn chưa đúng. Viết theo dạng ngày/tháng/năm, ví dụ 30/09/2026.';
-const LOI_GIO = 'Giờ chưa đúng. Viết theo dạng giờ:phút, ví dụ 08:00, 8:00 hoặc 20h.';
+/** Mã lỗi của hạn chót; câu chữ tương ứng nằm ở từ điển Trò chuyện (`goiY.loiNgay`, `goiY.loiGio`). */
+export type MaLoiHanChot = 'loiNgay' | 'loiGio';
+
+export interface KetQuaHanChotTheoMa {
+  iso: string | null;
+  ma: MaLoiHanChot | null;
+}
 
 /** Tách ngày, tháng, năm từ `yyyy-mm-dd` (dạng máy chủ trả) hoặc `dd/mm/yyyy` (dạng người dùng gõ). */
 function tachNgay(chuoi: string): [number, number, number] | null {
@@ -68,24 +77,37 @@ function tachGio(chuoi: string): [number, number] | null {
  * `../meetings/thoi-diem.ts`. Kiểm ngược sau khi dựng để `31/02` không âm thầm
  * cuộn sang tháng 3, giống `hanChotSangISO` ở màn tạo công việc.
  */
-export function docHanChotAI(ngay?: string, gio?: string): KetQuaHanChotAI {
+export function docHanChotTheoMa(ngay?: string, gio?: string): KetQuaHanChotTheoMa {
   const chuoiNgay = (ngay ?? '').trim();
-  if (!chuoiNgay) return { iso: null, loi: null };
+  if (!chuoiNgay) return { iso: null, ma: null };
 
   const phanNgay = tachNgay(chuoiNgay);
-  if (!phanNgay) return { iso: null, loi: LOI_NGAY };
+  if (!phanNgay) return { iso: null, ma: 'loiNgay' };
   const [nam, thang, ngayTrongThang] = phanNgay;
 
   const chuoiGio = (gio ?? '').trim();
   const phanGio = chuoiGio ? tachGio(chuoiGio) : [0, 0];
-  if (!phanGio) return { iso: null, loi: LOI_GIO };
+  if (!phanGio) return { iso: null, ma: 'loiGio' };
 
   const d = new Date(nam, thang - 1, ngayTrongThang, phanGio[0], phanGio[1], 0, 0);
   if (d.getFullYear() !== nam || d.getMonth() !== thang - 1 || d.getDate() !== ngayTrongThang) {
-    return { iso: null, loi: LOI_NGAY };
+    return { iso: null, ma: 'loiNgay' };
   }
 
-  return { iso: d.toISOString(), loi: null };
+  return { iso: d.toISOString(), ma: null };
+}
+
+/**
+ * Như `docHanChotTheoMa` nhưng trả luôn câu báo lỗi theo ngôn ngữ. Chỗ nào giữ
+ * lỗi trong state thì dùng bản theo mã và dịch lúc vẽ, để đổi ngôn ngữ thì băng đỏ đổi theo.
+ */
+export function docHanChotAI(
+  ngay?: string,
+  gio?: string,
+  ngonNgu: NgonNgu = layNgonNgu(),
+): KetQuaHanChotAI {
+  const { iso, ma } = docHanChotTheoMa(ngay, gio);
+  return { iso, loi: ma ? theoNgonNgu(tuDienChat, ngonNgu).goiY[ma] : null };
 }
 
 /** Ghép ngày và giờ thành chuỗi ISO theo múi giờ thiết bị. Trả undefined nếu không hợp lệ. */
@@ -94,7 +116,9 @@ export function combineDueDateTime(date?: string, time?: string): string | undef
 }
 
 function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error('Đã xảy ra lỗi không xác định.');
+  return value instanceof Error
+    ? value
+    : new LoiDaDich(theoNgonNgu(tuDienChat).goiY.loiKhongXacDinh);
 }
 
 /**
@@ -121,7 +145,7 @@ export async function createTaskFromMessage(
       rồi báo thành công — người dùng sẽ tin là hạn đã được lưu.
     */
     const han = docHanChotAI(input.dueDate, input.dueTime);
-    if (han.loi) return { outcome: 'failed', error: new Error(han.loi) };
+    if (han.loi) return { outcome: 'failed', error: new LoiDaDich(han.loi) };
     const dueDate = han.iso;
     try {
       task = await createTask({

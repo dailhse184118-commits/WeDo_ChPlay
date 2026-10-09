@@ -1,3 +1,6 @@
+import { theoNgonNgu } from '../../i18n/dich';
+import { layNgonNgu, type NgonNgu } from '../../i18n/ngon-ngu';
+import { tuDienThongBao } from '../../i18n/tu-dien/thong-bao';
 import type { Task } from '../types';
 
 export interface ReminderPlan {
@@ -17,14 +20,19 @@ export const MAX_SCHEDULED = 60;
  * làm tham số để test được mà không cần giả lập đồng hồ.
  *
  * Mỗi việc sinh hai mốc: trước 24 giờ và đúng giờ hạn. Mốc đã qua bị bỏ.
+ *
+ * Chữ nhắc dựng theo `ngonNgu` LÚC ĐẶT LỊCH. Lịch đã đặt rồi (`diffReminders` giữ
+ * nguyên lịch cùng việc cùng giờ) giữ ngôn ngữ cũ cho tới khi được đặt lại.
  */
 export function planReminders(
   tasks: Task[],
   userId: string,
   now: Date,
   limit: number = MAX_SCHEDULED,
+  ngonNgu: NgonNgu = layNgonNgu(),
 ): ReminderPlan[] {
   const plans: ReminderPlan[] = [];
+  const t = theoNgonNgu(tuDienThongBao, ngonNgu);
 
   for (const task of tasks) {
     if (task.assigneeId !== userId) continue;
@@ -40,16 +48,16 @@ export function planReminders(
     if (dayBefore.getTime() > now.getTime()) {
       plans.push({
         taskId: task.id,
-        title: 'Sắp đến hạn',
-        body: `"${task.title}" đến hạn sau 24 giờ nữa.`,
+        title: t.sapDenHan,
+        body: t.denHanSau24Gio(task.title),
         fireAt: dayBefore,
       });
     }
 
     plans.push({
       taskId: task.id,
-      title: 'Đến hạn hôm nay',
-      body: `"${task.title}" đến hạn bây giờ.`,
+      title: t.denHanHomNay,
+      body: t.denHanBayGio(task.title),
       fireAt: due,
     });
   }

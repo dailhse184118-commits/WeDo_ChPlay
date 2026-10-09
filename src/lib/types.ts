@@ -29,11 +29,17 @@ export interface UserProfile extends UserSummary {
   dob?: string | null;
   platformRole?: PlatformRole;
   createdAt?: string;
-  /**
-   * Lúc cho phép gửi tin nhắn tới AI, chuỗi ISO; `null` là chưa cho phép hoặc
-   * đã rút lại. Tuỳ chọn vì hồ sơ lưu từ bản app cũ không có khoá này.
-   */
+  /*
+    Ba mốc đồng ý, chuỗi ISO. Tuỳ chọn vì máy chủ bản cũ và hồ sơ lưu từ bản app
+    cũ không có chúng: THIẾU khoá (`undefined`) nghĩa là "không biết", còn `null`
+    mới nghĩa là "chưa đồng ý". Xem `CongDieuKhoan`.
+  */
+  /** Lúc cho phép gửi tin nhắn tới AI; `null` là chưa cho phép hoặc đã rút lại. */
   aiConsentAt?: string | null;
+  /** Lúc đồng ý Điều khoản sử dụng. */
+  termsAcceptedAt?: string | null;
+  /** Lúc xác nhận đủ 18 tuổi. */
+  adultConfirmedAt?: string | null;
 }
 
 /** Hình dạng phản hồi của POST /auth/login và POST /auth/register. */
@@ -223,9 +229,18 @@ export interface Friendship {
   status: FriendshipStatus;
   createdAt: string;
   updatedAt: string;
-  requester?: UserSummary;
-  addressee?: UserSummary;
+  requester?: NguoiTrongTinhBan;
+  addressee?: NguoiTrongTinhBan;
 }
+
+/**
+ * Một bên trong quan hệ bạn bè.
+ *
+ * Ở lời mời mình đã gửi mà người kia chưa nhận, máy chủ giấu email và số điện
+ * thoại của người nhận — khoá vẫn có, giá trị là `null`. Tìm theo tên đã giấu
+ * hai thứ đó; lộ ở đây thì chỉ cần bấm "Kết bạn" là đọc được liên lạc người lạ.
+ */
+export type NguoiTrongTinhBan = Omit<UserSummary, 'email'> & { email: string | null };
 
 /**
  * `GET /friends` trả cả ba nhóm trong một lượt gọi.
@@ -240,7 +255,12 @@ export interface FriendsList {
 }
 
 /** Một người tìm được qua `GET /friends/search`, kèm quan hệ hiện có nếu có. */
-export interface NguoiTimDuoc extends UserSummary {
+export interface NguoiTimDuoc extends Omit<UserSummary, 'email'> {
+  /**
+   * Máy chủ chỉ trả email và số điện thoại của người ĐÃ là bạn. Người lạ tìm
+   * được thì cả hai là `null` — khoá vẫn có, chỉ giá trị bị giấu.
+   */
+  email: string | null;
   friendship?: Friendship | null;
 }
 

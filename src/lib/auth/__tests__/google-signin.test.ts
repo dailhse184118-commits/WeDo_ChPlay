@@ -1,6 +1,13 @@
+import { Platform } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-import { GOOGLE_WEB_CLIENT_ID, getGoogleIdToken, signOutFromGoogle } from '../google-signin';
+import {
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
+  coDangNhapGoogle,
+  getGoogleIdToken,
+  signOutFromGoogle,
+} from '../google-signin';
 
 // Lớp native là ranh giới duy nhất được giả lập, qua `__mocks__` ở gốc dự án.
 const mockedSignIn = GoogleSignin.signIn as jest.MockedFunction<typeof GoogleSignin.signIn>;
@@ -32,9 +39,20 @@ function nativeError(code: string, message = 'native error') {
   return Object.assign(new Error(message), { code });
 }
 
+/*
+  Preset `jest-expo` chạy như iOS, mà iPhone chỉ có đăng nhập Google khi đã khai
+  client iOS. Đặt hẳn hệ điều hành cho từng ca, đừng để mặc định quyết.
+*/
+let heDieuHanh: { restore: () => void } | null = null;
+afterEach(() => {
+  heDieuHanh?.restore();
+  heDieuHanh = null;
+});
+
 describe('lấy ID token của Google', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
     mockedPlayServices.mockResolvedValue(true);
   });
 
@@ -127,6 +145,7 @@ describe('đăng xuất khỏi Google', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
   });
 
   it('bảo Google quên phiên, để lần sau còn chọn được tài khoản khác', async () => {
@@ -146,5 +165,113 @@ describe('đăng xuất khỏi Google', () => {
     mockedGoogleSignOut.mockRejectedValue(new Error('SIGN_IN_REQUIRED'));
 
     await expect(signOutFromGoogle()).resolves.toBeUndefined();
+  });
+});
+
+describe('client iOS khai trong mã', () => {
+  it('mang kiểu string, không phải kiểu chữ của giá trị đang điền', () => {
+    /*
+      Khai `const X = ''` thì TypeScript chốt kiểu là `''`. Tới lúc người điều
+      phối điền client ID thật, phép so `!== ''` ở ca dưới thành so hai kiểu chữ
+      không giao nhau — `tsc` báo TS2367 và bản build hỏng đúng lúc điền. Dòng
+      này bắt lỗi đó ngay bây giờ, khi hằng số còn trống.
+    */
+    const laString: string extends typeof GOOGLE_IOS_CLIENT_ID ? true : false = true;
+    expect(laString).toBe(true);
+  });
+
+  it('để trống, hoặc đúng dạng client ID của Google', () => {
+    // Người điều phối điền giá trị sau; điền sai dạng thì máy chủ từ chối mọi token.
+    if (GOOGLE_IOS_CLIENT_ID !== '') {
+      expect(GOOGLE_IOS_CLIENT_ID).toMatch(/^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/);
+      expect(GOOGLE_IOS_CLIENT_ID).not.toBe(GOOGLE_WEB_CLIENT_ID);
+    } else {
+      expect(GOOGLE_IOS_CLIENT_ID).toBe('');
+    }
+  });
+});
+
+describe('trên iPhone chưa khai client iOS: không đụng tới SDK Google', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
+  });
+
+  it('báo không có đăng nhập Google', () => {
+    expect(coDangNhapGoogle('')).toBe(false);
+    expect(coDangNhapGoogle('   ')).toBe(false);
+  });
+
+  it('không configure, không mở hộp thoại, báo rõ phải dùng email', async () => {
+    await expect(getGoogleIdToken('')).rejects.toThrow('email và mật khẩu');
+
+    expect(mockedConfigure).not.toHaveBeenCalled();
+    expect(mockedPlayServices).not.toHaveBeenCalled();
+    expect(mockedSignIn).not.toHaveBeenCalled();
+  });
+
+  it('đăng xuất không gọi Google', async () => {
+    await expect(signOutFromGoogle('')).resolves.toBeUndefined();
+
+    expect(GoogleSignin.signOut).not.toHaveBeenCalled();
+  });
+});
+
+describe('trên iPhone đã khai client iOS', () => {
+  const IOS_CLIENT_ID = '108450458549-iosclient.apps.googleusercontent.com';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'ios');
+    mockedPlayServices.mockResolvedValue(true);
+  });
+
+  it('báo có đăng nhập Google', () => {
+    expect(coDangNhapGoogle(IOS_CLIENT_ID)).toBe(true);
+  });
+
+  it('khai cả client iOS lẫn client Web, rồi trả về ID token', async () => {
+    mockedSignIn.mockResolvedValue(successResponse('id-token-iphone'));
+
+    await expect(getGoogleIdToken(IOS_CLIENT_ID)).resolves.toBe('id-token-iphone');
+
+    expect(mockedConfigure).toHaveBeenCalledWith({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      iosClientId: IOS_CLIENT_ID,
+    });
+  });
+
+  it('người dùng đóng hộp thoại: null', async () => {
+    mockedSignIn.mockResolvedValue({ type: 'cancelled', data: null });
+
+    await expect(getGoogleIdToken(IOS_CLIENT_ID)).resolves.toBeNull();
+  });
+
+  it('đăng xuất bảo Google quên phiên', async () => {
+    (GoogleSignin.signOut as jest.Mock).mockResolvedValue(null);
+
+    await signOutFromGoogle(IOS_CLIENT_ID);
+
+    expect(GoogleSignin.signOut).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('trên Android vẫn có đăng nhập Google', () => {
+  it('báo có, dù client iOS có khai hay không', () => {
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
+
+    expect(coDangNhapGoogle()).toBe(true);
+    expect(coDangNhapGoogle('')).toBe(true);
+  });
+
+  it('chỉ khai client Web như cũ, không kèm client iOS', async () => {
+    jest.clearAllMocks();
+    heDieuHanh = jest.replaceProperty(Platform, 'OS', 'android');
+    mockedPlayServices.mockResolvedValue(true);
+    mockedSignIn.mockResolvedValue(successResponse('id-token-android'));
+
+    await getGoogleIdToken('108450458549-iosclient.apps.googleusercontent.com');
+
+    expect(mockedConfigure).toHaveBeenCalledWith({ webClientId: GOOGLE_WEB_CLIENT_ID });
   });
 });

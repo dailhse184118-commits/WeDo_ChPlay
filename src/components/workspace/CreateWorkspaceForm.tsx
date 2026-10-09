@@ -6,7 +6,10 @@ import { Button } from '../ui/Button';
 import { ErrorBanner } from '../ui/ErrorBanner';
 import { ScreenContainer } from '../ui/ScreenContainer';
 import { TextField } from '../ui/TextField';
+import { useDichLoi, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienKhoiDau } from '../../i18n/tu-dien/khoi-dau';
 import type { KetQuaThamGia } from '../../lib/api/loi-moi';
+import { chuLoi, type NguonLoi } from '../../lib/auth/nguon-loi';
 import { saveActiveWorkspaceId } from '../../lib/auth/token-storage';
 import { useWorkspace } from '../../lib/workspace/workspace-context';
 import { colors, fontSize, spacing } from '../../theme/tokens';
@@ -32,9 +35,12 @@ interface CreateWorkspaceFormProps {
 }
 
 export function CreateWorkspaceForm({ onDone, choNhapMaMoi = false }: CreateWorkspaceFormProps = {}) {
+  const t = useTuDien(tuDienKhoiDau);
+  const dichLoi = useDichLoi();
   const { create, refresh } = useWorkspace();
   const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const [loi, setLoi] = useState<NguonLoi<'thieuTen' | 'khongTaoDuoc'> | null>(null);
+  const error = chuLoi(t, loi, dichLoi);
   const [submitting, setSubmitting] = useState(false);
   const [nhapMaOpen, setNhapMaOpen] = useState(false);
 
@@ -51,17 +57,17 @@ export function CreateWorkspaceForm({ onDone, choNhapMaMoi = false }: CreateWork
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setError('Vui lòng nhập tên không gian làm việc');
+      setLoi({ khoa: 'thieuTen' });
       return;
     }
 
-    setError('');
+    setLoi(null);
     setSubmitting(true);
     try {
       await create(name.trim());
       onDone?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không tạo được không gian làm việc.');
+      setLoi({ loi: err, duPhong: 'khongTaoDuoc' });
     } finally {
       setSubmitting(false);
     }
@@ -70,31 +76,30 @@ export function CreateWorkspaceForm({ onDone, choNhapMaMoi = false }: CreateWork
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.heading}>Tạo không gian làm việc</Text>
+        <Text style={styles.heading}>{t.tieuDe}</Text>
         <Text style={styles.body}>
-          Không gian làm việc là nơi chứa các dự án và công việc của nhóm bạn. Tạo một cái để bắt
-          đầu.
+          {t.gioiThieu}
         </Text>
 
         {error ? <ErrorBanner message={error} /> : null}
 
         <TextField
           testID="name"
-          label="Tên không gian làm việc"
+          label={t.nhanTen}
           value={name}
           onChangeText={setName}
-          placeholder="Nhóm đồ án tốt nghiệp"
+          placeholder={t.tenMau}
           autoCapitalize="sentences"
         />
 
-        <Button testID="submit" label="Tạo" onPress={handleSubmit} loading={submitting} />
+        <Button testID="submit" label={t.tao} onPress={handleSubmit} loading={submitting} />
 
         {choNhapMaMoi ? (
           <View style={styles.coMa}>
             <Button
               testID="nut-co-ma-moi"
               variant="secondary"
-              label="Có mã mời? Nhập mã"
+              label={t.coMaMoi}
               onPress={() => setNhapMaOpen(true)}
             />
           </View>

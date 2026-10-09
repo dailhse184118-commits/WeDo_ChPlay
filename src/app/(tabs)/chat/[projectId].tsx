@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,8 @@ import {
   TaskSuggestionSheet,
   type TaskSuggestionValues,
 } from '../../../components/chat/TaskSuggestionSheet';
+import { useBangThaoTac, type ThaoTac } from '../../../components/moderation/BangThaoTac';
+import { PhieuBaoCao, type DoiTuongBaoCao } from '../../../components/moderation/PhieuBaoCao';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
 import {
@@ -33,7 +36,12 @@ import {
   sendProjectMessage,
 } from '../../../lib/api/chat';
 import type { TepChon } from '../../../lib/api/tasks';
-import { MA_HET_LUOT_AI, getEntitlements } from '../../../lib/api/entitlements';
+import { useDichLoi, useNgonNgu, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../../i18n/tu-dien/chat';
+import { tuDienChung } from '../../../i18n/tu-dien/chung';
+import { tuDienKiemDuyet } from '../../../i18n/tu-dien/kiem-duyet';
+import { tuDienNangCap } from '../../../i18n/tu-dien/nang-cap';
+import { MA_HET_LUOT_AI, getEntitlements, type HanMucAI } from '../../../lib/api/entitlements';
 import { listProjects } from '../../../lib/api/projects';
 import { useDongYAI } from '../../../lib/ai/dong-y-ai';
 import { trangThaiHanMuc } from '../../../lib/ai/han-muc';
@@ -46,11 +54,13 @@ import { applyRecall, mergeMessages } from '../../../lib/chat/message-list';
 import { idsHienAvatar, idsHienTen } from '../../../lib/chat/nhom-tin';
 import { useDongBoKhungChat } from '../../../lib/chat/use-dong-bo-khung-chat';
 import { useHeaderTep } from '../../../lib/chat/use-header-tep';
+import { locTinNguoiDaChan } from '../../../lib/moderation/loc-chan';
+import { useChanNguoi, useNguoiDaChan } from '../../../lib/moderation/use-kiem-duyet';
+import { laLeaderDuAn } from '../../../lib/tasks/task-permissions';
 import { baoLoi, moTaTep } from '../../../lib/observability/sentry';
 import { chonAnh, chupAnh } from '../../../lib/images/pick-images';
 import { activeTypers, applyTyping, typingLabel } from '../../../lib/chat/typing-state';
 import { useSocket } from '../../../lib/socket/socket-context';
-import { laLeaderDuAn } from '../../../lib/tasks/task-permissions';
 import { useWorkspace } from '../../../lib/workspace/workspace-context';
 import type { ChatMessage, ChatTaskSuggestion, UserSummary } from '../../../lib/types';
 import { colors, fontSize, spacing } from '../../../theme/tokens';
@@ -62,6 +72,19 @@ interface PendingItem {
   content: string;
   failed: boolean;
 }
+
+/*
+  Lỗi giữ ở dạng NGUỒN chứ không giữ câu đã dựng: dịch lúc vẽ để đổi ngôn ngữ
+  giữa chừng thì băng đỏ đổi theo.
+*/
+type KhoaLoiKhung = 'khongTaiDuocTin' | 'khongGuiDuocAnh' | 'khongMoDuocAnh';
+type NguonLoiKhung = { loi: unknown; duPhong: KhoaLoiKhung };
+
+type NguonLoiPhieu =
+  /** Hết lượt AI: câu hạn mức tính lại lúc vẽ từ số liệu `han`; không có thì dùng câu của lỗi. */
+  | { kieu: 'het-luot'; han: HanMucAI | null; loi: unknown }
+  | { kieu: 'loi'; loi: unknown; duPhong: 'khongPhanTichDuoc' | 'loiChung' }
+  | { kieu: 'chua-gan' };
 
 export default function ChatThreadScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
@@ -75,6 +98,12 @@ export default function ChatThreadScreen() {
   }, [router]);
 
   const { user } = useAuth();
+  const t = useTuDien(tuDienChat);
+  const kd = useTuDien(tuDienKiemDuyet);
+  const chung = useTuDien(tuDienChung);
+  const nangCap = useTuDien(tuDienNangCap);
+  const dichLoi = useDichLoi();
+  const { ngonNgu } = useNgonNgu();
   const { xinDongYRoiChay } = useDongYAI();
   const { active, workspaces } = useWorkspace();
   const { socket } = useSocket();
@@ -82,7 +111,7 @@ export default function ChatThreadScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [loadError, setLoadError] = useState<NguonLoiKhung | null>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -133,7 +162,7 @@ export default function ChatThreadScreen() {
     (duAnNgoaiKhongGian
       ? projectsKhacQuery.data?.find((item) => item.id === projectId)
       : undefined);
-  const projectName = project?.name ?? 'Trò chuyện';
+  const projectName = project?.name ?? t.tieuDe;
   const members = useMemo<UserSummary[]>(
     () => (project?.members ?? []).map((member) => member.user),
     [project],
@@ -141,10 +170,20 @@ export default function ChatThreadScreen() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetLoading, setSheetLoading] = useState(false);
-  const [sheetError, setSheetError] = useState('');
+  const [sheetError, setSheetError] = useState<NguonLoiPhieu | null>(null);
   const [sheetSubmitting, setSheetSubmitting] = useState(false);
   const [suggestion, setSuggestion] = useState<ChatTaskSuggestion | undefined>(undefined);
   const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
+
+  /* Tin đang bị báo cáo. `null` là phiếu báo cáo đang đóng. */
+  const [doiTuongBaoCao, setDoiTuongBaoCao] = useState<DoiTuongBaoCao | null>(null);
+  const { moBang, bang: bangThaoTac } = useBangThaoTac();
+  const { hoiRoiChan } = useChanNguoi();
+  /*
+    Người mình đã chặn. Máy chủ bỏ tin của họ khỏi các lượt GET, nhưng tin tới
+    qua socket thì không — lọc lại lúc dựng danh sách (xem `display`).
+  */
+  const daChan = useNguoiDaChan();
 
   /*
     Màn này là một tab ẩn, sống suốt phiên: mở dự án khác vẫn là CÙNG một màn,
@@ -161,11 +200,12 @@ export default function ChatThreadScreen() {
     setCursor(undefined);
     setTypingBy({});
     setLoading(true);
-    setLoadError('');
+    setLoadError(null);
     setDraft('');
     setAnhChoGui([]);
     setAnhDangXem(null);
     setSheetOpen(false);
+    setDoiTuongBaoCao(null);
     setSending(false);
   }
 
@@ -209,7 +249,7 @@ export default function ChatThreadScreen() {
   });
 
   const hanMuc = hanMucQuery.data
-    ? trangThaiHanMuc(hanMucQuery.data.usage.aiDetections)
+    ? trangThaiHanMuc(hanMucQuery.data.usage.aiDetections, ngonNgu)
     : null;
 
   /**
@@ -326,11 +366,11 @@ export default function ChatThreadScreen() {
         // Trang cũ nào đang tải dở thuộc mốc cũ — bỏ khi nó về (xem `loadMore`).
         theHeMoc.current += 1;
       }
-      setLoadError('');
+      setLoadError(null);
       void datChuaDocVe0(duAn);
     } catch (err) {
       if (luot === luotNap.current && duAnDangHien.current === duAn) {
-        setLoadError(err instanceof Error ? err.message : 'Không tải được tin nhắn.');
+        setLoadError({ loi: err, duPhong: 'khongTaiDuocTin' });
       }
     } finally {
       if (luot === luotNap.current && duAnDangHien.current === duAn) setLoading(false);
@@ -491,7 +531,7 @@ export default function ChatThreadScreen() {
       } catch {
         // Đã đổi dự án (kể cả A→B→A): bong bóng "gửi lỗi" đã bị dọn — phải báo bằng hộp thoại.
         if (theHe.current !== theHeLucGui) {
-          Alert.alert('Chưa gửi được tin nhắn', `"${content}" chưa tới nhóm. Mở lại dự án đó để gửi lại.`);
+          Alert.alert(t.chuaGuiDuocTin, t.tinChuaToiNhom(content));
           return;
         }
         setPending((current) =>
@@ -533,7 +573,7 @@ export default function ChatThreadScreen() {
       if (!duAn) return;
       const theHeLucGui = theHe.current;
       setSending(true);
-      setLoadError('');
+      setLoadError(null);
       try {
         // Mỗi tệp thành một tin nhắn riêng — xem `taiNhieuTepLen`.
         const saved = await sendProjectFiles(duAn, files, content);
@@ -565,25 +605,23 @@ export default function ChatThreadScreen() {
           setAnhChoGui((hienCo) => hienCo.filter((tep) => !daToi.has(tep)));
           setDraft('');
         }
-        const cauLoi = doDang
-          ? cauGuiDoDang(doDang, 'ảnh')
-          : loi instanceof Error
-            ? loi.message
-            : 'Không gửi được ảnh.';
         if (theHe.current !== theHeLucGui) {
-          Alert.alert('Chưa gửi được ảnh', `${cauLoi} Ảnh chưa tới nhóm trước — mở lại dự án đó để gửi lại.`);
+          const cauLoi = doDang
+            ? cauGuiDoDang(doDang, ngonNgu)
+            : dichLoi(loi, t.khongGuiDuocAnh);
+          Alert.alert(t.chuaGuiDuocAnh, t.anhChuaToiNhom(cauLoi));
           return;
         }
-        setLoadError(cauLoi);
+        setLoadError({ loi: doDang ?? loi, duPhong: 'khongGuiDuocAnh' });
       } finally {
         if (theHe.current === theHeLucGui) setSending(false);
       }
     },
-    [projectId],
+    [projectId, t, dichLoi, ngonNgu],
   );
 
   const nhanAnh = useCallback(async (lay: () => Promise<TepChon[]>) => {
-    setLoadError('');
+    setLoadError(null);
     try {
       const them = await lay();
       if (them.length === 0) return;
@@ -591,7 +629,7 @@ export default function ChatThreadScreen() {
       setAnhChoGui((hienCo) => [...hienCo, ...them]);
     } catch (loi) {
       baoLoi(loi, 'chon-anh-chat-du-an');
-      setLoadError(loi instanceof Error ? loi.message : 'Không mở được ảnh.');
+      setLoadError({ loi, duPhong: 'khongMoDuocAnh' });
     }
   }, []);
 
@@ -614,13 +652,20 @@ export default function ChatThreadScreen() {
     void doSend(content, localId);
   }, [draft, anhChoGui, doSend, doSendAnh, socket, projectId]);
 
-  const handleLongPress = useCallback(
-    async (messageId: string) => {
+  /**
+   * Điểm DUY NHẤT bắt đầu gửi một tin nhắn cho AI đề xuất công việc.
+   *
+   * Mọi đường vào luồng AI phải đi qua hàm này, để hộp thoại xin đồng ý dùng AI
+   * chỉ cần bọc đúng một chỗ.
+   */
+  const batDauGoiYAI = useCallback(
+    async (tin: ChatMessage) => {
       if (!projectId) return;
+      const messageId = tin.id;
 
       setSourceMessageId(messageId);
       setSuggestion(undefined);
-      setSheetError('');
+      setSheetError(null);
       setSheetOpen(true);
       setSheetLoading(true);
       orphanTaskId.current = null;
@@ -642,12 +687,13 @@ export default function ChatThreadScreen() {
         */
         if (err instanceof ApiError && err.code === MA_HET_LUOT_AI) {
           const moi = await hanMucQuery.refetch();
-          const trangThai = moi.data
-            ? trangThaiHanMuc(moi.data.usage.aiDetections)
-            : null;
-          setSheetError(trangThai?.loiNhan ?? err.message);
+          setSheetError({
+            kieu: 'het-luot',
+            han: moi.data?.usage.aiDetections ?? null,
+            loi: err,
+          });
         } else {
-          setSheetError(err instanceof Error ? err.message : 'Không phân tích được tin nhắn.');
+          setSheetError({ kieu: 'loi', loi: err, duPhong: 'khongPhanTichDuoc' });
         }
         setSuggestion({ hasTask: false, title: '', confidence: 'low' });
       } finally {
@@ -659,12 +705,11 @@ export default function ChatThreadScreen() {
 
   /*
     Máy chủ chỉ cho Leader dự án hoặc chủ không gian làm việc dùng AI
-    (`ensureProjectLeader`). Thành viên thường nhấn giữ từng mở bảng gợi ý rồi
-    ăn 403 — nên chỉ bày AI cho đúng những người đó.
+    (`ensureProjectLeader`), nên chỉ bày mục AI cho đúng những người đó.
 
     Dự án không có trong danh sách của không gian đang chọn — mở từ thông báo của
-    không gian khác chẳng hạn — thì không biết chắc vai trò. Khi đó vẫn cho, và để
-    máy chủ quyết: giấu nhầm là Leader thật mất tính năng.
+    không gian khác chẳng hạn — thì không biết chắc vai trò. Khi đó vẫn hiện, như
+    trước giờ, và để máy chủ quyết: giấu nhầm là Leader thật mất tính năng.
 
     Chủ không gian xét theo không gian CỦA DỰ ÁN: mở từ thông báo của không gian
     khác thì `active` là không gian đang chọn, không phải không gian chứa dự án.
@@ -679,17 +724,58 @@ export default function ChatThreadScreen() {
   ) : undefined;
 
   /*
-    Nhấn giữ một tin: chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem
-    `useDongYAI`. Tin còn đang gửi hoặc gửi hỏng chưa tồn tại trên máy chủ (mã
-    là mã tạm trên máy), gửi lên chỉ nhận 404.
+    Nhấn giữ một tin mở bảng thao tác. Trước đây nhấn giữ là gọi AI ngay — tức
+    không có đường nào để báo cáo hay chặn một tin nhắn xấu (Guideline 1.2).
+
+    Tin của chính mình thì không có Báo cáo và Chặn. Tin còn đang gửi hoặc gửi
+    hỏng chưa tồn tại trên máy chủ (mã là mã tạm trên máy) nên không có thao tác nào.
   */
-  const nhanGiuTin = useCallback(
-    (messageId: string) => {
-      if (!duocDungAI) return;
-      if (pending.some((item) => item.localId === messageId)) return;
-      xinDongYRoiChay(() => void handleLongPress(messageId));
+  const moThaoTacTin = useCallback(
+    (tin: ChatMessage) => {
+      if (pending.some((item) => item.localId === tin.id)) return;
+
+      const tenNguoiGui =
+        tin.author?.fullName ??
+        members.find((member) => member.id === tin.authorId)?.fullName ??
+        '';
+      const thaoTac: ThaoTac[] = [];
+
+      if (duocDungAI) {
+        thaoTac.push({
+          khoa: 'ai',
+          nhan: t.aiTaoViec,
+          // Chưa đồng ý dùng AI thì hỏi trước, không gửi gì — xem `useDongYAI`.
+          onChon: () => xinDongYRoiChay(() => void batDauGoiYAI(tin)),
+        });
+      }
+
+      if (tin.authorId !== user?.id) {
+        thaoTac.push({
+          khoa: 'bao-cao',
+          nhan: kd.baoCaoTin,
+          onChon: () =>
+            setDoiTuongBaoCao({
+              targetType: 'PROJECT_MESSAGE',
+              targetId: tin.id,
+              tenNguoi: tenNguoiGui || undefined,
+            }),
+        });
+        thaoTac.push({
+          khoa: 'chan',
+          nhan: kd.chanNguoi,
+          nguyHiem: true,
+          onChon: () =>
+            hoiRoiChan({
+              id: tin.authorId,
+              fullName: tenNguoiGui,
+              avatarUrl: tin.author?.avatarUrl,
+            }),
+        });
+      }
+
+      moBang({ tieuDe: tenNguoiGui || undefined, thaoTac });
     },
-    [duocDungAI, pending, xinDongYRoiChay, handleLongPress],
+    [pending, members, duocDungAI, batDauGoiYAI, xinDongYRoiChay, user?.id, hoiRoiChan, moBang, t, kd],
   );
 
   const handleConfirm = useCallback(
@@ -697,7 +783,7 @@ export default function ChatThreadScreen() {
       if (!projectId || !sourceMessageId || !active?.id) return;
 
       setSheetSubmitting(true);
-      setSheetError('');
+      setSheetError(null);
 
       /* Không gian của CHÍNH dự án, không phải không gian đang chọn — xem `khongGianCuaKhung`. */
       const workspaceId =
@@ -730,10 +816,10 @@ export default function ChatThreadScreen() {
         void queryClient.invalidateQueries({ queryKey: ['tasks'] });
         void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
 
-        Alert.alert('Đã tạo công việc', result.task.title ?? values.title, [
-          { text: 'Đóng', style: 'cancel' },
+        Alert.alert(t.daTaoViec, result.task.title ?? values.title, [
+          { text: chung.dong, style: 'cancel' },
           {
-            text: 'Xem công việc',
+            text: t.xemCongViec,
             /* Mang theo khung chat này để Quay lại ở màn công việc về đúng đây. */
             onPress: () =>
               router.push({
@@ -749,15 +835,13 @@ export default function ChatThreadScreen() {
         // Công việc ĐÃ được tạo thật. Giữ lại id để lần thử tiếp theo chỉ gắn,
         // không tạo thêm công việc trùng.
         orphanTaskId.current = result.task.id;
-        setSheetError(
-          'Đã tạo công việc nhưng chưa gắn được vào tin nhắn. Bấm "Tạo công việc" để thử gắn lại — sẽ không tạo thêm công việc mới.',
-        );
+        setSheetError({ kieu: 'chua-gan' });
         return;
       }
 
-      setSheetError(result.error.message);
+      setSheetError({ kieu: 'loi', loi: result.error, duPhong: 'loiChung' });
     },
-    [projectId, sourceMessageId, active?.id, messages, project?.workspaceId, router, queryClient],
+    [projectId, sourceMessageId, active?.id, messages, project?.workspaceId, router, queryClient, t, chung],
   );
 
   // Danh sách hiển thị: tin thật cộng tin đang gửi, đảo ngược cho FlatList inverted.
@@ -772,8 +856,11 @@ export default function ChatThreadScreen() {
       updatedAt: new Date().toISOString(),
     }));
     // Lọc theo dự án cho chắc: tin lạc dự án khác không bao giờ được hiện ở đây.
-    return [...messages.filter((tin) => tin.projectId === projectId), ...pendingAsMessages].reverse();
-  }, [messages, pending, active?.id, projectId, user?.id]);
+    const cuaDuAn = messages.filter((tin) => tin.projectId === projectId);
+    // Không thể đuổi người khỏi dự án chung, nên chặn nghĩa là ẩn tin của họ với mình.
+    const khongBiChan = locTinNguoiDaChan(cuaDuAn, daChan, (tin) => tin.authorId);
+    return [...khongBiChan, ...pendingAsMessages].reverse();
+  }, [messages, pending, active?.id, projectId, user?.id, daChan]);
 
   /*
     Tính trên thứ tự thời gian, tức đảo lại `display` — xem `idsHienAvatar`.
@@ -792,12 +879,27 @@ export default function ChatThreadScreen() {
 
   const typingText = useMemo(() => {
     void typingTick;
-    const ids = activeTypers(typingBy, Date.now());
+    const ids = activeTypers(typingBy, Date.now()).filter((id) => !daChan.has(id));
     const names = ids
       .map((id) => members.find((member) => member.id === id)?.fullName)
       .filter((name): name is string => Boolean(name));
-    return typingLabel(names);
-  }, [typingBy, typingTick, members]);
+    return typingLabel(names, ngonNgu);
+  }, [typingBy, typingTick, members, daChan, ngonNgu]);
+
+  /* Câu báo lỗi dựng lúc vẽ từ nguồn, theo ngôn ngữ đang dùng. */
+  const chuLoiKhung = loadError
+    ? loadError.loi instanceof LoiGuiDoDang
+      ? cauGuiDoDang(loadError.loi, ngonNgu)
+      : dichLoi(loadError.loi, t[loadError.duPhong])
+    : '';
+  const chuLoiPhieu = !sheetError
+    ? undefined
+    : sheetError.kieu === 'chua-gan'
+      ? t.chuaGanDuoc
+      : sheetError.kieu === 'het-luot'
+        ? ((sheetError.han ? trangThaiHanMuc(sheetError.han, ngonNgu).loiNhan : null) ??
+          dichLoi(sheetError.loi, t.khongPhanTichDuoc))
+        : dichLoi(sheetError.loi, sheetError.duPhong === 'loiChung' ? chung.loiChung : t.khongPhanTichDuoc);
 
   // Vòng quay chỉ khi CHƯA có gì để xem. Nạp lại lúc quay về màn thì chạy ngầm.
   if (loading && messages.length === 0) {
@@ -832,7 +934,7 @@ export default function ChatThreadScreen() {
         tay cho từng màn.
       */}
       <KeyboardAvoidingView style={styles.flex} behavior="padding" automaticOffset>
-        {loadError ? <ErrorBanner message={loadError} /> : null}
+        {loadError ? <ErrorBanner message={chuLoiKhung} /> : null}
 
         {/*
           Nhắc trước khi chạm trần, không phải sau. Người dùng đang giữa việc mà
@@ -842,6 +944,16 @@ export default function ChatThreadScreen() {
         {hanMuc && hanMuc.muc !== 'du' ? (
           <View style={hanMuc.muc === 'het' ? styles.hanMucHet : styles.hanMucSapHet}>
             <Text style={styles.hanMucChu}>{hanMuc.loiNhan}</Text>
+            {hanMuc.coNutNangCap ? (
+              <Pressable
+                testID="nut-nang-cap"
+                accessibilityRole="button"
+                onPress={() => router.push('/account/nang-cap')}
+                style={styles.hanMucNut}
+              >
+                <Text style={styles.hanMucNutChu}>{nangCap.tieuDe}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -857,13 +969,9 @@ export default function ChatThreadScreen() {
           }
           ListEmptyComponent={
             <EmptyChat
-              title="Chưa có tin nhắn nào"
+              title={t.chuaCoTinNhan}
               // Chỉ hứa tính năng AI với người thật sự dùng được nó — xem `duocDungAI`.
-              body={
-                duocDungAI
-                  ? 'Gửi tin nhắn đầu tiên. Nhấn giữ một tin nhắn bất kỳ để nhờ AI biến nó thành công việc.'
-                  : 'Gửi tin nhắn đầu tiên cho cả nhóm.'
-              }
+              body={duocDungAI ? t.trongDuAnAI : t.trongDuAn}
             />
           }
           renderItem={({ item }) => {
@@ -879,9 +987,7 @@ export default function ChatThreadScreen() {
                 goc={GOC_MAY_CHU}
                 headers={headerTep}
                 onXemAnh={setAnhDangXem}
-                onLongPress={
-                  duocDungAI && !pendingItem ? () => nhanGiuTin(item.id) : undefined
-                }
+                onLongPress={pendingItem ? undefined : () => moThaoTacTin(item)}
                 onRetry={
                   pendingItem
                     ? () => {
@@ -922,11 +1028,14 @@ export default function ChatThreadScreen() {
         members={members}
         sourceMessage={messages.find((m) => m.id === sourceMessageId)?.content}
         currentUserId={user?.id}
-        error={sheetError || undefined}
+        error={chuLoiPhieu || undefined}
         submitting={sheetSubmitting}
         onConfirm={handleConfirm}
         onDismiss={() => setSheetOpen(false)}
       />
+
+      {bangThaoTac}
+      <PhieuBaoCao doiTuong={doiTuongBaoCao} onDong={() => setDoiTuongBaoCao(null)} />
     </View>
   );
 }
@@ -952,6 +1061,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   hanMucChu: { fontSize: fontSize.sm, color: colors.text, lineHeight: fontSize.sm * 1.5 },
+  hanMucNut: { alignSelf: 'flex-start', paddingVertical: spacing.xs, marginTop: spacing.xs },
+  hanMucNutChu: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
   // Nền khung chat xám nhạt để bong bóng trắng của người khác nổi lên.
   flex: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '../ui/Card';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import type { Project } from '../../lib/types';
 import { colors, fontSize, gradients, radius, scaleWithFont, sizes, spacing } from '../../theme/tokens';
 
@@ -28,6 +30,7 @@ function avatarStyle(index: number) {
 }
 
 export function ProjectRow({ project, unreadCount, onPress, index = 0 }: ProjectRowProps) {
+  const t = useTuDien(tuDienChat);
   const badgeLabel = unreadCount > 99 ? '99+' : String(unreadCount);
   const { textColor, ...avatarBg } = avatarStyle(index);
 
@@ -46,9 +49,9 @@ export function ProjectRow({ project, unreadCount, onPress, index = 0 }: Project
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {project._count?.members
-              ? `${project._count.members} thành viên`
-              : 'Kênh trò chuyện dự án'}
-            {project._count?.tasks ? ` · ${project._count.tasks} việc` : ''}
+              ? t.soThanhVien(project._count.members)
+              : t.kenhDuAn}
+            {project._count?.tasks ? ` · ${t.soViec(project._count.tasks)}` : ''}
           </Text>
         </View>
 

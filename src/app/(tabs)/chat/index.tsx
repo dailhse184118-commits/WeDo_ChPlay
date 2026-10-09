@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -26,6 +27,8 @@ import { CreateWorkspaceForm } from '../../../components/workspace/CreateWorkspa
 import { WorkspaceSwitcher } from '../../../components/workspace/WorkspaceSwitcher';
 import { ErrorBanner } from '../../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../../components/ui/GradientHeader';
+import { useDichLoi, useTuDien } from '../../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../../i18n/tu-dien/chat';
 import { getProjectUnreadCount } from '../../../lib/api/chat';
 import { listConversations, startConversation } from '../../../lib/api/direct-chat';
 import { listFriends } from '../../../lib/api/friends';
@@ -35,6 +38,8 @@ import { getWorkspace } from '../../../lib/api/workspaces';
 import { useAuth } from '../../../lib/auth/auth-context';
 import { saveActiveWorkspaceId } from '../../../lib/auth/token-storage';
 import { duAnCanDemChuaDoc } from '../../../lib/chat/chua-doc-du-an';
+import { locHoiThoaiNguoiDaChan } from '../../../lib/moderation/loc-chan';
+import { useNguoiDaChan } from '../../../lib/moderation/use-kiem-duyet';
 import { useSocket } from '../../../lib/socket/socket-context';
 import { usePhienBan } from '../../../lib/version/use-phien-ban';
 import { useRefetchOnScreenFocus } from '../../../lib/use-refetch-on-focus';
@@ -44,6 +49,8 @@ import { colors, fontSize, lineHeight, radius, scale, scaleWithFont, spacing } f
 export default function ChatListScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const t = useTuDien(tuDienChat);
+  const dichLoi = useDichLoi();
   const { active, workspaces, switchTo, refresh } = useWorkspace();
   const workspaceId = active?.id;
 
@@ -92,6 +99,11 @@ export default function ChatListScreen() {
       void queryClient.invalidateQueries({ queryKey: ['direct-conversations'] });
       router.push(`/chat/dm/${hoiThoai.id}?ten=${encodeURIComponent(bien.hoTen)}`);
     },
+    /*
+      Trước đây hỏng là im lặng: bấm tên mà không có gì xảy ra. Giờ còn thêm một
+      lý do có thật — hai người đã chặn nhau — và máy chủ trả sẵn câu để nói.
+    */
+    onError: (loi) => Alert.alert(t.khongMoDuocCuocTroChuyen, dichLoi(loi, t.thuLaiSau)),
   });
 
   /*
@@ -119,6 +131,16 @@ export default function ChatListScreen() {
     */
     enabled: muc === 'tin-nhan',
   });
+
+  /*
+    Hội thoại với người mình đã chặn thì giấu đi. Nó vẫn còn trên máy chủ — bỏ
+    chặn là hiện lại, kèm lịch sử cũ.
+  */
+  const daChan = useNguoiDaChan();
+  const hoiThoaiHien = useMemo(
+    () => locHoiThoaiNguoiDaChan(conversationsQuery.data ?? [], daChan, user?.id),
+    [conversationsQuery.data, daChan, user?.id],
+  );
 
   const projectsQuery = useQuery({
     queryKey: ['projects', workspaceId],
@@ -215,7 +237,7 @@ export default function ChatListScreen() {
   return (
     <View style={styles.screen}>
       <GradientHeader
-        title={firstName ? `Chào ${firstName}` : 'Trò chuyện'}
+        title={firstName ? t.chao(firstName) : t.tieuDe}
         subtitle={active?.name}
         onPressSubtitle={() => setSwitcherOpen(true)}
         right={
@@ -223,9 +245,7 @@ export default function ChatListScreen() {
             <Pressable
               testID="nut-ban-be"
               accessibilityRole="button"
-              accessibilityLabel={
-                soLoiMoi > 0 ? `Bạn bè, ${soLoiMoi} lời mời đang chờ` : 'Bạn bè'
-              }
+              accessibilityLabel={t.banBe(soLoiMoi)}
               onPress={() => router.push('/chat/friends')}
               hitSlop={8}
               style={styles.nutBanBe}
@@ -241,8 +261,8 @@ export default function ChatListScreen() {
       >
         <SegmentedTabs
           options={[
-            { key: 'du-an', label: 'Dự án' },
-            { key: 'tin-nhan', label: 'Tin nhắn' },
+            { key: 'du-an', label: t.tabDuAn },
+            { key: 'tin-nhan', label: t.tinNhan },
           ]}
           value={muc}
           onChange={(key) => setMuc(key as 'du-an' | 'tin-nhan')}
@@ -254,10 +274,10 @@ export default function ChatListScreen() {
           <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.9)" />
           <TextInput
             testID="project-search"
-            accessibilityLabel="Tìm dự án"
+            accessibilityLabel={t.timDuAn}
             value={query}
             onChangeText={setQuery}
-            placeholder="Tìm dự án"
+            placeholder={t.timDuAn}
             placeholderTextColor="rgba(255,255,255,0.75)"
             style={styles.searchInput}
             // Tự sửa chính tả trong ô tìm kiếm chỉ làm hỏng từ khoá người dùng gõ.
@@ -271,26 +291,22 @@ export default function ChatListScreen() {
 
       <View style={styles.body}>
         {capNhat.muc === 'nen-cap-nhat' ? (
-          <UpdateBanner phienBanMoi={capNhat.latest} notes={capNhat.notes} />
+          <UpdateBanner
+            phienBanMoi={capNhat.latest}
+            notes={capNhat.notes}
+            storeUrl={capNhat.storeUrl}
+          />
         ) : null}
 
         {muc === 'du-an' && projectsQuery.isError ? (
           <ErrorBanner
-            message={
-              projectsQuery.error instanceof Error
-                ? projectsQuery.error.message
-                : 'Không tải được danh sách dự án.'
-            }
+            message={dichLoi(projectsQuery.error, t.khongTaiDuocDuAn)}
           />
         ) : null}
 
         {muc === 'tin-nhan' && conversationsQuery.isError ? (
           <ErrorBanner
-            message={
-              conversationsQuery.error instanceof Error
-                ? conversationsQuery.error.message
-                : 'Không tải được danh sách tin nhắn.'
-            }
+            message={dichLoi(conversationsQuery.error, t.khongTaiDuocTinNhan)}
           />
         ) : null}
 
@@ -301,7 +317,7 @@ export default function ChatListScreen() {
             </View>
           ) : (
             <FlatList
-              data={conversationsQuery.data ?? []}
+              data={hoiThoaiHien}
               ListHeaderComponent={
                 <Pressable
                   testID="nut-nhan-tin-moi"
@@ -310,7 +326,7 @@ export default function ChatListScreen() {
                   style={styles.nutNhanTinMoi}
                 >
                   <Ionicons name="create-outline" size={18} color={colors.primary} />
-                  <Text style={styles.nutNhanTinMoiChu}>Nhắn tin mới</Text>
+                  <Text style={styles.nutNhanTinMoiChu}>{t.nhanTinMoi}</Text>
                 </Pressable>
               }
               keyExtractor={(item) => item.id}
@@ -349,11 +365,8 @@ export default function ChatListScreen() {
                     <View style={styles.emptyIcon}>
                       <Ionicons name="chatbubbles-outline" size={28} color={colors.primary} />
                     </View>
-                    <Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
-                    <Text style={styles.emptyBody}>
-                      Chạm "Nhắn tin mới" để chọn một người trong không gian làm việc, hoặc bấm
-                      biểu tượng người ở góc trên để kết bạn với người ngoài không gian.
-                    </Text>
+                    <Text style={styles.emptyTitle}>{t.trongTinNhanTieuDe}</Text>
+                    <Text style={styles.emptyBody}>{t.trongTinNhanThan}</Text>
                   </View>
                 )
               }
@@ -375,7 +388,7 @@ export default function ChatListScreen() {
                 style={styles.nutNhanTinMoi}
               >
                 <Ionicons name="enter-outline" size={18} color={colors.primary} />
-                <Text style={styles.nutNhanTinMoiChu}>Nhập mã mời</Text>
+                <Text style={styles.nutNhanTinMoiChu}>{t.nhapMaMoi}</Text>
               </Pressable>
             }
             keyExtractor={(project) => project.id}
@@ -412,12 +425,10 @@ export default function ChatListScreen() {
                     />
                   </View>
                   <Text style={styles.emptyTitle}>
-                    {query ? 'Không tìm thấy dự án nào' : 'Chưa có dự án nào'}
+                    {query ? t.khongTimThayDuAn : t.chuaCoDuAn}
                   </Text>
                   <Text style={styles.emptyBody}>
-                    {query
-                      ? 'Thử từ khoá khác, hoặc xoá ô tìm kiếm để xem tất cả.'
-                      : 'Không gian làm việc này chưa có dự án. Tạo dự án trên web WeDo, rồi quay lại đây để trò chuyện cùng nhóm.'}
+                    {query ? t.thuTuKhoaKhac : t.khongGianChuaCoDuAn}
                   </Text>
                 </View>
               )

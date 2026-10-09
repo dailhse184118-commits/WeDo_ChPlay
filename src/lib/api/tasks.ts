@@ -1,3 +1,4 @@
+import { tuDienLoiMang } from '../../i18n/tu-dien/loi-mang';
 import { apiRequest } from './client';
 import { taiNhieuTepLen } from './chat-files';
 import type { Task, TaskStatus } from '../types';
@@ -51,7 +52,7 @@ export function acceptTask(id: string): Promise<Task> {
 export function rejectTask(id: string, reason: string): Promise<Task> {
   const trimmed = reason.trim();
   if (trimmed.length < 3) {
-    return Promise.reject(new Error('Lý do từ chối phải có ít nhất 3 ký tự'));
+    return Promise.reject(new Error(tuDienLoiMang.vi.lyDoTuChoiNgan));
   }
   return apiRequest<Task>(`/tasks/${id}/reject`, {
     method: 'POST',
@@ -90,7 +91,7 @@ export interface TepChon {
  */
 export async function uploadSubmissions(id: string, files: TepChon[]): Promise<Task> {
   if (files.length === 0) {
-    throw new Error('Hãy chọn ít nhất một tệp để nộp');
+    throw new Error(tuDienLoiMang.vi.chuaChonTep);
   }
 
   const ketQua = await taiNhieuTepLen<Task>(
@@ -120,7 +121,7 @@ export function approveReview(id: string): Promise<Task> {
 export function rejectReview(id: string, reason: string): Promise<Task> {
   const trimmed = reason.trim();
   if (trimmed.length < 3) {
-    return Promise.reject(new Error('Lý do trả lại phải có ít nhất 3 ký tự'));
+    return Promise.reject(new Error(tuDienLoiMang.vi.lyDoTraLaiNgan));
   }
   return apiRequest<Task>(`/tasks/${id}/reject-review`, {
     method: 'POST',

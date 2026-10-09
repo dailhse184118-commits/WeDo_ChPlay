@@ -2,6 +2,7 @@ import {
   capNhatThongTinCaNhan,
   datDongYAI,
   deleteAccount,
+  dongYDieuKhoan,
   getDeletionBlockers,
   transferWorkspaceOwner,
 } from '../account';
@@ -44,10 +45,18 @@ describe('API xoá tài khoản', () => {
   });
 });
 
-describe('API đồng ý dùng AI', () => {
+describe('API đồng ý', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedRequest.mockResolvedValue({ aiConsentAt: null } as never);
+    mockedRequest.mockResolvedValue({} as never);
+  });
+
+  it('đồng ý điều khoản kèm xác nhận đủ 18 tuổi', async () => {
+    await dongYDieuKhoan();
+    expect(mockedRequest).toHaveBeenCalledWith('/users/me/accept-terms', {
+      method: 'POST',
+      body: { confirmAdult: true },
+    });
   });
 
   it('cho phép dùng AI bằng POST, rút lại bằng DELETE', async () => {

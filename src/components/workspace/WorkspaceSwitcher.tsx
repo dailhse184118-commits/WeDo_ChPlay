@@ -2,6 +2,8 @@ import React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienHeThong } from '../../i18n/tu-dien/he-thong';
 import type { Workspace } from '../../lib/types';
 import {
   colors,
@@ -40,6 +42,8 @@ export function WorkspaceSwitcher({
   onCreate,
   onDismiss,
 }: WorkspaceSwitcherProps) {
+  const t = useTuDien(tuDienHeThong).khongGian;
+
   const handlePress = (workspaceId: string) => {
     // Chọn lại chính cái đang dùng thì không có gì để đổi, chỉ đóng sheet.
     if (workspaceId !== activeId) {
@@ -61,7 +65,7 @@ export function WorkspaceSwitcher({
 
       <View style={styles.sheet}>
         <View style={styles.handle} />
-        <Text style={styles.heading}>Không gian làm việc</Text>
+        <Text style={styles.heading}>{t.tieuDe}</Text>
 
         <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
           {workspaces.map((workspace) => {
@@ -97,14 +101,14 @@ export function WorkspaceSwitcher({
         <Pressable
           testID="workspace-tao-moi"
           accessibilityRole="button"
-          accessibilityLabel="Tạo không gian làm việc mới"
+          accessibilityLabel={t.taoMoiNhan}
           onPress={handleCreate}
           style={({ pressed }) => [styles.taoMoi, pressed ? styles.rowPressed : null]}
         >
           <View style={styles.taoMoiIcon}>
             <Ionicons name="add" size={sizes.icon} color={colors.primary} />
           </View>
-          <Text style={styles.taoMoiChu}>Tạo không gian mới</Text>
+          <Text style={styles.taoMoiChu}>{t.taoMoi}</Text>
         </Pressable>
       </View>
     </Modal>

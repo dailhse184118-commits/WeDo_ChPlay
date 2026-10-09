@@ -1,4 +1,9 @@
+import { Platform } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+
+import { theoNgonNgu } from '../../i18n/dich';
+import { LoiDaDich } from '../../i18n/loi';
+import { tuDienDangNhap } from '../../i18n/tu-dien/dang-nhap';
 
 /**
  * Web client ID dự phòng, dùng khi bản build không khai biến môi trường.
@@ -41,6 +46,42 @@ export const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || CLIENT_ID_DU_PHONG;
 
 /**
+ * OAuth client dạng **iOS** của cùng project, cho bản iPhone.
+ *
+ * Trên iPhone, `aud` của ID token là client iOS này chứ không phải client Web,
+ * nên máy chủ phải khai cùng giá trị ở `GOOGLE_IOS_CLIENT_ID`.
+ *
+ * Tạo ngày 28/09/2026 trong Google Cloud Console (client "WeDo iOS", bundle
+ * vn.wedo.app). Để trống thì iPhone không hiện nút Google (xem
+ * `coDangNhapGoogle`). Có giá trị thì PHẢI khai cùng lúc `iosUrlScheme` (client ID
+ * đảo ngược, `com.googleusercontent.apps.…`) cho plugin
+ * `@react-native-google-signin/google-signin` trong `app.json` — thiếu nó thì
+ * bấm nút là app văng.
+ *
+ * Không phải bí mật, giống client Web ở trên.
+ *
+ * Khai hẳn kiểu `string`: để TypeScript tự suy thì kiểu là đúng giá trị chữ
+ * đang điền, và mọi phép so với `''` thành lỗi TS2367 ngay khi điền giá trị thật.
+ */
+export const GOOGLE_IOS_CLIENT_ID: string =
+  '108450458549-jr95oi462iueau8md2n4vp2di1b47pmn.apps.googleusercontent.com';
+
+/**
+ * Máy này có đăng nhập bằng Google hay không.
+ *
+ * Android luôn có. iPhone chỉ có khi đã khai `GOOGLE_IOS_CLIENT_ID`: thiếu client
+ * iOS (và `iosUrlScheme` đi kèm) thì bấm nút là hỏng — reviewer của Apple bấm
+ * vào là từ chối (Guideline 2.1). Có Google trên iPhone thì cũng phải có Sign in
+ * with Apple (4.8) — xem `apple-signin.ts`.
+ *
+ * Đọc lúc gọi chứ không chốt ở tầng module, để kiểm thử đổi được hệ điều hành.
+ * Tham số chỉ để kiểm thử thay được client ID; mã thật gọi không đối số.
+ */
+export function coDangNhapGoogle(iosClientId: string = GOOGLE_IOS_CLIENT_ID): boolean {
+  return Platform.OS !== 'ios' || iosClientId.trim() !== '';
+}
+
+/**
  * Bảo Google quên phiên đã chọn trên máy này.
  *
  * Không gọi hàm này thì đăng xuất khỏi WeDo chỉ xoá token của WeDo, còn Google
@@ -50,7 +91,10 @@ export const GOOGLE_WEB_CLIENT_ID =
  * Nuốt mọi lỗi: người đăng nhập bằng email chưa hề chạm tới Google, và việc
  * đăng xuất khỏi WeDo không được phụ thuộc vào việc Google có hợp tác hay không.
  */
-export async function signOutFromGoogle(): Promise<void> {
+export async function signOutFromGoogle(iosClientId: string = GOOGLE_IOS_CLIENT_ID): Promise<void> {
+  // iPhone chưa khai client iOS thì không có đường đăng nhập Google nào — xem `coDangNhapGoogle`.
+  if (!coDangNhapGoogle(iosClientId)) return;
+
   try {
     await GoogleSignin.signOut();
   } catch {
@@ -74,16 +118,34 @@ function maNativeCuaLoi(error: unknown): string | null {
  *
  * Ném lỗi kèm thông báo tiếng Việt cho những trường hợp người dùng cần biết.
  */
-export async function getGoogleIdToken(): Promise<string | null> {
+export async function getGoogleIdToken(
+  iosClientId: string = GOOGLE_IOS_CLIENT_ID,
+): Promise<string | null> {
+  /*
+    iPhone chưa khai client iOS thì nút đã bị giấu. Chốt thêm ở đây để không
+    đường nào khác chạm được tới SDK Google — `configure` bên dưới cũng không chạy.
+  */
+  if (!coDangNhapGoogle(iosClientId)) {
+    throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleIphoneChuaHoTro);
+  }
+
   // `configure` là thao tác nhẹ và `signIn` luôn chờ nó xong, nên gọi ngay trước
   // mỗi lần đăng nhập là đủ — khỏi cần một bước khởi tạo riêng lúc mở app.
-  GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+  //
+  // Trên iPhone khai thêm `iosClientId`: SDK iOS mở hộp chọn tài khoản bằng
+  // client iOS, còn `webClientId` vẫn cần để Google cấp ID token cho máy chủ.
+  // Android giữ nguyên như cũ, chỉ `webClientId`.
+  GoogleSignin.configure(
+    Platform.OS === 'ios'
+      ? { webClientId: GOOGLE_WEB_CLIENT_ID, iosClientId }
+      : { webClientId: GOOGLE_WEB_CLIENT_ID },
+  );
 
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   } catch (error) {
     if (maNativeCuaLoi(error) === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-      throw new Error('Máy chưa có Google Play Services nên không dùng được đăng nhập Google.');
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleThieuPlayServices);
     }
     throw error;
   }
@@ -105,16 +167,10 @@ export async function getGoogleIdToken(): Promise<string | null> {
       người kiểm thử chụp màn hình gửi về.
     */
     if (ma === MA_DEVELOPER_ERROR_ANDROID || ma === 'DEVELOPER_ERROR') {
-      throw new Error(
-        'Google chưa chấp nhận ứng dụng này (DEVELOPER_ERROR). ' +
-          'Kiểm tra SHA-1 của chứng chỉ ký và trạng thái Publish trong Google Cloud Console.',
-      );
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleDeveloperError);
     }
     if (ma) {
-      throw new Error(
-        `Đăng nhập Google không thành công (${ma}). ` +
-          'Vui lòng thử lại, hoặc đăng nhập bằng email và mật khẩu.',
-      );
+      throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleKhongThanhCong(ma));
     }
     throw error;
   }
@@ -124,7 +180,7 @@ export async function getGoogleIdToken(): Promise<string | null> {
   const idToken = response.data.idToken;
   if (!idToken) {
     // Google chỉ cấp ID token khi `webClientId` khai đúng một client dạng Web.
-    throw new Error('Google không trả về ID token. Kiểm tra lại Web client ID của ứng dụng.');
+    throw new LoiDaDich(theoNgonNgu(tuDienDangNhap).googleThieuIdToken);
   }
 
   return idToken;

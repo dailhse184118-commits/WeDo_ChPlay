@@ -1,4 +1,12 @@
-import { forgotPassword, getMe, login, loginWithGoogle, register, resetPassword } from '../auth';
+import {
+  forgotPassword,
+  getMe,
+  login,
+  loginWithApple,
+  loginWithGoogle,
+  register,
+  resetPassword,
+} from '../auth';
 import { apiRequest } from '../client';
 
 jest.mock('../client', () => ({
@@ -45,11 +53,62 @@ describe('auth API', () => {
     });
   });
 
+  it('POST /auth/register kèm dấu đồng ý điều khoản và đủ 18 tuổi khi đã đánh dấu', async () => {
+    await register({
+      email: 'a@b.c',
+      password: 'matkhau',
+      fullName: 'Đại',
+      acceptTerms: true,
+      confirmAdult: true,
+    });
+    expect(mockedRequest).toHaveBeenCalledWith('/auth/register', {
+      method: 'POST',
+      body: {
+        email: 'a@b.c',
+        password: 'matkhau',
+        fullName: 'Đại',
+        acceptTerms: true,
+        confirmAdult: true,
+      },
+      skipAuth: true,
+    });
+  });
+
   it('POST /auth/google với ID token và bỏ qua header auth', async () => {
     await loginWithGoogle('id-token-cua-google');
     expect(mockedRequest).toHaveBeenCalledWith('/auth/google', {
       method: 'POST',
       body: { idToken: 'id-token-cua-google' },
+      skipAuth: true,
+    });
+  });
+
+  it('POST /auth/apple gửi đủ token, mã, nonce gốc, họ tên và email; bỏ qua header auth', async () => {
+    await loginWithApple({
+      identityToken: 'jwt-cua-apple',
+      authorizationCode: 'ma-mot-lan',
+      nonce: 'nonce-goc',
+      fullName: 'Lê Hữu Đại',
+      email: 'abc@privaterelay.appleid.com',
+    });
+    expect(mockedRequest).toHaveBeenCalledWith('/auth/apple', {
+      method: 'POST',
+      body: {
+        identityToken: 'jwt-cua-apple',
+        authorizationCode: 'ma-mot-lan',
+        nonce: 'nonce-goc',
+        fullName: 'Lê Hữu Đại',
+        email: 'abc@privaterelay.appleid.com',
+      },
+      skipAuth: true,
+    });
+  });
+
+  it('POST /auth/apple lần đăng nhập sau: Apple không đưa tên và email thì không gửi khoá đó', async () => {
+    await loginWithApple({ identityToken: 'jwt-cua-apple', nonce: 'nonce-goc' });
+    expect(mockedRequest).toHaveBeenCalledWith('/auth/apple', {
+      method: 'POST',
+      body: { identityToken: 'jwt-cua-apple', nonce: 'nonce-goc' },
       skipAuth: true,
     });
   });

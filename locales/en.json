@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "WeDo",
+    "NSCameraUsageDescription": "WeDo needs your camera so you can take and send photos right in chat.",
+    "NSPhotoLibraryUsageDescription": "WeDo needs your photo library so you can send existing photos in chat and pick a profile picture."
+  }
+}

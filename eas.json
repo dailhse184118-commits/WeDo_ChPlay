@@ -29,6 +29,11 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6816878767",
+        "appleTeamId": "LR53W8386S"
+      }
+    }
   }
 }

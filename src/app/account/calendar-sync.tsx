@@ -3,6 +3,8 @@ import { ActivityIndicator, Alert, Platform, ScrollView, Share, StyleSheet, Text
 import { Redirect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienDongBoLich } from '../../i18n/tu-dien/dong-bo-lich';
 import { Button } from '../../components/ui/Button';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { GradientHeader } from '../../components/ui/GradientHeader';
@@ -45,7 +47,10 @@ export default function ManDongBoLich() {
 function NoiDungDongBoLich() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [loi, setLoi] = useState<string | null>(null);
+  const t = useTuDien(tuDienDongBoLich);
+  const { ngonNgu } = useNgonNgu();
+  /* Giữ lỗi gốc, dịch lúc vẽ: đổi ngôn ngữ giữa chừng thì băng đỏ đổi theo. */
+  const [loi, setLoi] = useState<{ nguon: unknown } | null>(null);
 
   /*
     Link là "chìa khoá" đọc lịch: không ghi xuống máy, và rời màn là bỏ khỏi bộ
@@ -64,7 +69,7 @@ function NoiDungDongBoLich() {
     onMutate: () => setLoi(null),
     onSuccess: (moi) => queryClient.setQueryData(KHOA_TRANG_THAI, moi),
     onError: (e) => {
-      setLoi(cauLoiDongBoLich(e));
+      setLoi({ nguon: e });
       // Gói vừa hết hạn giữa chừng: nạp lại để màn chuyển sang câu giới thiệu gói, không kẹt ở nút Tạo link.
       if (e instanceof ApiError && e.status === 403) {
         void queryClient.invalidateQueries({ queryKey: KHOA_TRANG_THAI });
@@ -80,38 +85,32 @@ function NoiDungDongBoLich() {
         duocDung: cu?.duocDung ?? true,
         coLink: false,
       })),
-    onError: (e) => setLoi(cauLoiDongBoLich(e)),
+    onError: (e) => setLoi({ nguon: e }),
   });
 
   const chiaSe = async (url: string) => {
     setLoi(null);
     try {
       // Android chỉ đọc `message`; `title` là tiêu đề của bảng chia sẻ.
-      await Share.share({ title: 'Link lịch WeDo', message: url });
+      await Share.share({ title: t.linkCuaBan.tieuDeChiaSe, message: url });
     } catch (e) {
-      setLoi(cauLoiDongBoLich(e));
+      setLoi({ nguon: e });
     }
   };
 
   const hoiTaoLinkMoi = () => {
-    Alert.alert(
-      'Tạo link mới?',
-      'Link đang dùng sẽ ngừng chạy ngay. Lịch nào đã thêm link cũ sẽ không cập nhật nữa, bạn phải thêm lại bằng link mới.',
-      [
-        { text: 'Huỷ', style: 'cancel' },
-        { text: 'Tạo link mới', style: 'destructive', onPress: () => tao.mutate() },
-      ],
+    Alert.alert(t.hoiTaoLinkMoi.tieuDe, t.hoiTaoLinkMoi.noiDung, [
+      { text: t.hoiTaoLinkMoi.huy, style: 'cancel' },
+      { text: t.hoiTaoLinkMoi.xacNhan, style: 'destructive', onPress: () => tao.mutate() },
+    ],
     );
   };
 
   const hoiTatDongBo = () => {
-    Alert.alert(
-      'Tắt đồng bộ lịch?',
-      'Link sẽ ngừng chạy ngay. Lịch đã thêm không nhận thêm thay đổi nào từ WeDo; bạn có thể xoá lịch đó trong ứng dụng lịch.',
-      [
-        { text: 'Huỷ', style: 'cancel' },
-        { text: 'Tắt đồng bộ', style: 'destructive', onPress: () => tat.mutate() },
-      ],
+    Alert.alert(t.hoiTatDongBo.tieuDe, t.hoiTatDongBo.noiDung, [
+      { text: t.hoiTatDongBo.huy, style: 'cancel' },
+      { text: t.hoiTatDongBo.xacNhan, style: 'destructive', onPress: () => tat.mutate() },
+    ],
     );
   };
 
@@ -121,26 +120,23 @@ function NoiDungDongBoLich() {
   return (
     <View style={styles.man}>
       <GradientHeader
-        title="Đồng bộ lịch"
+        title={t.tieuDe}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/account'))}
         dense
       />
 
       <ScrollView style={styles.than} contentContainerStyle={styles.thanNoiDung}>
-        <Text style={styles.gioiThieu}>
-          Hạn chót việc bạn đã nhận, cuộc họp và sự kiện của bạn trên WeDo tự hiện trong Google
-          Calendar, Lịch Apple hoặc Outlook, và tự cập nhật.
-        </Text>
+        <Text style={styles.gioiThieu}>{t.gioiThieu}</Text>
 
-        {loi ? <ErrorBanner message={loi} /> : null}
+        {loi ? <ErrorBanner message={cauLoiDongBoLich(loi.nguon, ngonNgu)} /> : null}
 
         {trangThai.isPending ? (
           <ActivityIndicator testID="dong-bo-lich-dang-tai" color={colors.primary} />
         ) : !duLieu ? (
           <>
-            <ErrorBanner message={cauLoiDongBoLich(trangThai.error)} />
+            <ErrorBanner message={cauLoiDongBoLich(trangThai.error, ngonNgu)} />
             <Button
-              label="Thử lại"
+              label={t.thuLai}
               variant="secondary"
               onPress={() => void trangThai.refetch()}
               testID="nut-thu-lai-dong-bo-lich"
@@ -154,14 +150,12 @@ function NoiDungDongBoLich() {
               (xem `src/lib/web-link.ts`).
             */}
             <View style={styles.the}>
-              <Text style={styles.theChu}>
-                Tính năng của gói Pro và Team.
-              </Text>
+              <Text style={styles.theChu}>{t.tinhNangGoiPro}</Text>
             </View>
             {/* Gói hết hạn khi link còn: vẫn cho tắt hẳn link. */}
             {duLieu.coLink ? (
               <Button
-                label="Tắt đồng bộ"
+                label={t.tatDongBo}
                 variant="danger"
                 onPress={hoiTatDongBo}
                 loading={tat.isPending}
@@ -171,7 +165,7 @@ function NoiDungDongBoLich() {
           </>
         ) : !duLieu.coLink || !duLieu.url ? (
           <Button
-            label="Tạo link đồng bộ"
+            label={t.taoLinkDongBo}
             onPress={() => tao.mutate()}
             loading={tao.isPending}
             testID="nut-tao-link-dong-bo-lich"
@@ -205,54 +199,45 @@ interface CoLinkProps {
 }
 
 function CoLink({ url, layLanCuoi, onChiaSe, onTaoLinkMoi, onTat, dangTao, dangTat, dangBan }: CoLinkProps) {
+  const t = useTuDien(tuDienDongBoLich);
+  const { ngonNgu } = useNgonNgu();
   return (
     <>
       <View style={styles.the}>
-        <Text style={styles.nhan}>Link của bạn</Text>
+        <Text style={styles.nhan}>{t.linkCuaBan.tieuDe}</Text>
         <Text selectable style={styles.link} testID="link-dong-bo-lich">
           {url}
         </Text>
-        <Button label="Chia sẻ link" onPress={onChiaSe} testID="nut-chia-se-link-lich" />
-        <Text style={styles.canhBao}>
-          Ai có link này đều xem được lịch của bạn. Chỉ gửi cho chính bạn; lỡ gửi nhầm thì bấm Tạo link
-          mới.
-        </Text>
+        <Button label={t.linkCuaBan.chiaSe} onPress={onChiaSe} testID="nut-chia-se-link-lich" />
+        <Text style={styles.canhBao}>{t.linkCuaBan.canhBao}</Text>
       </View>
 
       <View style={styles.the}>
-        <Text style={styles.nhan}>Thêm vào lịch</Text>
+        <Text style={styles.nhan}>{t.themVaoLich.tieuDe}</Text>
 
-        <Text style={styles.buocTieuDe}>Google Calendar</Text>
-        <Text style={styles.buoc}>
-          Ứng dụng Google Calendar trên điện thoại không thêm được lịch bằng link. Chia sẻ link sang máy
-          tính, mở calendar.google.com, chọn “Thêm lịch → Từ URL” rồi dán link. Sau đó lịch tự
-          hiện cả trên điện thoại.
-        </Text>
+        <Text style={styles.buocTieuDe}>{t.themVaoLich.googleTieuDe}</Text>
+        <Text style={styles.buoc}>{t.themVaoLich.googleBuoc}</Text>
 
-        <Text style={styles.buocTieuDe}>Lịch Apple (máy Mac, iPhone)</Text>
-        <Text style={styles.buoc}>Gửi link sang máy đó rồi mở link webcal dưới đây, chọn Đăng ký:</Text>
+        <Text style={styles.buocTieuDe}>{t.themVaoLich.appleTieuDe}</Text>
+        <Text style={styles.buoc}>{t.themVaoLich.appleBuoc}</Text>
         <Text selectable style={styles.link} testID="link-webcal">
           {linkWebcal(url)}
         </Text>
 
-        <Text style={styles.buocTieuDe}>Outlook</Text>
-        <Text style={styles.buoc}>
-          Trên outlook.com, chọn “Thêm lịch → Đăng ký từ web” rồi dán link.
-        </Text>
+        <Text style={styles.buocTieuDe}>{t.themVaoLich.outlookTieuDe}</Text>
+        <Text style={styles.buoc}>{t.themVaoLich.outlookBuoc}</Text>
 
-        <Text style={styles.phu}>
-          Google cập nhật lịch vài giờ một lần; Lịch Apple và Outlook khoảng mỗi giờ.
-        </Text>
+        <Text style={styles.phu}>{t.themVaoLich.tanSuat}</Text>
       </View>
 
       <Text style={styles.phu} testID="lan-cuoi-lay-lich">
         {layLanCuoi
-          ? `Lần cuối lịch của bạn lấy dữ liệu: ${hienThiHanMoi(layLanCuoi)}`
-          : 'Chưa có ứng dụng lịch nào lấy dữ liệu từ link này.'}
+          ? t.lanCuoi(hienThiHanMoi(layLanCuoi, ngonNgu))
+          : t.chuaLayLanNao}
       </Text>
 
       <Button
-        label="Tạo link mới"
+        label={t.taoLinkMoi}
         variant="secondary"
         onPress={onTaoLinkMoi}
         loading={dangTao}
@@ -260,7 +245,7 @@ function CoLink({ url, layLanCuoi, onChiaSe, onTaoLinkMoi, onTat, dangTao, dangT
         testID="nut-tao-link-moi-lich"
       />
       <Button
-        label="Tắt đồng bộ"
+        label={t.tatDongBo}
         variant="danger"
         onPress={onTat}
         loading={dangTat}

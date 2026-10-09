@@ -2,6 +2,8 @@ import React from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../ui/Avatar';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import type { WorkspaceChiTiet } from '../../lib/types';
 import {
   colors,
@@ -43,6 +45,7 @@ export function NewConversationSheet({
   onChon,
   onDismiss,
 }: NewConversationSheetProps) {
+  const t = useTuDien(tuDienChat);
   const nguoiKhac = (workspace?.members ?? []).filter(
     (thanhVien) => thanhVien.user.id !== currentUserId,
   );
@@ -53,10 +56,10 @@ export function NewConversationSheet({
 
       <View style={styles.sheet}>
         <View style={styles.tay} />
-        <Text style={styles.tieuDe}>Nhắn tin cho ai</Text>
+        <Text style={styles.tieuDe}>{t.nhanTinChoAi}</Text>
 
         {nguoiKhac.length === 0 ? (
-          <Text style={styles.trong}>Không gian này chưa có thành viên nào khác</Text>
+          <Text style={styles.trong}>{t.khongCoThanhVienKhac}</Text>
         ) : (
           <ScrollView style={styles.danhSach} showsVerticalScrollIndicator={false}>
             {nguoiKhac.map((thanhVien) => (

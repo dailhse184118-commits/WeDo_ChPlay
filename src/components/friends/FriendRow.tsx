@@ -1,13 +1,17 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '../ui/Avatar';
+import { useTuDien } from '../../i18n/NgonNguProvider';
+import { tuDienChat } from '../../i18n/tu-dien/chat';
 import type { TrangThaiKetBan } from '../../lib/friends/quan-he';
 import type { UserSummary } from '../../lib/types';
 import { colors, fontSize, lineHeight, radius, sizes, spacing } from '../../theme/tokens';
 
 interface FriendRowProps {
-  nguoi: UserSummary;
+  /** Email có thể vắng: kết quả tìm kiếm giấu email của người chưa là bạn. */
+  nguoi: Omit<UserSummary, 'email'> & { email?: string | null };
   trangThai: TrangThaiKetBan;
   /** Đang gọi máy chủ cho chính dòng này. Khoá thao tác để không gửi trùng. */
   dangXuLy?: boolean;
@@ -15,6 +19,11 @@ interface FriendRowProps {
   onGuiLoiMoi?: () => void;
   onDuyet?: () => void;
   onTuChoi?: () => void;
+  /**
+   * Mở bảng Báo cáo / Chặn cho người này. Có truyền thì hiện nút ba chấm ở cuối
+   * dòng — kể cả dòng lời mời đến, vì lời mời quấy rối cũng phải báo cáo được.
+   */
+  onThem?: () => void;
 }
 
 /**
@@ -32,9 +41,11 @@ export function FriendRow({
   onGuiLoiMoi,
   onDuyet,
   onTuChoi,
+  onThem,
 }: FriendRowProps) {
   // Bọc mọi thao tác: chạm hai lần nhanh sẽ gửi hai lời mời, và máy chủ trả lỗi
   // "lời mời đang chờ phản hồi" cho lượt thứ hai — người dùng thấy báo đỏ vô cớ.
+  const t = useTuDien(tuDienChat).ban;
   const chay = (viec?: () => void) => () => {
     if (!dangXuLy) viec?.();
   };
@@ -47,9 +58,15 @@ export function FriendRow({
         <Text style={styles.ten} numberOfLines={1}>
           {nguoi.fullName}
         </Text>
-        <Text style={styles.email} numberOfLines={1}>
-          {nguoi.email}
-        </Text>
+        {/*
+          Máy chủ chỉ trả email của người đã là bạn — người lạ tìm được thì
+          email là `null`. Không có thì bỏ dòng, đừng để một dòng trống.
+        */}
+        {nguoi.email ? (
+          <Text style={styles.email} numberOfLines={1}>
+            {nguoi.email}
+          </Text>
+        ) : null}
       </View>
 
       {trangThai === 'la-ban' ? (
@@ -59,7 +76,7 @@ export function FriendRow({
           onPress={chay(onNhanTin)}
           style={styles.nutChinh}
         >
-          <Text style={styles.nutChinhChu}>Nhắn tin</Text>
+          <Text style={styles.nutChinhChu}>{t.nhanTin}</Text>
         </Pressable>
       ) : null}
 
@@ -70,12 +87,12 @@ export function FriendRow({
           onPress={chay(onGuiLoiMoi)}
           style={styles.nutChinh}
         >
-          <Text style={styles.nutChinhChu}>Kết bạn</Text>
+          <Text style={styles.nutChinhChu}>{t.ketBan}</Text>
         </Pressable>
       ) : null}
 
       {trangThai === 'da-gui-loi-moi' ? (
-        <Text style={styles.dangCho}>Đã gửi lời mời</Text>
+        <Text style={styles.dangCho}>{t.daGuiLoiMoi}</Text>
       ) : null}
 
       {trangThai === 'cho-minh-duyet' ? (
@@ -86,7 +103,7 @@ export function FriendRow({
             onPress={chay(onDuyet)}
             style={styles.nutChinh}
           >
-            <Text style={styles.nutChinhChu}>Duyệt</Text>
+            <Text style={styles.nutChinhChu}>{t.duyet}</Text>
           </Pressable>
           <Pressable
             testID="friend-row-tu-choi"
@@ -94,9 +111,22 @@ export function FriendRow({
             onPress={chay(onTuChoi)}
             style={styles.nutPhu}
           >
-            <Text style={styles.nutPhuChu}>Từ chối</Text>
+            <Text style={styles.nutPhuChu}>{t.tuChoi}</Text>
           </Pressable>
         </View>
+      ) : null}
+
+      {onThem ? (
+        <Pressable
+          testID="friend-row-them"
+          accessibilityRole="button"
+          accessibilityLabel={t.thaoTacKhac(nguoi.fullName)}
+          onPress={chay(onThem)}
+          hitSlop={8}
+          style={styles.nutThem}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+        </Pressable>
       ) : null}
     </View>
   );
@@ -123,4 +153,5 @@ const styles = StyleSheet.create({
   nutPhu: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs },
   nutPhuChu: { color: colors.textMuted, fontSize: fontSize.xs },
   dangCho: { color: colors.textMuted, fontSize: fontSize.xs, fontStyle: 'italic' },
+  nutThem: { paddingVertical: spacing.xs, paddingLeft: spacing.xxs },
 });
