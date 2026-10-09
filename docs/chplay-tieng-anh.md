@@ -76,12 +76,10 @@ WORKSPACES AND ACCOUNT
 WORKS WITH THE WEB VERSION
 WeDo on Android shares your account and data with the WeDo web app. Projects and project members are created on the web, then the whole team works together on their phones. If you signed up with Google on the web, tap "Continue with Google" to reach the same account.
 
-The app interface is currently in Vietnamese. An English interface is coming soon.
-
 Terms: https://wedofpt.com.vn/dieu-khoan.html?lang=en
 Privacy Policy: https://wedofpt.com.vn/privacy.html?lang=en
 
 Need help? Email us: wedosupport6886@gmail.com
 ```
 
-Khi bản song ngữ (1.0.16) lên CH Play: xoá câu "The app interface is currently in Vietnamese. An English interface is coming soon." ở cả CH Play và App Store.
+Bản song ngữ 1.0.16: câu "The app interface is currently in Vietnamese..." đã được bỏ khỏi mô tả ở trên. Nếu trang CH Play đang hiện còn câu đó thì xoá đi khi bản 1.0.16 lên.

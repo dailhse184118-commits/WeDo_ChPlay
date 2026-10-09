@@ -6,10 +6,10 @@ Việc cuối của đợt In-App Purchase. Chương này thay dòng `PAYMENTS: 
 
 Đây là **văn bản thay thế hoàn chỉnh** cho Notes cũ (khối đã dán ở [chương 09](09-ban-dien-that.md) có dòng `PAYMENTS: free; no in-app purchases`, không được để lại). Tài khoản demo theo chương 09: A `wedo.review@gmail.com` ("Lê Huân", Leader dự án "Ra mắt AppleStore"), B `dieulinh@gmail.com` ("Diệu Linh", Member). Không có tài khoản C: người duyệt tự đăng ký tài khoản mới để thử xoá. HOW TO TEST và USER-GENERATED CONTENT rút gọn từ Notes ở chương 09, giữ nguyên các sự thật.
 
-**Dài 3,774 ký tự, 3,921 byte UTF-8 (đếm theo NFC), tính cả mật khẩu B giả định dài 16 ký tự, dưới giới hạn 4.000 byte của Apple**. Mật khẩu A **không** ghi trong khối: nhập ở ô Password của Sign-In Information. Mật khẩu B ghi vào Notes (xem dưới).
+**Dài 3833 ký tự, 3980 byte UTF-8 (đếm theo NFC), tính cả mật khẩu B giả định dài 16 ký tự, dưới giới hạn 4.000 byte của Apple**. Mật khẩu A **không** ghi trong khối: nhập ở ô Password của Sign-In Information. Mật khẩu B ghi vào Notes (xem dưới).
 
 ```text
-WeDo is a team-work app for Vietnamese students, the iPhone companion to https://wedofpt.com.vn. The app is in Vietnamese; English meanings are in brackets. Version 1.0.15 (5) sells two plans through auto-renewable In-App Purchase.
+WeDo is a team-work app for Vietnamese students, the iPhone companion to https://wedofpt.com.vn. The app follows the device language (change it in Account > Language). Vietnamese labels have English in brackets. Version 1.0.15 (5) sells two plans through auto-renewable In-App Purchase.
 
 DEMO ACCOUNTS (email + password; no email verification, no OTP)
 Main: wedo.review@gmail.com, "Lê Huân", Leader of the project "Ra mắt AppleStore". Password: see App Store Connect demo account field.

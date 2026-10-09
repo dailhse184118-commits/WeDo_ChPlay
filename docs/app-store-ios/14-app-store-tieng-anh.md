@@ -1,6 +1,6 @@
 # 14 — Bản tiếng Anh cho trang App Store (English (U.S.))
 
-Mục đích: người duyệt của Apple và khách không dùng tiếng Việt đọc được trang App Store. Chốt ngày 09/10/2026: app sẽ song ngữ theo ngôn ngữ máy, mặc định tiếng Anh, làm ở bản sau 1.0.15. Vì vậy mô tả dưới đây ghi rõ giao diện hiện là tiếng Việt.
+Mục đích: người duyệt của Apple và khách không dùng tiếng Việt đọc được trang App Store. Chốt ngày 09/10/2026: app sẽ song ngữ theo ngôn ngữ máy, mặc định tiếng Anh, làm ở bản sau 1.0.15. Bản 1.0.16 đã song ngữ nên mô tả không còn câu nói giao diện chỉ có tiếng Việt.
 
 ## Cách thêm ngôn ngữ trên App Store Connect
 
@@ -84,8 +84,6 @@ WeDo on iPhone shares your account and data with the WeDo web app. Projects and 
 PAID PLANS
 WeDo offers Personal Pro and Team Growth, billed monthly or yearly through In-App Purchase. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings > [your name] > Subscriptions.
 
-The app interface is currently in Vietnamese. An English interface is coming soon.
-
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 WeDo Terms: https://wedofpt.com.vn/dieu-khoan.html?lang=en
 Privacy Policy: https://wedofpt.com.vn/privacy.html?lang=en
@@ -105,6 +103,24 @@ student,group project,team,task,deadline,chat,meeting,calendar,planner,todo,assi
 • New: Personal Pro and Team Growth plans, available as in-app subscriptions.
 • Restore purchases and manage your subscription from the Upgrade screen.
 • Stability and performance improvements.
+```
+
+### What's New cho bản 1.0.16 (song ngữ)
+
+English (U.S.):
+
+```text
+• WeDo now speaks English and Vietnamese. The app follows your device language.
+• Change the language any time in Account > Language.
+• Push notifications arrive in your language too.
+```
+
+Tiếng Việt:
+
+```text
+• WeDo nay có cả tiếng Anh và tiếng Việt, tự theo ngôn ngữ của máy.
+• Đổi ngôn ngữ bất cứ lúc nào ở Tài khoản > Ngôn ngữ.
+• Thông báo đẩy cũng gửi bằng ngôn ngữ của bạn.
 ```
 
 ## Bổ sung cho bản tiếng Việt (Description)
