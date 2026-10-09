@@ -13,7 +13,7 @@
     },
     "ios": {
       "bundleIdentifier": "vn.wedo.app",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "icon": "./assets/images/icon.png",
@@ -32,7 +32,7 @@
     },
     "android": {
       "package": "vn.wedo.app",
-      "versionCode": 20,
+      "versionCode": 21,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0055c7",
