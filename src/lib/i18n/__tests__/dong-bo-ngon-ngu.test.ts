@@ -80,3 +80,43 @@ it('quên giá trị đã gửi thì lần sau gửi lại', async () => {
   expect(gui).toHaveBeenCalledTimes(2);
   huy();
 });
+
+it('quên giá trị đã gửi thì khoá biến mất khỏi kho', async () => {
+  await AsyncStorage.setItem(KHOA_DA_GUI, 'en');
+  await quenNgonNguDaGui();
+  expect(await AsyncStorage.getItem(KHOA_DA_GUI)).toBeNull();
+});
+
+it('ngôn ngữ đổi trong lúc đọc kho (marker trùng ngôn ngữ cũ) thì vẫn gửi ngôn ngữ mới', async () => {
+  datNgonNguChoKiemThu('en');
+  await AsyncStorage.setItem(KHOA_DA_GUI, 'en');
+  const that = AsyncStorage.getItem.bind(AsyncStorage);
+  const spy = jest.spyOn(AsyncStorage, 'getItem').mockImplementationOnce(async (k) => {
+    const v = await that(k);
+    await new Promise<void>((r) => setTimeout(r, 20));
+    return v;
+  });
+  const huy = batDongBoNgonNgu(() => true);
+  await doi();
+  await datLuaChon('vi');
+  await new Promise<void>((r) => setTimeout(r, 60));
+  expect(gui).toHaveBeenLastCalledWith('vi');
+  spy.mockRestore();
+  huy();
+});
+
+it('huỷ giữa lúc đang gửi thì không ghi lại marker đã bị quên', async () => {
+  datNgonNguChoKiemThu('en');
+  let xong!: () => void;
+  gui.mockImplementationOnce(
+    (language) => new Promise((r) => { xong = () => r({ language }); }),
+  );
+  const huy = batDongBoNgonNgu(() => true);
+  await doi();
+  huy();
+  await quenNgonNguDaGui();
+  xong();
+  await doi();
+  await doi();
+  expect(await AsyncStorage.getItem(KHOA_DA_GUI)).toBeFalsy();
+});

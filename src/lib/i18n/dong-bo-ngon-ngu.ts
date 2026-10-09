@@ -34,12 +34,16 @@ export function batDongBoNgonNgu(daDangNhap: () => boolean): () => void {
       } catch {
         daGui = null;
       }
-      if (daGui === ngonNgu) return;
-      await capNhatNgonNgu(ngonNgu);
-      try {
-        await AsyncStorage.setItem(KHOA_DA_GUI, ngonNgu);
-      } catch {
-        // Không nhớ được thì lần sau gửi lại, vô hại.
+      if (daGui !== ngonNgu) {
+        await capNhatNgonNgu(ngonNgu);
+        // Đã huỷ (đăng xuất) giữa lúc gửi thì không ghi lại giá trị vừa bị quên.
+        if (conSong) {
+          try {
+            await AsyncStorage.setItem(KHOA_DA_GUI, ngonNgu);
+          } catch {
+            // Không nhớ được thì lần sau gửi lại, vô hại.
+          }
+        }
       }
     } catch {
       // Lỗi mạng: không ghi "đã gửi", lần sau thử lại.
