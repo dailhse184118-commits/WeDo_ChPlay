@@ -1,6 +1,6 @@
 # Ra mắt bản 1.0.16: app mobile song ngữ (vi/en)
 
-Nhánh mobile `feat/song-ngu`. Bản iOS 1.0.16 (build 6), Android 1.0.16 (versionCode 20; lần upload gần nhất lên Google Play là 19 nên 20 hợp lệ).
+Nhánh mobile `feat/song-ngu`. Bản iOS 1.0.16 (build 7), Android 1.0.16 (versionCode 20; lần upload gần nhất lên Google Play là 19 nên 20 hợp lệ).
 
 ## Thứ tự làm
 
