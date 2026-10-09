@@ -16,6 +16,7 @@ import { configureNotificationHandler } from '../lib/notifications/handler';
 import { taoKenhThongBaoAndroid } from '../lib/notifications/push-token';
 import { HAN_CACHE_BEN_BI_MS, cacheBenBi, nenLuuXuongMay, queryClient } from '../lib/query';
 import { usePhienBan } from '../lib/version/use-phien-ban';
+import { NgonNguProvider } from '../i18n/NgonNguProvider';
 
 /*
   Đặt trên hết: chỉ những lỗi xảy ra SAU lời gọi này mới được ghi nhận, nên nó
@@ -97,43 +98,45 @@ export default function RootLayout() {
   useEffect(() => bridgeAppStateToQueryFocus(), []);
 
   return (
-    <SafeAreaProvider>
-      {/*
-        Bọc cả app để bàn phím được đọc từ `WindowInsetsAnimation` của Android —
-        nguồn sự thật của hệ điều hành — thay vì sự kiện `keyboardDidShow` mà
-        bàn phím của mỗi hãng báo mỗi kiểu khi chạy edge-to-edge. Đó là nguyên
-        nhân ô soạn tin bị che trên một số máy, người kiểm thử báo 18/09/2026.
-      */}
-      <KeyboardProvider>
+    <NgonNguProvider>
+      <SafeAreaProvider>
         {/*
-          Khôi phục cache từ đĩa trước khi dựng cây màn hình, để mở app lúc không
-          có mạng vẫn thấy dữ liệu lần trước thay vì màn hình trắng.
+          Bọc cả app để bàn phím được đọc từ `WindowInsetsAnimation` của Android —
+          nguồn sự thật của hệ điều hành — thay vì sự kiện `keyboardDidShow` mà
+          bàn phím của mỗi hãng báo mỗi kiểu khi chạy edge-to-edge. Đó là nguyên
+          nhân ô soạn tin bị che trên một số máy, người kiểm thử báo 18/09/2026.
         */}
-        <PersistQueryClientProvider
-          client={queryClient}
-          persistOptions={{
-            persister: cacheBenBi,
-            maxAge: HAN_CACHE_BEN_BI_MS,
-            dehydrateOptions: { shouldDehydrateQuery: nenLuuXuongMay },
-          }}
-        >
-          <AuthProvider>
-            <StatusBar style="dark" />
-            <VeDangNhapKhiDangXuat />
-            <CongPhienBan>
-              {/*
-                Người đã đăng nhập mà chưa đồng ý Điều khoản sử dụng thì không
-                vào được màn nào — kể cả màn mở từ thông báo. Nằm DƯỚI cổng phiên
-                bản: app quá cũ thì cập nhật trước đã.
-              */}
-              <CongDieuKhoan>
-                <Stack screenOptions={{ headerShown: false }} />
-              </CongDieuKhoan>
-            </CongPhienBan>
-          </AuthProvider>
-        </PersistQueryClientProvider>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+        <KeyboardProvider>
+          {/*
+            Khôi phục cache từ đĩa trước khi dựng cây màn hình, để mở app lúc không
+            có mạng vẫn thấy dữ liệu lần trước thay vì màn hình trắng.
+          */}
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+              persister: cacheBenBi,
+              maxAge: HAN_CACHE_BEN_BI_MS,
+              dehydrateOptions: { shouldDehydrateQuery: nenLuuXuongMay },
+            }}
+          >
+            <AuthProvider>
+              <StatusBar style="dark" />
+              <VeDangNhapKhiDangXuat />
+              <CongPhienBan>
+                {/*
+                  Người đã đăng nhập mà chưa đồng ý Điều khoản sử dụng thì không
+                  vào được màn nào — kể cả màn mở từ thông báo. Nằm DƯỚI cổng phiên
+                  bản: app quá cũ thì cập nhật trước đã.
+                */}
+                <CongDieuKhoan>
+                  <Stack screenOptions={{ headerShown: false }} />
+                </CongDieuKhoan>
+              </CongPhienBan>
+            </AuthProvider>
+          </PersistQueryClientProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </NgonNguProvider>
   );
 }
 

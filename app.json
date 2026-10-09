@@ -8,7 +8,8 @@
     "scheme": "wedo",
     "userInterfaceStyle": "light",
     "locales": {
-      "vi": "./locales/vi.json"
+      "vi": "./locales/vi.json",
+      "en": "./locales/en.json"
     },
     "ios": {
       "bundleIdentifier": "vn.wedo.app",
@@ -21,7 +22,7 @@
       },
       "infoPlist": {
         "CFBundleDevelopmentRegion": "vi",
-        "CFBundleLocalizations": ["vi"],
+        "CFBundleLocalizations": ["vi", "en"],
         "CFBundleAllowMixedLocalizations": true,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
