@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { useTuDien } from '../../i18n/NgonNguProvider';
 import { tuDienCongViec } from '../../i18n/tu-dien/cong-viec';
@@ -14,6 +24,9 @@ import { colors, fontSize, lineHeight, radius, scaleWithFont, shadows, sizes, sp
 export const QUICK_REASONS = tuDienCongViec.vi.tuChoiPhieu.lyDoNhanh;
 
 const MAX_LENGTH = 200;
+
+/** Lý do là một câu ngắn: dòng xuống (gõ hay dán vào) gộp thành một khoảng trắng. */
+const gopDong = (chu: string) => chu.replace(/\s*[\r\n]+\s*/g, ' ');
 
 interface RejectTaskSheetProps {
   visible: boolean;
@@ -64,86 +77,111 @@ export function RejectTaskSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-      <Pressable style={styles.backdrop} onPress={onDismiss} />
+      {/*
+        Lỗi 10/10 (video từ iPhone): phiếu không né bàn phím, ô lý do tự giãn theo
+        số dòng và phím Return chỉ xuống dòng, nên nút gửi bị đẩy xuống dưới bàn
+        phím — người dùng kẹt, không gửi được, cũng không tắt được bàn phím.
+        Nay: chỉ đẩy phiếu lên trên iOS (Android tự co cửa sổ Modal, đệm thêm là
+        nhảy gấp đôi — cùng cách PhieuBaoCao), phiếu cao tối đa 90% và cuộn được,
+        ô cao cố định, Return đóng bàn phím.
+      */}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable style={styles.backdrop} onPress={onDismiss} />
 
-      <View style={styles.sheet}>
-        <View style={styles.handle} />
+        <View style={styles.sheet}>
+          <View style={styles.handle} />
 
-        <Text style={styles.heading}>{heading ?? t.tieuDe}</Text>
-        <Text style={styles.body}>{body ?? t.noiDung(assignerName)}</Text>
+          <ScrollView
+            testID="reject-cuon"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.heading}>{heading ?? t.tieuDe}</Text>
+            <Text style={styles.body}>{body ?? t.noiDung(assignerName)}</Text>
 
-        {error ? <ErrorBanner message={error} /> : null}
-        {lyDoNgan ? <ErrorBanner message={t.lyDoNganQua} /> : null}
+            {error ? <ErrorBanner message={error} /> : null}
+            {lyDoNgan ? <ErrorBanner message={t.lyDoNganQua} /> : null}
 
-        <View style={styles.chips}>
-          {(quickReasons ?? t.lyDoNhanh).map((quick, index) => (
-            <Pressable
-              key={quick}
-              testID={`quick-reason-${index}`}
-              accessibilityRole="button"
-              onPress={() => {
-                setReason(quick);
-                setLyDoNgan(false);
+            <View style={styles.chips}>
+              {(quickReasons ?? t.lyDoNhanh).map((quick, index) => (
+                <Pressable
+                  key={quick}
+                  testID={`quick-reason-${index}`}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setReason(quick);
+                    setLyDoNgan(false);
+                  }}
+                  style={({ pressed }) => [styles.chip, pressed ? styles.chipPressed : null]}
+                >
+                  <Text style={styles.chipText}>{quick}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.label}>{t.nhan}</Text>
+            <TextInput
+              testID="reject-reason"
+              accessibilityLabel={t.nhan}
+              value={reason}
+              onChangeText={(value) => {
+                setReason(gopDong(value));
+                if (lyDoNgan) setLyDoNgan(false);
               }}
-              style={({ pressed }) => [styles.chip, pressed ? styles.chipPressed : null]}
+              placeholder={t.goiY}
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              multiline
+              scrollEnabled
+              returnKeyType="done"
+              submitBehavior="blurAndSubmit"
+              maxLength={MAX_LENGTH}
+              // Từ điển tiếng Anh của Android gạch đỏ toàn bộ tiếng Việt.
+              spellCheck={false}
+              autoCorrect={false}
+            />
+
+            <View style={styles.meta}>
+              <Text style={styles.required}>{t.batBuoc}</Text>
+              <Text testID="reject-counter" style={styles.counter}>
+                {reason.length}/{MAX_LENGTH}
+              </Text>
+            </View>
+
+            <Pressable
+              testID="reject-confirm"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: submitting, busy: submitting }}
+              disabled={submitting}
+              onPress={handleConfirm}
+              style={({ pressed }) => [
+                styles.submit,
+                pressed && !submitting ? styles.submitPressed : null,
+                submitting ? styles.submitDisabled : null,
+              ]}
             >
-              <Text style={styles.chipText}>{quick}</Text>
+              <Text style={styles.submitText}>{submitting ? t.dangGui : (confirmLabel ?? t.nutGui)}</Text>
             </Pressable>
-          ))}
+
+            <Pressable testID="reject-cancel" onPress={onDismiss} style={styles.cancel}>
+              <Text style={styles.cancelText}>{t.huy}</Text>
+            </Pressable>
+          </ScrollView>
         </View>
-
-        <Text style={styles.label}>{t.nhan}</Text>
-        <TextInput
-          testID="reject-reason"
-          accessibilityLabel={t.nhan}
-          value={reason}
-          onChangeText={(value) => {
-            setReason(value);
-            if (lyDoNgan) setLyDoNgan(false);
-          }}
-          placeholder={t.goiY}
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          multiline
-          maxLength={MAX_LENGTH}
-          // Từ điển tiếng Anh của Android gạch đỏ toàn bộ tiếng Việt.
-          spellCheck={false}
-          autoCorrect={false}
-        />
-
-        <View style={styles.meta}>
-          <Text style={styles.required}>{t.batBuoc}</Text>
-          <Text testID="reject-counter" style={styles.counter}>
-            {reason.length}/{MAX_LENGTH}
-          </Text>
-        </View>
-
-        <Pressable
-          testID="reject-confirm"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: submitting, busy: submitting }}
-          disabled={submitting}
-          onPress={handleConfirm}
-          style={({ pressed }) => [
-            styles.submit,
-            pressed && !submitting ? styles.submitPressed : null,
-            submitting ? styles.submitDisabled : null,
-          ]}
-        >
-          <Text style={styles.submitText}>{submitting ? t.dangGui : (confirmLabel ?? t.nutGui)}</Text>
-        </Pressable>
-
-        <Pressable testID="reject-cancel" onPress={onDismiss} style={styles.cancel}>
-          <Text style={styles.cancelText}>{t.huy}</Text>
-        </Pressable>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
+    maxHeight: '90%',
     backgroundColor: colors.background,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
@@ -185,7 +223,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   input: {
-    minHeight: 96,
+    height: 112,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,

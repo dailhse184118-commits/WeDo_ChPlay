@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 import { RejectTaskSheet, QUICK_REASONS } from '../RejectTaskSheet';
@@ -117,5 +118,47 @@ describe('RejectTaskSheet', () => {
 
     await fireEvent.press(getByTestId('reject-cancel'));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    Lỗi 10/10 (video người dùng iPhone): phím Return chỉ xuống dòng, ô tự giãn
+    theo số dòng, đẩy nút gửi xuống dưới bàn phím — kẹt, không gửi được.
+  */
+  describe('bàn phím không được nhốt người dùng', () => {
+    it('phím Return đóng bàn phím chứ không xuống dòng', async () => {
+      const { getByTestId } = await render(
+        <RejectTaskSheet visible onConfirm={() => {}} onDismiss={() => {}} />,
+      );
+      const o = getByTestId('reject-reason');
+      expect(o.props.returnKeyType).toBe('done');
+      expect(o.props.submitBehavior).toBe('blurAndSubmit');
+    });
+
+    it('dòng xuống dán vào bị gộp thành khoảng trắng', async () => {
+      const onConfirm = jest.fn();
+      const { getByTestId } = await render(
+        <RejectTaskSheet visible onConfirm={onConfirm} onDismiss={() => {}} />,
+      );
+
+      await fireEvent.changeText(getByTestId('reject-reason'), 'Không có tiền\n\n\nĐó rồi');
+      await fireEvent.press(getByTestId('reject-confirm'));
+
+      await waitFor(() => expect(onConfirm).toHaveBeenCalledWith('Không có tiền Đó rồi'));
+    });
+
+    it('ô nhập cao cố định, không giãn theo nội dung', async () => {
+      const { getByTestId } = await render(
+        <RejectTaskSheet visible onConfirm={() => {}} onDismiss={() => {}} />,
+      );
+      const kieu = StyleSheet.flatten(getByTestId('reject-reason').props.style);
+      expect(typeof kieu.height).toBe('number');
+    });
+
+    it('nội dung phiếu cuộn được để luôn tới được nút gửi', async () => {
+      const { getByTestId } = await render(
+        <RejectTaskSheet visible onConfirm={() => {}} onDismiss={() => {}} />,
+      );
+      expect(getByTestId('reject-cuon').props.keyboardShouldPersistTaps).toBe('handled');
+    });
   });
 });

@@ -26,6 +26,32 @@ export function maGuiDi(oNhap: string): string | null {
   return gon.length === DO_DAI_MA_MOI ? gon : null;
 }
 
+const MA_TRONG_LINK = new RegExp(`^[A-Z0-9]{${DO_DAI_MA_MOI}}$`);
+/** Bảng chữ của mã mời (máy chủ: bỏ 0/O/1/I cho khỏi nhầm). */
+const MA_TRAN = new RegExp(`^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{${DO_DAI_MA_MOI}}$`);
+
+/**
+ * Lấy mã mời từ nội dung một mã QR. Nhận hai dạng:
+ * - link có đoạn `/moi/<mã>` (sau `#` hay trong đường dẫn, tên miền nào cũng
+ *   được — gốc link lấy từ `FRONTEND_URL` của máy chủ nên có thể đổi): mã là 8
+ *   ký tự chữ/số;
+ * - chuỗi chỉ là mã, có hay không có gạch, chữ thường hay hoa: phải đúng bảng
+ *   chữ của mã mời, để QR tình cờ có 8 chữ số (vd. `12345678`) không bị nhận nhầm.
+ *
+ * Chỉ đọc chuỗi: không mở link, không gọi mạng. Không phải lời mời thì `null`.
+ */
+export function docMaTuQr(noiDung: string): string | null {
+  const gon = noiDung.trim();
+  const theoLink = /\/moi\/([^/?#&\s]+)/i.exec(gon);
+  const chuan = (chuoi: string) => chuoi.toUpperCase().replace(/-/g, '');
+  if (theoLink) {
+    const ma = chuan(theoLink[1]);
+    return MA_TRONG_LINK.test(ma) ? ma : null;
+  }
+  const ma = chuan(gon);
+  return MA_TRAN.test(ma) ? ma : null;
+}
+
 export function hienThiMaMoi(ma: string): string {
   return ma.length === DO_DAI_MA_MOI ? `${ma.slice(0, 4)}-${ma.slice(4)}` : ma;
 }

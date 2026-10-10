@@ -84,9 +84,17 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "WeDo cần máy ảnh để bạn chụp và gửi ảnh ngay trong khung chat.",
+          "cameraPermission": "WeDo cần máy ảnh để bạn chụp ảnh gửi trong khung chat và quét mã QR mời vào nhóm.",
           "photosPermission": "WeDo cần thư viện ảnh để bạn gửi ảnh có sẵn trong khung chat và chọn ảnh đại diện.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "WeDo cần máy ảnh để bạn chụp ảnh gửi trong khung chat và quét mã QR mời vào nhóm.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       "./plugins/with-may-anh-tuy-chon"

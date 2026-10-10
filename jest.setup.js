@@ -45,3 +45,32 @@ delete Intl.RelativeTimeFormat;
 delete Intl.ListFormat;
 delete Intl.Segmenter;
 delete Intl.DisplayNames;
+
+/*
+  `expo-camera` và `react-native-qrcode-svg` đều vẽ bằng native (máy ảnh, SVG),
+  không chạy được trong Jest. Mock chung ở đây để mọi màn có bảng mời vào nhóm
+  vẫn vẽ được; test cần quyền khác thì tự đổi `useCameraPermissions`:
+
+    jest.mocked(useCameraPermissions).mockReturnValue([{ granted: false, ... }, xin, lay]);
+
+  `CameraView` thành một View giữ nguyên props, nên test gọi được
+  `props.onBarcodeScanned({ data, type: 'qr' })` như máy ảnh vừa đọc được mã.
+*/
+jest.mock('expo-camera', () => {
+  const React = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+  const quyenDaCap = { granted: true, canAskAgain: true, status: 'granted', expires: 'never' };
+  return {
+    __esModule: true,
+    CameraView: (props) => React.createElement(View, props),
+    useCameraPermissions: jest.fn(() => [quyenDaCap, jest.fn(async () => quyenDaCap), jest.fn(async () => quyenDaCap)]),
+  };
+});
+jest.mock('react-native-qrcode-svg', () => {
+  const React = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
+  return {
+    __esModule: true,
+    default: ({ value }) => React.createElement(View, { testID: 'ma-qr', value }),
+  };
+});

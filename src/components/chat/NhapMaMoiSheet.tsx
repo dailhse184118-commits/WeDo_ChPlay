@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '../ui/Button';
+import { QuetMaQr } from './QuetMaQr';
 import { useNgonNgu, useTuDien } from '../../i18n/NgonNguProvider';
 import { tuDienChat } from '../../i18n/tu-dien/chat';
 import { tuDienChung } from '../../i18n/tu-dien/chung';
@@ -29,8 +31,8 @@ interface NhapMaMoiSheetProps {
 }
 
 /**
- * Vào nhóm bằng mã Leader gửi (bản này chưa mở được link hay quét QR — phần đó
- * chờ bản build mới). Gõ mã → xem trước dự án → Tham gia.
+ * Vào nhóm bằng mã Leader gửi: gõ mã hoặc quét QR → xem trước dự án → Tham gia.
+ * Quét được mã thì tự xem trước, nhưng người dùng vẫn phải tự bấm Tham gia.
  */
 export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiSheetProps) {
   const [oNhap, setONhap] = useState('');
@@ -42,6 +44,7 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
   // Giữ lỗi gốc, dịch lúc vẽ.
   const [loi, setLoi] = useState<{ e: unknown } | null>(null);
   const [dang, setDang] = useState<'xem' | 'vao' | null>(null);
+  const [dangQuet, setDangQuet] = useState(false);
   const ma = maGuiDi(oNhap);
 
   const datLai = () => {
@@ -49,6 +52,7 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
     setXemTruoc(null);
     setLoi(null);
     setDang(null);
+    setDangQuet(false);
   };
 
   const dong = () => {
@@ -56,17 +60,24 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
     onDismiss();
   };
 
-  const xem = async () => {
-    if (!ma || dang) return;
+  const xem = async (maXem: string | null = ma) => {
+    if (!maXem || dang) return;
     setDang('xem');
     setLoi(null);
     try {
-      setXemTruoc(await xemTruocLoiMoi(ma));
+      setXemTruoc(await xemTruocLoiMoi(maXem));
     } catch (e) {
       setLoi({ e });
     } finally {
       setDang(null);
     }
+  };
+
+  const daQuetDuoc = (maQuet: string) => {
+    setDangQuet(false);
+    setONhap(dinhDangOMaMoi(maQuet));
+    setXemTruoc(null);
+    void xem(maQuet);
   };
 
   const vao = async () => {
@@ -92,23 +103,36 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
         <Text style={styles.tieuDe}>{tc.nhapMaMoi}</Text>
         <Text style={styles.moTa}>{t.moTaNhapMa}</Text>
 
-        <TextInput
-          testID="o-ma-moi"
-          accessibilityLabel={t.maMoi}
-          value={oNhap}
-          onChangeText={(giaTri) => {
-            setONhap(dinhDangOMaMoi(giaTri));
-            setXemTruoc(null);
-            setLoi(null);
-          }}
-          placeholder="XXXX-XXXX"
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          spellCheck={false}
-          maxLength={9}
-          style={styles.o}
-        />
+        <View style={styles.hangNhap}>
+          <TextInput
+            testID="o-ma-moi"
+            accessibilityLabel={t.maMoi}
+            value={oNhap}
+            onChangeText={(giaTri) => {
+              setONhap(dinhDangOMaMoi(giaTri));
+              setXemTruoc(null);
+              setLoi(null);
+            }}
+            placeholder="XXXX-XXXX"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            spellCheck={false}
+            maxLength={9}
+            style={styles.o}
+          />
+          <Pressable
+            testID="nut-quet-qr"
+            accessibilityRole="button"
+            accessibilityLabel={t.quetMaQr}
+            onPress={() => setDangQuet(true)}
+            disabled={dang !== null}
+            style={({ pressed }) => [styles.nutQuet, pressed ? styles.nutQuetNhan : null]}
+          >
+            <Ionicons name="qr-code-outline" size={22} color={colors.primary} />
+            <Text style={styles.chuNutQuet}>{t.quetQr}</Text>
+          </Pressable>
+        </View>
 
         {loi ? (
           <Text testID="loi-ma-moi" style={styles.loi}>
@@ -137,6 +161,10 @@ export function NhapMaMoiSheet({ visible, onDismiss, onDaThamGia }: NhapMaMoiShe
           />
         )}
       </View>
+
+      {/* Lồng trong Modal của bảng: iOS không hiện được hai Modal anh em cùng lúc.
+          Chỉ gắn khi đang quét: máy ảnh và hỏi quyền không chạy lúc chỉ gõ mã. */}
+      {dangQuet ? <QuetMaQr onMa={daQuetDuoc} onDong={() => setDangQuet(false)} /> : null}
     </Modal>
   );
 }
@@ -163,7 +191,9 @@ const styles = StyleSheet.create({
   tieuDe: { fontSize: fontSize.lg, lineHeight: lineHeight.lg, fontWeight: '700', color: colors.text },
   moTa: { fontSize: fontSize.sm, lineHeight: lineHeight.sm, color: colors.textMuted },
   // Ô có chữ: `minHeight` để chữ phóng to thì ô cao theo.
+  hangNhap: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm },
   o: {
+    flex: 1,
     minHeight: scaleWithFont(52),
     borderWidth: 1,
     borderColor: colors.border,
@@ -175,6 +205,18 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
+  nutQuet: {
+    minWidth: scaleWithFont(64),
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xxs,
+  },
+  nutQuetNhan: { backgroundColor: colors.surface },
+  chuNutQuet: { fontSize: fontSize.xs, lineHeight: lineHeight.xs, fontWeight: '700', color: colors.primary },
   loi: { fontSize: fontSize.sm, lineHeight: lineHeight.sm, color: colors.danger },
   theDuAn: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
   tenDuAn: { fontSize: fontSize.md, lineHeight: lineHeight.md, fontWeight: '700', color: colors.text },

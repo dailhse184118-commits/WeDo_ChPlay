@@ -2,6 +2,7 @@ import { ApiError } from '../api/client';
 import {
   cauLoiMoi,
   dinhDangOMaMoi,
+  docMaTuQr,
   hienThiHanMoi,
   maGuiDi,
   noiDungChiaSe,
@@ -68,5 +69,55 @@ describe('hienThiHanMoi', () => {
   it('giờ Việt Nam, không phụ thuộc múi giờ của máy', () => {
     expect(hienThiHanMoi('2026-10-09T03:30:00.000Z')).toBe('10:30 09/10/2026');
     expect(hienThiHanMoi('khong-phai-ngay')).toBe('');
+  });
+});
+
+describe('docMaTuQr', () => {
+  it('link có #/moi/<mã> của web WeDo', () => {
+    expect(docMaTuQr('https://wedofpt.com.vn/#/moi/7K3M9QXA')).toBe('7K3M9QXA');
+  });
+
+  it('link có /moi/<mã> trong đường dẫn, kèm tham số phía sau', () => {
+    expect(docMaTuQr('https://wedofpt.com.vn/moi/7k3m9qxa?utm=zalo')).toBe('7K3M9QXA');
+    expect(docMaTuQr('https://wedofpt.com.vn/moi/7K3M9QXA/')).toBe('7K3M9QXA');
+  });
+
+  it('tên miền khác (FRONTEND_URL đổi) vẫn đọc được mã', () => {
+    expect(docMaTuQr('http://localhost:5173/#/moi/7K3M-9QXA')).toBe('7K3M9QXA');
+    expect(docMaTuQr('https://wedo.example.org/app/#/moi/ABCD2345')).toBe('ABCD2345');
+  });
+
+  it('chuỗi chỉ là mã: chữ thường, có gạch, có khoảng trắng hai đầu', () => {
+    expect(docMaTuQr('7k3m9qxa')).toBe('7K3M9QXA');
+    expect(docMaTuQr(' 7K3M-9QXA \n')).toBe('7K3M9QXA');
+  });
+
+  it('rác hay link không phải lời mời thì null', () => {
+    expect(docMaTuQr('')).toBeNull();
+    expect(docMaTuQr('Xin chào')).toBeNull();
+    expect(docMaTuQr('https://evil.example.com/7K3M9QXA')).toBeNull();
+    expect(docMaTuQr('https://wedofpt.com.vn/#/du-an/7K3M9QXA')).toBeNull();
+    expect(docMaTuQr('WIFI:S:QuanCafe;T:WPA;P:12345678;;')).toBeNull();
+    expect(docMaTuQr('https://wedofpt.com.vn/#/moi/7K3M+9QX')).toBeNull();
+  });
+
+  it('chuỗi chỉ là mã phải đúng bảng chữ mã mời (không 0, 1, O, I)', () => {
+    expect(docMaTuQr('12345678')).toBeNull();
+    expect(docMaTuQr('ABCD0EFG')).toBeNull();
+    expect(docMaTuQr('ABCDOEFG')).toBeNull();
+    expect(docMaTuQr('ABCD1EFG')).toBeNull();
+    expect(docMaTuQr('abcd-iefg')).toBeNull();
+    expect(docMaTuQr('23456789')).toBe('23456789');
+  });
+
+  it('mã lấy từ link /moi/<mã> chỉ cần 8 chữ/số như trước', () => {
+    expect(docMaTuQr('https://wedofpt.com.vn/#/moi/12345678')).toBe('12345678');
+  });
+
+  it('mã 7 hay 9 ký tự thì null', () => {
+    expect(docMaTuQr('7K3M9QX')).toBeNull();
+    expect(docMaTuQr('7K3M9QXAB')).toBeNull();
+    expect(docMaTuQr('https://wedofpt.com.vn/#/moi/7K3M9QX')).toBeNull();
+    expect(docMaTuQr('https://wedofpt.com.vn/#/moi/7K3M9QXAB')).toBeNull();
   });
 });

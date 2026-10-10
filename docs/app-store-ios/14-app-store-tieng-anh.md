@@ -113,6 +113,7 @@ English (U.S.):
 • WeDo now speaks English and Vietnamese. The app follows your device language.
 • Change the language any time in Account > Language.
 • Push notifications arrive in your language too.
+• Scan a QR code to join a team. Leaders can show the invite QR right in the app.
 ```
 
 Tiếng Việt:
@@ -121,6 +122,7 @@ Tiếng Việt:
 • WeDo nay có cả tiếng Anh và tiếng Việt, tự theo ngôn ngữ của máy.
 • Đổi ngôn ngữ bất cứ lúc nào ở Tài khoản > Ngôn ngữ.
 • Thông báo đẩy cũng gửi bằng ngôn ngữ của bạn.
+• Quét mã QR để vào nhóm. Leader hiện QR mời ngay trong app.
 ```
 
 ## Bổ sung cho bản tiếng Việt (Description)
